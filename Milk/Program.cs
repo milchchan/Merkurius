@@ -13,8 +13,10 @@ namespace Milk
     {
         static void Main(string[] args)
         {
-            Dictionary<double[], double[][]> patternDictionary = new Dictionary<double[], double[][]>();
-            Model model = new Model(Environment.TickCount, 2, 2, 1, 1, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new HyperbolicTangent(), new AdaDelta());
+            Random random = new Random(Environment.TickCount);
+            Dictionary<double[], IEnumerable<double[]>> patternDictionary = new Dictionary<double[], IEnumerable<double[]>>();
+            Model model = new Model(random, new Layer[] { new Layer(3, new HyperbolicTangent(), new AdaDelta()), new Layer(2, new HyperbolicTangent(), new AdaDelta()), new Layer(1, new HyperbolicTangent(), new AdaDelta()) }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)));
+            //Model model = new Model(Environment.TickCount, 2, 2, 1, 1, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new HyperbolicTangent(), new AdaDelta());
             //Model model = new Model(Environment.TickCount, 2, 2, 1, 1, (x, y) => -Math.Sqrt(6 / (x + y)) * 4, (x, y) => Math.Sqrt(6 / (x + y)) * 4, new Sigmoid(), new Momentum(0.5, 0.1)); // For Sigmoid activation function
 
             patternDictionary.Add(new double[] { 0 }, new double[][] { new double[] { 0, 0 } });
@@ -40,7 +42,15 @@ namespace Milk
 
             Stopwatch sw = Stopwatch.StartNew();
 
-            model.Pretrain(patternDictionary, 0.1, 0.3, 1000);
+            model.Pretrain(patternDictionary.Values.Aggregate<IEnumerable<double[]>, List<double[]>>(new List<double[]>(), (list, vectors) =>
+            {
+                foreach (double[] vector in vectors)
+                {
+                    list.Add(vector);
+                }
+
+                return list;
+            }), 0.1, 0.3, 1000);
 
             sw.Stop();
 
@@ -59,9 +69,9 @@ namespace Milk
             Console.WriteLine("Done ({0}).", sw.Elapsed.ToString());
             Console.WriteLine();
 
-            foreach (double[] vector in patternDictionary.Values.Aggregate<double[][], List<double[]>>(new List<double[]>(), (list, array) =>
+            foreach (double[] vector in patternDictionary.Values.Aggregate<IEnumerable<double[]>, List<double[]>>(new List<double[]>(), (list, vectors) =>
             {
-                foreach (double[] vector in array)
+                foreach (double[] vector in vectors)
                 {
                     list.Add(vector);
                 }
