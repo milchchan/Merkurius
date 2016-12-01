@@ -74,7 +74,7 @@ namespace Milk
                     {
                         for (int k = 0; k < nodes; k++)
                         {
-                            weights[j, k] = Random(min, max);
+                            weights[j, k] = Uniform(min, max);
                         }
                     }
 
@@ -102,7 +102,7 @@ namespace Milk
                     {
                         for (int j = 0; j < layer.Activations.Length; j++)
                         {
-                            weights[i, j] = Random(min, max);
+                            weights[i, j] = Uniform(min, max);
                         }
                     }
 
@@ -288,7 +288,7 @@ namespace Milk
             {
                 double error = 0;
 
-                foreach (KeyValuePair<double[], double[]> kvp in Shuffle<KeyValuePair<double[], double[]>>(this.random, kvpList))
+                foreach (KeyValuePair<double[], double[]> kvp in Shuffle<KeyValuePair<double[], double[]>>(kvpList))
                 {
                     List<int[]> dropoutList;
                     double[][] deltas;
@@ -408,35 +408,39 @@ namespace Milk
 
         private void BackwardPropagate(double[] vector, List<int[]> dropoutList, out double[][] deltas)
         {
-            int length = this.layerList[this.layerList.Count - 1].Activations.Length;
+            Layer outputLayer = this.layerList[this.layerList.Count - 1];
+            int index = this.layerList.Count - 2;
 
             deltas = new double[this.layerList.Count - 1][];
-            deltas[deltas.Length - 1] = new double[length];
+            deltas[index] = new double[outputLayer.Activations.Length];
 
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < outputLayer.Activations.Length; i++)
             {
-                deltas[deltas.Length - 1][i] = this.layerList[deltas.Length - 1].ActivationFunction.Derivative(this.layerList[this.layerList.Count - 1].Activations[i]) * (this.layerList[this.layerList.Count - 1].Activations[i] - vector[i]) * dropoutList[this.layerList.Count - 1][i];
+                deltas[index][i] = this.layerList[index].ActivationFunction.Derivative(outputLayer.Activations[i]) * (outputLayer.Activations[i] - vector[i]) * dropoutList[this.layerList.Count - 1][i];
             }
 
             for (int i = this.layerList.Count - 2; i > 0; i--)
             {
-                deltas[i - 1] = new double[this.layerList[i].Activations.Length];
+                int previousIndex = i - 1;
+                int nextIndex = i + 1;
+                    
+                deltas[previousIndex] = new double[this.layerList[i].Activations.Length];
 
                 for (int j = 0; j < this.layerList[i].Activations.Length; j++)
                 {
                     double error = 0;
 
-                    for (int k = 0; k < this.layerList[i + 1].Activations.Length; k++)
+                    for (int k = 0; k < this.layerList[nextIndex].Activations.Length; k++)
                     {
                         error += deltas[i][k] * this.weightsCollection[i][j, k];
                     }
 
-                    deltas[i - 1][j] = this.layerList[i - 1].ActivationFunction.Derivative(this.layerList[i].Activations[j]) * error * dropoutList[i][j];
+                    deltas[previousIndex][j] = this.layerList[previousIndex].ActivationFunction.Derivative(this.layerList[i].Activations[j]) * error * dropoutList[i][j];
                 }
             }
         }
 
-        private double Random(double min, double max)
+        private double Uniform(double min, double max)
         {
             return (max - min) * this.random.NextDouble() + min;
         }
@@ -456,7 +460,7 @@ namespace Milk
             return count;
         }
 
-        private IEnumerable<T> Shuffle<T>(Random r, IEnumerable<T> collection)
+        private IEnumerable<T> Shuffle<T>(IEnumerable<T> collection)
         {
             // Fisher-Yates algorithm
             T[] array = collection.ToArray();
@@ -464,7 +468,7 @@ namespace Milk
 
             while (n > 1)
             {
-                int k = r.Next(n); // 0 <= k < n.
+                int k = this.random.Next(n); // 0 <= k < n.
 
                 n--; // n is now the last pertinent index;
                 T temp = array[n]; // swap list[n] with list[k] (does nothing if k == n).
