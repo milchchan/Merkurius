@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Milk.ActivationFunctions;
+using Milk.LossFunctions;
 using Milk.Optimizers;
 
 namespace Milk
@@ -13,6 +14,7 @@ namespace Milk
         private List<Layer> layerList = null;
         private Collection<double[,]> weightsCollection = null;
         private double errorThreshold = 0.01;
+        private ILossFunction lossFunction = null;
 
         public double ErrorThreshold
         {
@@ -53,6 +55,7 @@ namespace Milk
             this.random = new Random(seed);
             this.layerList = new List<Layer>();
             this.weightsCollection = new Collection<double[,]>();
+            this.lossFunction = new MeanSquaredError();
 
             for (int i = 0; i < layers; i++)
             {
@@ -83,11 +86,12 @@ namespace Milk
             }
         }
 
-        public Model(Random random, IEnumerable<Layer> layers, Func<int, int, double> minFunc, Func<int, int, double> maxFunc)
+        public Model(Random random, IEnumerable<Layer> layers, Func<int, int, double> minFunc, Func<int, int, double> maxFunc, ILossFunction lossFunction)
         {
             this.random = random;
             this.layerList = new List<Layer>();
             this.weightsCollection = new Collection<double[,]>();
+            this.lossFunction = lossFunction;
 
             foreach (Layer layer in layers)
             {
@@ -177,7 +181,7 @@ namespace Milk
                                 }
 
                                 sum += inputBiasesList[j][k];
-                                inputVector[k] = Binomial(1, this.layerList[j].ActivationFunction.Activate(sum));
+                                inputVector[k] = Binomial(1, this.layerList[j].ActivationFunction.Function(sum));
                             }
 
                             j++;
@@ -212,7 +216,7 @@ namespace Milk
                             }
 
                             y[n] += hiddenBiasesList[i][n];
-                            y[n] = this.layerList[i + 1].ActivationFunction.Activate(y[n]);
+                            y[n] = this.layerList[i + 1].ActivationFunction.Function(y[n]);
                         }
 
                         // Decode
@@ -226,7 +230,7 @@ namespace Milk
                             }
 
                             z[n] += inputBiasesList[i][n];
-                            z[n] = this.layerList[i + 1].ActivationFunction.Activate(z[n]);
+                            z[n] = this.layerList[i + 1].ActivationFunction.Function(z[n]);
                         }
 
                         for (int n = 0; n < z.Length; n++)
@@ -313,7 +317,7 @@ namespace Milk
 
                     for (int i = 0; i < kvp.Value.Length; i++)
                     {
-                        error += (kvp.Value[i] - this.layerList[this.layerList.Count - 1].Activations[i]) * (kvp.Value[i] - this.layerList[this.layerList.Count - 1].Activations[i]) / 2;
+                        error += this.lossFunction.Function(kvp.Value[i], this.layerList[this.layerList.Count - 1].Activations[i]);
                     }
                 }
 
@@ -360,7 +364,7 @@ namespace Milk
                             sum += tempActivations[i - 1][k] * this.weightsCollection[i - 1][k, j];
                         }
 
-                        tempActivations[i][j] = this.layerList[i].ActivationFunction.Activate(sum);
+                        tempActivations[i][j] = this.layerList[i].ActivationFunction.Function(sum);
                     }
                 }
             }
@@ -398,7 +402,7 @@ namespace Milk
                             sum += this.layerList[i - 1].Activations[k] * this.weightsCollection[i - 1][k, j];
                         }
 
-                        this.layerList[i].Activations[j] = this.layerList[i].ActivationFunction.Activate(sum) * mask[j];
+                        this.layerList[i].Activations[j] = this.layerList[i].ActivationFunction.Function(sum) * mask[j];
                     }
                 }
 
@@ -416,7 +420,7 @@ namespace Milk
 
             for (int i = 0; i < outputLayer.Activations.Length; i++)
             {
-                deltas[index][i] = this.layerList[index].ActivationFunction.Derivative(outputLayer.Activations[i]) * (outputLayer.Activations[i] - vector[i]) * dropoutList[this.layerList.Count - 1][i];
+                deltas[index][i] = this.layerList[index].ActivationFunction.Derivative(outputLayer.Activations[i]) * this.lossFunction.Derivative(outputLayer.Activations[i], vector[i]) * dropoutList[this.layerList.Count - 1][i];
             }
 
             for (int i = this.layerList.Count - 2; i > 0; i--)

@@ -44,8 +44,11 @@
     <Compile Include="ActivationFunction.cs" />
     <Compile Include="AdaDelta.cs" />
     <Compile Include="AdaGrad.cs" />
+    <Compile Include="CrossEntropy.cs" />
     <Compile Include="HyperbolicTangent.cs" />
     <Compile Include="Layer.cs" />
+    <Compile Include="LossFunction.cs" />
+    <Compile Include="MeanSquaredError.cs" />
     <Compile Include="Model.cs" />
     <Compile Include="Momentum.cs" />
     <Compile Include="Optimizer.cs" />
@@ -54,6 +57,7 @@
     <Compile Include="ReLU.cs" />
     <Compile Include="RMSprop.cs" />
     <Compile Include="Sigmoid.cs" />
+    <Compile Include="Softmax.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

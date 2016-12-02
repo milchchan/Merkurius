@@ -6,7 +6,7 @@ namespace Milk
     {
         public class ReLU : IActivationFunction
         {
-            public double Activate(double x)
+            public double Function(double x)
             {
                 if (x > 0)
                 {

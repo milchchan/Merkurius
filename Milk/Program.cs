@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Milk.ActivationFunctions;
+using Milk.LossFunctions;
 using Milk.Optimizers;
 
 namespace Milk
@@ -15,7 +16,7 @@ namespace Milk
         {
             Random random = new Random(Environment.TickCount);
             Dictionary<double[], IEnumerable<double[]>> patternDictionary = new Dictionary<double[], IEnumerable<double[]>>();
-            Model model = new Model(random, new Layer[] { new Layer(3, new HyperbolicTangent(), new AdaDelta()), new Layer(2, new HyperbolicTangent(), new AdaDelta()), new Layer(1, new HyperbolicTangent(), new AdaDelta()) }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)));
+            Model model = new Model(random, new Layer[] { new Layer(3, new HyperbolicTangent(), new AdaDelta()), new Layer(2, new HyperbolicTangent(), new AdaDelta()), new Layer(1, new HyperbolicTangent(), new AdaDelta()) }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new MeanSquaredError());
             //Model model = new Model(Environment.TickCount, 2, 2, 1, 1, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new HyperbolicTangent(), new AdaDelta());
             //Model model = new Model(Environment.TickCount, 2, 2, 1, 1, (x, y) => -Math.Sqrt(6 / (x + y)) * 4, (x, y) => Math.Sqrt(6 / (x + y)) * 4, new Sigmoid(), new Momentum(0.5, 0.1)); // For Sigmoid activation function
 

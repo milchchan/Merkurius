@@ -6,7 +6,7 @@ namespace Milk
     {
         public class Sigmoid : IActivationFunction
         {
-            public double Activate(double x)
+            public double Function(double x)
             {
                 return 1.0 / (1.0 + Math.Exp(-x));
             }

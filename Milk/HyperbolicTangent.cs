@@ -6,7 +6,7 @@ namespace Milk
     {
         public class HyperbolicTangent : IActivationFunction
         {
-            public double Activate(double x)
+            public double Function(double x)
             {
                 return Math.Tanh(x);
             }

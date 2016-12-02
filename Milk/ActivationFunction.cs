@@ -6,7 +6,7 @@ namespace Milk
     {
         public interface IActivationFunction
         {
-            double Activate(double x);
+            double Function(double x);
             double Derivative(double x);
         }
     }
