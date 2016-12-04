@@ -15,6 +15,7 @@ namespace Milk
         private Collection<double[,]> weightsCollection = null;
         private double errorThreshold = 0.01;
         private ILossFunction lossFunction = null;
+        private ITrainer trainer = null;
 
         public double ErrorThreshold
         {
@@ -56,6 +57,7 @@ namespace Milk
             this.layerList = new List<Layer>();
             this.weightsCollection = new Collection<double[,]>();
             this.lossFunction = new MeanSquaredError();
+            this.trainer = new Backpropagation(this.random);
 
             for (int i = 0; i < layers; i++)
             {
@@ -171,6 +173,8 @@ namespace Milk
 
                             inputVector = new int[this.layerList[j].Activations.Length];
 
+                            double[] summations = new double[this.layerList[j].Activations.Length];
+
                             for (int k = 0; k < inputVector.Length; k++)
                             {
                                 double sum = 0;
@@ -181,15 +185,23 @@ namespace Milk
                                 }
 
                                 sum += inputBiasesList[j][k];
-                                inputVector[k] = Binomial(1, this.layerList[j].ActivationFunction.Function(sum));
+                                summations[k] = sum;
+                            }
+
+                            for (int k = 0; k < summations.Length; k++)
+                            {
+                                inputVector[k] = Binomial(1, this.layerList[j].ActivationFunction.Function(summations, k));
                             }
 
                             j++;
                         }
 
+                        Layer yLayer = this.layerList[i + 1];
                         int[] x = new int[i == 0 ? vector.Length : this.layerList[i].Activations.Length];
-                        double[] y = new double[this.layerList[i + 1].Activations.Length];
+                        double[] y = new double[yLayer.Activations.Length];
                         double[] z = new double[x.Length];
+                        double[] ySummations = new double[y.Length];
+                        double[] zSummations = new double[z.Length];
                         double[] tempInputBiases = new double[x.Length];
                         double[] tempHiddenBiases = new double[y.Length];
 
@@ -208,29 +220,39 @@ namespace Milk
                         // Encode
                         for (int n = 0; n < y.Length; n++)
                         {
-                            y[n] = 0;
+                            double sum = 0;
 
                             for (int m = 0; m < x.Length; m++)
                             {
-                                y[n] += this.weightsCollection[i][m, n] * x[m];
+                                sum += this.weightsCollection[i][m, n] * x[m];
                             }
 
-                            y[n] += hiddenBiasesList[i][n];
-                            y[n] = this.layerList[i + 1].ActivationFunction.Function(y[n]);
+                            sum += hiddenBiasesList[i][n];
+                            ySummations[n] = sum;
+                        }
+
+                        for (int n = 0; n < ySummations.Length; n++)
+                        {
+                            y[n] = yLayer.ActivationFunction.Function(ySummations, n);
                         }
 
                         // Decode
                         for (int n = 0; n < z.Length; n++)
                         {
-                            z[n] = 0;
+                            double sum = 0;
 
                             for (int m = 0; m < y.Length; m++)
                             {
-                                z[n] += this.weightsCollection[i][n, m] * y[m];
+                                sum += this.weightsCollection[i][n, m] * y[m];
                             }
 
-                            z[n] += inputBiasesList[i][n];
-                            z[n] = this.layerList[i + 1].ActivationFunction.Function(z[n]);
+                            sum += inputBiasesList[i][n];
+                            zSummations[n] = sum;
+                        }
+
+                        for (int n = 0; n < zSummations.Length; n++)
+                        {
+                            z[n] = yLayer.ActivationFunction.Function(zSummations, n);
                         }
 
                         for (int n = 0; n < z.Length; n++)
@@ -355,6 +377,8 @@ namespace Milk
                 }
                 else
                 {
+                    double[] summations = new double[tempActivations[i].Length];
+
                     for (int j = 0; j < tempActivations[i].Length; j++)
                     {
                         double sum = 0;
@@ -364,7 +388,12 @@ namespace Milk
                             sum += tempActivations[i - 1][k] * this.weightsCollection[i - 1][k, j];
                         }
 
-                        tempActivations[i][j] = this.layerList[i].ActivationFunction.Function(sum);
+                        summations[j] = sum;
+                    }
+
+                    for (int j = 0; j < tempActivations[i].Length; j++)
+                    {
+                        tempActivations[i][j] = this.layerList[i].ActivationFunction.Function(summations, j);
                     }
                 }
             }
@@ -391,18 +420,25 @@ namespace Milk
                 }
                 else
                 {
+                    double[] summations = new double[this.layerList[i].Activations.Length];
+
                     for (int j = 0; j < this.layerList[i].Activations.Length; j++)
                     {
                         double sum = 0;
-
-                        mask[j] = Binomial(1, this.layerList[i].DropoutProbability);
 
                         for (int k = 0; k < this.layerList[i - 1].Activations.Length; k++)
                         {
                             sum += this.layerList[i - 1].Activations[k] * this.weightsCollection[i - 1][k, j];
                         }
 
-                        this.layerList[i].Activations[j] = this.layerList[i].ActivationFunction.Function(sum) * mask[j];
+                        summations[j] = sum;
+                    }
+
+                    for (int j = 0; j < this.layerList[i].Activations.Length; j++)
+                    {
+                        mask[j] = Binomial(1, this.layerList[i].DropoutProbability);
+
+                        this.layerList[i].Activations[j] = this.layerList[i].ActivationFunction.Function(summations, j) * mask[j];
                     }
                 }
 
@@ -420,7 +456,7 @@ namespace Milk
 
             for (int i = 0; i < outputLayer.Activations.Length; i++)
             {
-                deltas[index][i] = this.layerList[index].ActivationFunction.Derivative(outputLayer.Activations[i]) * this.lossFunction.Derivative(outputLayer.Activations[i], vector[i]) * dropoutList[this.layerList.Count - 1][i];
+                deltas[index][i] = this.layerList[index].ActivationFunction.Derivative(outputLayer.Activations, i) * this.lossFunction.Derivative(outputLayer.Activations[i], vector[i]) * dropoutList[this.layerList.Count - 1][i];
             }
 
             for (int i = this.layerList.Count - 2; i > 0; i--)
@@ -439,7 +475,7 @@ namespace Milk
                         error += deltas[i][k] * this.weightsCollection[i][j, k];
                     }
 
-                    deltas[previousIndex][j] = this.layerList[previousIndex].ActivationFunction.Derivative(this.layerList[i].Activations[j]) * error * dropoutList[i][j];
+                    deltas[previousIndex][j] = this.layerList[previousIndex].ActivationFunction.Derivative(this.layerList[i].Activations, j) * error * dropoutList[i][j];
                 }
             }
         }

@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Milk", "Milk\Milk.csproj", "{9E13DCDF-63D3-49C0-820B-76C6825C1898}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Milk", "Milk\Milk.csproj", "{7BFAD495-0433-4C37-9082-3F5ED08E043E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MilkTest", "MilkTest\MilkTest.csproj", "{B9C0E935-7E60-43B3-ADE4-5D0A751BBB5E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{9E13DCDF-63D3-49C0-820B-76C6825C1898}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9E13DCDF-63D3-49C0-820B-76C6825C1898}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9E13DCDF-63D3-49C0-820B-76C6825C1898}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9E13DCDF-63D3-49C0-820B-76C6825C1898}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BFAD495-0433-4C37-9082-3F5ED08E043E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BFAD495-0433-4C37-9082-3F5ED08E043E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BFAD495-0433-4C37-9082-3F5ED08E043E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BFAD495-0433-4C37-9082-3F5ED08E043E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9C0E935-7E60-43B3-ADE4-5D0A751BBB5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9C0E935-7E60-43B3-ADE4-5D0A751BBB5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9C0E935-7E60-43B3-ADE4-5D0A751BBB5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9C0E935-7E60-43B3-ADE4-5D0A751BBB5E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
