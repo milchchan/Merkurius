@@ -1,15 +1,13 @@
 ﻿using System;
 using Milk.ActivationFunctions;
-using Milk.Optimizers;
 
 namespace Milk
 {
     public class Layer
     {
         private double[] activations = null;
-        private double dropoutProbability = 0.5;
+        private double dropoutProbability = 1.0;
         private IActivationFunction activationFunction = null;
-        private IOptimizer optimizer = null;
 
         public double[] Activations
         {
@@ -39,19 +37,10 @@ namespace Milk
             }
         }
 
-        public IOptimizer Optimizer
-        {
-            get
-            {
-                return this.optimizer;
-            }
-        }
-
-        public Layer(int nodes, IActivationFunction activationFunction, IOptimizer optimizer)
+        public Layer(int nodes, IActivationFunction activationFunction)
         {
             this.activations = new double[nodes];
             this.activationFunction = activationFunction;
-            this.optimizer = optimizer;
 
             for (int i = 0; i < nodes; i++)
             {
