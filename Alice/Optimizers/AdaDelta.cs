@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Milk
+namespace Alice
 {
     namespace Optimizers
     {

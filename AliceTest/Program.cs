@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using Milk;
-using Milk.ActivationFunctions;
-using Milk.LossFunctions;
-using Milk.Optimizers;
+using Alice;
+using Alice.ActivationFunctions;
+using Alice.LossFunctions;
+using Alice.Optimizers;
 
-namespace MilkTest
+namespace AliceTest
 {
     class Program
     {

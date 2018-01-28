@@ -1,7 +1,7 @@
 ﻿using System;
-using Milk.ActivationFunctions;
+using Alice.ActivationFunctions;
 
-namespace Milk
+namespace Alice
 {
     public class Layer
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace Milk
+namespace Alice
 {
     public class Model
     {
@@ -27,14 +27,14 @@ namespace Milk
             }
         }
 
-        public Model(int seed, int inputNodes, int hiddenNodes, int hiddenLayers, int outputNodes, Func<int, int, double> minFunc, Func<int, int, double> maxFunc, Milk.ActivationFunctions.IActivationFunction activationFunction, Milk.Optimizers.IOptimizer optimizer)
+        public Model(int seed, int inputNodes, int hiddenNodes, int hiddenLayers, int outputNodes, Func<int, int, double> minFunc, Func<int, int, double> maxFunc, Alice.ActivationFunctions.IActivationFunction activationFunction, Alice.Optimizers.IOptimizer optimizer)
         {
             Random random = new Random(seed);
             int layers = 2 + hiddenLayers;
 
             this.layerCollection = new Collection<Layer>();
             this.weightsCollection = new Collection<double[,]>();
-            this.trainer = new Backpropagation(random, new Milk.Optimizers.AdaDelta(), new Milk.LossFunctions.MeanSquaredError());
+            this.trainer = new Backpropagation(random, new Alice.Optimizers.AdaDelta(), new Alice.LossFunctions.MeanSquaredError());
 
             for (int i = 0; i < layers; i++)
             {
@@ -62,6 +62,34 @@ namespace Milk
 
                     this.weightsCollection.Add(weights);
                 }
+            }
+        }
+
+        public Model(IEnumerable<Layer> layers, ITrainer trainer)
+        {
+            this.layerCollection = new Collection<Layer>();
+            this.weightsCollection = new Collection<double[,]>();
+            this.trainer = trainer;
+
+            foreach (Layer layer in layers)
+            {
+                if (this.layerCollection.Count > 0)
+                {
+                    int nodes = this.layerCollection[this.layerCollection.Count - 1].Activations.Length;
+                    double[,] weights = new double[nodes, layer.Activations.Length];
+
+                    for (int i = 0; i < nodes; i++)
+                    {
+                        for (int j = 0; j < layer.Activations.Length; j++)
+                        {
+                            weights[i, j] = 0;
+                        }
+                    }
+
+                    this.weightsCollection.Add(weights);
+                }
+
+                this.layerCollection.Add(layer);
             }
         }
 

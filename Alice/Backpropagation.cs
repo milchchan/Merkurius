@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Milk.Optimizers;
-using Milk.LossFunctions;
+using Alice.Optimizers;
+using Alice.LossFunctions;
 
-namespace Milk
+namespace Alice
 {
     public class Backpropagation : ITrainer
     {

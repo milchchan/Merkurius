@@ -1,26 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Milk
+namespace Alice
 {
     namespace Optimizers
     {
-        public class RMSprop : IOptimizer
+        public class AdaGrad : IOptimizer
         {
             private double eta = Math.Pow(10, -2); // Learning rate
-            private double rho = 0.95;
             private double epsilon = Math.Pow(10, -8);
             private Dictionary<int, double> rDictionary = null;
 
-            public RMSprop()
+            public AdaGrad()
             {
                 this.rDictionary = new Dictionary<int, double>();
             }
 
-            public RMSprop(double eta, double rho, double epsilon)
+            public AdaGrad(double eta, double epsilon)
             {
                 this.eta = eta;
-                this.rho = rho;
                 this.epsilon = epsilon;
                 this.rDictionary = new Dictionary<int, double>();
             }
@@ -31,7 +29,7 @@ namespace Milk
 
                 if (this.rDictionary.TryGetValue(index, out r))
                 {
-                    r += this.rho * r + (1.0 - r) * gradient * gradient;
+                    r += gradient * gradient;
                     this.rDictionary[index] = r;
                 }
                 else

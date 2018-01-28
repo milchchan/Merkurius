@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace Milk
+namespace Alice
 {
     public class StackedDenoisingAutoencoder : ITrainer
     {

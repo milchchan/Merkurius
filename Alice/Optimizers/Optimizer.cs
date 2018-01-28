@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Milk
+namespace Alice
 {
     namespace Optimizers
     {

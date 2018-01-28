@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Milk
+namespace Alice
 {
     namespace LossFunctions
     {
@@ -8,7 +8,7 @@ namespace Milk
         {
             public double Function(double y, double a)
             {
-                return -a * Math.Log(y) - (1.0 - a) * Math.Log(1.0 - a); ;
+                return -a * Math.Log(y, Math.E) - (1.0 - a) * Math.Log(1.0 - a, Math.E);
             }
 
             public double Derivative(double y, double a)
