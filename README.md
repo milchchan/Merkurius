@@ -1,1 +1,1 @@
-Milk is Deep Learning Framework for .NET
+Alice is Deep Learning Framework for .NET
