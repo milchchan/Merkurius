@@ -49,7 +49,7 @@ namespace Alice
             this.lossFunction = lossFunction;
         }
 
-        public void Train(Collection<Layer> layerCollection, Collection<double[,]> weightsCollection, IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
+        public void Train(Collection<FullyConnectedLayer> layerCollection, Collection<double[,]> weightsCollection, IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
         {
             // Backpropagation
             List<KeyValuePair<double[], double[]>> kvpList = dictionary.Aggregate<KeyValuePair<double[], IEnumerable<double[]>>, List<KeyValuePair<double[], double[]>>>(new List<KeyValuePair<double[], double[]>>(), (list, kvp) =>
@@ -63,14 +63,14 @@ namespace Alice
             });
             int t = 0;
             int hiddenLayers = layerCollection.Count - 2;
-            Layer outputLayer = layerCollection[layerCollection.Count - 1];
+            FullyConnectedLayer outputLayer = layerCollection[layerCollection.Count - 1];
 
             // Stochastic gradient descent
             while (t < epochs)
             {
                 double error = 0;
 
-                foreach (KeyValuePair<double[], double[]> kvp in Shuffle<KeyValuePair<double[], double[]>>(kvpList))
+                foreach (KeyValuePair<double[], double[]> kvp in kvpList.Shuffle<KeyValuePair<double[], double[]>>(this.random))
                 {
                     List<int[]> dropoutList;
                     double[][] deltas;
@@ -82,8 +82,8 @@ namespace Alice
 
                     for (int i = hiddenLayers; i >= 0; i--)
                     {
-                        Layer layer1 = layerCollection[i];
-                        Layer layer2 = layerCollection[i + 1];
+                        FullyConnectedLayer layer1 = layerCollection[i];
+                        FullyConnectedLayer layer2 = layerCollection[i + 1];
 
                         for (int j = 0; j < layer1.Activations.Length; j++)
                         {
@@ -110,7 +110,7 @@ namespace Alice
             }
         }
 
-        private void ForwardPropagate(Collection<Layer> layerCollection, Collection<double[,]> weightsCollection, double[] vector, out List<int[]> dropoutList)
+        private void ForwardPropagate(Collection<FullyConnectedLayer> layerCollection, Collection<double[,]> weightsCollection, double[] vector, out List<int[]> dropoutList)
         {
             dropoutList = new List<int[]>();
 
@@ -122,7 +122,7 @@ namespace Alice
                 {
                     for (int j = 0; j < layerCollection[i].Activations.Length - 1; j++)
                     {
-                        mask[j] = Binomial(1, layerCollection[i].DropoutProbability);
+                        mask[j] = this.random.Binomial(1, layerCollection[i].DropoutProbability);
                         layerCollection[i].Activations[j] = vector[j] * mask[j];
                     }
                 }
@@ -144,7 +144,7 @@ namespace Alice
 
                     for (int j = 0; j < layerCollection[i].Activations.Length; j++)
                     {
-                        mask[j] = Binomial(1, layerCollection[i].DropoutProbability);
+                        mask[j] = this.random.Binomial(1, layerCollection[i].DropoutProbability);
                         layerCollection[i].Activations[j] = layerCollection[i].ActivationFunction.Function(summations, j) * mask[j];
                     }
                 }
@@ -153,9 +153,9 @@ namespace Alice
             }
         }
 
-        private void BackwardPropagate(Collection<Layer> layerCollection, Collection<double[,]> weightsCollection, double[] vector, List<int[]> dropoutList, out double[][] deltas)
+        private void BackwardPropagate(Collection<FullyConnectedLayer> layerCollection, Collection<double[,]> weightsCollection, double[] vector, List<int[]> dropoutList, out double[][] deltas)
         {
-            Layer outputLayer = layerCollection[layerCollection.Count - 1];
+            FullyConnectedLayer outputLayer = layerCollection[layerCollection.Count - 1];
             int index = layerCollection.Count - 2;
 
             deltas = new double[layerCollection.Count - 1][];
@@ -185,40 +185,6 @@ namespace Alice
                     deltas[previousIndex][j] = layerCollection[previousIndex].ActivationFunction.Derivative(layerCollection[i].Activations, j) * error * dropoutList[i][j];
                 }
             }
-        }
-
-        private int Binomial(int n, double p)
-        {
-            int count = 0;
-
-            for (int i = 0; i < n; i++)
-            {
-                if (this.random.NextDouble() < p)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private IEnumerable<T> Shuffle<T>(IEnumerable<T> collection)
-        {
-            // Fisher-Yates algorithm
-            T[] array = collection.ToArray();
-            int n = array.Length; // The number of items left to shuffle (loop invariant).
-
-            while (n > 1)
-            {
-                int k = this.random.Next(n); // 0 <= k < n.
-
-                n--; // n is now the last pertinent index;
-                T temp = array[n]; // swap list[n] with list[k] (does nothing if k == n).
-                array[n] = array[k];
-                array[k] = temp;
-            }
-
-            return array;
         }
     }
 }

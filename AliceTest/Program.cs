@@ -16,7 +16,7 @@ namespace AliceTest
         {
             Random random = new Random(Environment.TickCount);
             Dictionary<double[], IEnumerable<double[]>> patternDictionary = new Dictionary<double[], IEnumerable<double[]>>();
-            Model autoencoder = new Model(random, new Layer[] { new Layer(3, new HyperbolicTangent()), new Layer(2, new HyperbolicTangent()), new Layer(1, new HyperbolicTangent()) }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new StackedDenoisingAutoencoder(random));
+            Network autoencoder = new Network(random, new FullyConnectedLayer[] { new FullyConnectedLayer(3, new HyperbolicTangent()), new FullyConnectedLayer(2, new HyperbolicTangent()), new FullyConnectedLayer(1, new HyperbolicTangent()) }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new StackedDenoisingAutoencoder(random));
             //Model model = new Model(random, new Layer[] { new Layer(3, new HyperbolicTangent()), new Layer(2, new HyperbolicTangent()), new Layer(1, new HyperbolicTangent()) }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new Backpropagation(random, new AdaDelta(), new MeanSquaredError()) { ErrorThreshold = 0.001 });
             //Model model = new Model(random, new Layer[] { new Layer(3, new Sigmoid()), new Layer(2, new Sigmoid()), new Layer(1, new Sigmoid()) }, (x, y) => -Math.Sqrt(6 / (x + y)) * 4, (x, y) => Math.Sqrt(6 / (x + y)) * 4, new Backpropagation(random, new Momentum(0.5, 0.1), new MeanSquaredError()) { ErrorThreshold = 0.001 }); // For Sigmoid activation function
 
@@ -47,12 +47,12 @@ namespace AliceTest
 
             Console.WriteLine("Done ({0}).", sw.Elapsed.ToString());
 
-            List<Layer> layerList = new List<Layer>();
+            List<FullyConnectedLayer> layerList = new List<FullyConnectedLayer>();
             List<double> weightList = new List<double>();
 
-            foreach (Layer layer in autoencoder.Layers)
+            foreach (FullyConnectedLayer layer in autoencoder.Layers)
             {
-                Layer copiedLayer = new Layer(layer.Activations.Length, new HyperbolicTangent());
+                FullyConnectedLayer copiedLayer = new FullyConnectedLayer(layer.Activations.Length, new HyperbolicTangent());
 
                 for (int i = 0; i < layer.Activations.Length; i++)
                 {
@@ -73,7 +73,7 @@ namespace AliceTest
                 }
             }
 
-            Model backpropagation = new Model(layerList, (i) => weightList[i], new Backpropagation(random, new AdaDelta(), new MeanSquaredError()) { ErrorThreshold = 0.001 });
+            Network backpropagation = new Network(layerList, (i) => weightList[i], new Backpropagation(random, new AdaDelta(), new MeanSquaredError()) { ErrorThreshold = 0.001 });
 
             sw.Reset();
 

@@ -6,6 +6,6 @@ namespace Alice
 {
     public interface ITrainer
     {
-        void Train(Collection<Layer> layerList, Collection<double[,]> weightsCollection, IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs);
+        void Train(Collection<FullyConnectedLayer> layerList, Collection<double[,]> weightsCollection, IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs);
     }
 }

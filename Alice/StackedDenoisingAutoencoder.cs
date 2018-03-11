@@ -40,7 +40,7 @@ namespace Alice
             this.random = random;
         }
 
-        public void Train(Collection<Layer> layerCollection, Collection<double[,]> weightsCollection, IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
+        public void Train(Collection<FullyConnectedLayer> layerCollection, Collection<double[,]> weightsCollection, IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
         {
             // Stacked Denoising Autoencoders (SdA)
             List<int[]> vectorList = dictionary.Values.Aggregate<IEnumerable<double[]>, List<int[]>>(new List<int[]>(), (list, vectors) =>
@@ -126,13 +126,13 @@ namespace Alice
 
                             for (int k = 0; k < summations.Length; k++)
                             {
-                                inputVector[k] = Binomial(1, layerCollection[j].ActivationFunction.Function(summations, k));
+                                inputVector[k] = this.random.Binomial(1, layerCollection[j].ActivationFunction.Function(summations, k));
                             }
 
                             j++;
                         }
 
-                        Layer yLayer = layerCollection[i + 1];
+                        FullyConnectedLayer yLayer = layerCollection[i + 1];
                         int[] x = new int[i == 0 ? vector.Length : layerCollection[i].Activations.Length];
                         double[] y = new double[yLayer.Activations.Length];
                         double[] z = new double[x.Length];
@@ -149,7 +149,7 @@ namespace Alice
                             }
                             else
                             {
-                                x[n] = Binomial(1, 1.0 - this.corruptionLevel);
+                                x[n] = this.random.Binomial(1, 1.0 - this.corruptionLevel);
                             }
                         }
 
@@ -229,21 +229,6 @@ namespace Alice
                     t++;
                 }
             }
-        }
-
-        private int Binomial(int n, double p)
-        {
-            int count = 0;
-
-            for (int i = 0; i < n; i++)
-            {
-                if (this.random.NextDouble() < p)
-                {
-                    count++;
-                }
-            }
-
-            return count;
         }
     }
 }
