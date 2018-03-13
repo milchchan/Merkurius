@@ -8,14 +8,14 @@ This repository contains the deep laerning library implementation for .NET platf
 * Stacked Denoising Autoencoders
 
 ### Activation Functions
-* HyperbolicTangent
+* Hyperbolic tangent
 * ReLU
 * Sigmoid
 * Softmax
 
 ### Loss Functions
-* Cross Entropy
-* Mean Squared Error
+* Cross-entropy
+* Mean squared error (MSE)
 
 ### Optimizers
 * AdaDelta
