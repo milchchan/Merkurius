@@ -13,6 +13,9 @@ This repository contains the deep laerning library implementation for .NET platf
 * Sigmoid
 * Softmax
 
+### Layers
+* Fully connected layer
+
 ### Loss Functions
 * Cross-entropy
 * Mean squared error (MSE)
