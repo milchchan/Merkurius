@@ -44,5 +44,35 @@ namespace Alice
 
             return array;
         }
+
+        public static IEnumerable<T> Sample<T>(this IEnumerable<T> collection, Random random, int size)
+        {
+            // Generates a random sample from a given 1-D collection
+            int max = collection.Count();
+            int n = size > max ? max : size;
+            int i = 0;
+            Dictionary<int, T> dictionary = new Dictionary<int, T>();
+
+            while (i < n)
+            {
+                int j = random.Next(i, n);
+                T temp;
+
+                if (dictionary.TryGetValue(j, out temp))
+                {
+                    yield return temp;
+
+                    dictionary[j] = collection.ElementAt(i);
+                }
+                else
+                {
+                    yield return collection.ElementAt(j);
+
+                    dictionary.Add(j, collection.ElementAt(i));
+                }
+
+                i++;
+            }
+        }
     }
 }

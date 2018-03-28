@@ -6,8 +6,8 @@ namespace Alice
     {
         public interface ILossFunction
         {
-            double Function(double y, double a);
-            double Derivative(double y, double a);
+            double Function(double y, double t);
+            double Derivative(double y, double t);
         }
     }
 }

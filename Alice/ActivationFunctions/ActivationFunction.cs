@@ -6,8 +6,8 @@ namespace Alice
     {
         public interface IActivationFunction
         {
-            double Function(double[] x, int i);
-            double Derivative(double[] x, int i);
+            double Function(double x);
+            double Derivative(double x);
         }
     }
 }

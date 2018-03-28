@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+using Alice.Layers;
 
 namespace Alice
 {
     public class Network
     {
-        private Collection<FullyConnectedLayer> layerCollection = null;
-        private Collection<double[,]> weightsCollection = null;
+        private Random random = null;
+        private Collection<Layer> layerCollection = null;
         private ITrainer trainer = null;
 
-        public IEnumerable<FullyConnectedLayer> Layers
+        public IEnumerable<Layer> Layers
         {
             get
             {
@@ -19,193 +19,100 @@ namespace Alice
             }
         }
 
-        public IEnumerable<double[,]> Weights
+        public Network(Random random, IEnumerable<Layer> layers, Func<int, int, double> minFunc, Func<int, int, double> maxFunc, ITrainer trainer)
         {
-            get
-            {
-                return this.weightsCollection;
-            }
-        }
+            Layer previousLayer = null;
 
-        public Network(int seed, int inputNodes, int hiddenNodes, int hiddenLayers, int outputNodes, Func<int, int, double> minFunc, Func<int, int, double> maxFunc, Alice.ActivationFunctions.IActivationFunction activationFunction, Alice.Optimizers.IOptimizer optimizer)
-        {
-            Random random = new Random(seed);
-            int layers = 2 + hiddenLayers;
-
-            this.layerCollection = new Collection<FullyConnectedLayer>();
-            this.weightsCollection = new Collection<double[,]>();
-            this.trainer = new Backpropagation(random, new Alice.Optimizers.AdaDelta(), new Alice.LossFunctions.MeanSquaredError());
-
-            for (int i = 0; i < layers; i++)
-            {
-                if (i == 0)
-                {
-                    this.layerCollection.Add(new FullyConnectedLayer(inputNodes + 1, activationFunction)); // + 1 for bias node
-                }
-                else
-                {
-                    int nodes = i == layers - 1 ? outputNodes : hiddenNodes;
-
-                    this.layerCollection.Add(new FullyConnectedLayer(nodes, activationFunction));
-
-                    double[,] weights = new double[this.layerCollection[i - 1].Activations.Length, nodes];
-                    double min = minFunc(this.layerCollection[i - 1].Activations.Length, nodes);
-                    double max = maxFunc(this.layerCollection[i - 1].Activations.Length, nodes);
-
-                    for (int j = 0; j < this.layerCollection[i - 1].Activations.Length; j++)
-                    {
-                        for (int k = 0; k < nodes; k++)
-                        {
-                            weights[j, k] = random.Uniform(min, max);
-                        }
-                    }
-
-                    this.weightsCollection.Add(weights);
-                }
-            }
-        }
-
-        public Network(IEnumerable<FullyConnectedLayer> layers, ITrainer trainer)
-        {
-            this.layerCollection = new Collection<FullyConnectedLayer>();
-            this.weightsCollection = new Collection<double[,]>();
+            this.random = random;
+            this.layerCollection = new Collection<Layer>();
             this.trainer = trainer;
 
-            foreach (FullyConnectedLayer layer in layers)
+            foreach (var layer in layers)
             {
-                if (this.layerCollection.Count > 0)
+                if (previousLayer != null)
                 {
-                    int nodes = this.layerCollection[this.layerCollection.Count - 1].Activations.Length;
-                    double[,] weights = new double[nodes, layer.Activations.Length];
+                    double min = minFunc(previousLayer.Activations.Length, layer.Activations.Length);
+                    double max = maxFunc(previousLayer.Activations.Length, layer.Activations.Length);
 
-                    for (int i = 0; i < nodes; i++)
+                    previousLayer.Connect(layer);
+
+                    for (int i = 0; i < previousLayer.Activations.Length; i++)
                     {
                         for (int j = 0; j < layer.Activations.Length; j++)
                         {
-                            weights[i, j] = 0;
+                            previousLayer.Weights[i, j] = random.Uniform(min, max);
                         }
                     }
 
-                    this.weightsCollection.Add(weights);
+                    for (int i = 0; i < layer.Activations.Length; i++)
+                    {
+                        previousLayer.Biases[i] = random.Uniform(min, max);
+                    }
                 }
 
+                previousLayer = layer;
                 this.layerCollection.Add(layer);
             }
         }
 
-        public Network(IEnumerable<FullyConnectedLayer> layers, Func<int, double> func, ITrainer trainer)
+        public Network(Random random, IEnumerable<Layer> layers, Func<int, double> weightFunc, Func<int, double> biasFunc, ITrainer trainer)
         {
-            int index = 0;
+            Layer previousLayer = null;
+            int weightIndex = 0;
+            int biasIndex = 0;
 
-            this.layerCollection = new Collection<FullyConnectedLayer>();
-            this.weightsCollection = new Collection<double[,]>();
+            this.random = random;
+            this.layerCollection = new Collection<Layer>();
             this.trainer = trainer;
 
-            foreach (FullyConnectedLayer layer in layers)
+            foreach (var layer in layers)
             {
-                if (this.layerCollection.Count > 0)
+                if (previousLayer != null)
                 {
-                    int nodes = this.layerCollection[this.layerCollection.Count - 1].Activations.Length;
-                    double[,] weights = new double[nodes, layer.Activations.Length];
+                    previousLayer.Connect(layer);
 
-                    for (int i = 0; i < nodes; i++)
+                    for (int i = 0; i < previousLayer.Activations.Length; i++)
                     {
                         for (int j = 0; j < layer.Activations.Length; j++)
                         {
-                            weights[i, j] = func(index);
-                            index++;
+                            previousLayer.Weights[i, j] = weightFunc(weightIndex);
+                            weightIndex++;
                         }
                     }
 
-                    this.weightsCollection.Add(weights);
-                }
-
-                this.layerCollection.Add(layer);
-            }
-        }
-
-        public Network(Random random, IEnumerable<FullyConnectedLayer> layers, Func<int, int, double> minFunc, Func<int, int, double> maxFunc, ITrainer trainer)
-        {
-            this.layerCollection = new Collection<FullyConnectedLayer>();
-            this.weightsCollection = new Collection<double[,]>();
-            this.trainer = trainer;
-
-            foreach (FullyConnectedLayer layer in layers)
-            {
-                if (this.layerCollection.Count > 0)
-                {
-                    int nodes = this.layerCollection[this.layerCollection.Count - 1].Activations.Length;
-                    double[,] weights = new double[nodes, layer.Activations.Length];
-                    double min = minFunc(nodes, layer.Activations.Length);
-                    double max = maxFunc(nodes, layer.Activations.Length);
-
-                    for (int i = 0; i < nodes; i++)
+                    for (int i = 0; i < layer.Activations.Length; i++)
                     {
-                        for (int j = 0; j < layer.Activations.Length; j++)
-                        {
-                            weights[i, j] = random.Uniform(min, max);
-                        }
+                        previousLayer.Biases[i] = biasFunc(biasIndex);
+                        biasIndex++;
                     }
-
-                    this.weightsCollection.Add(weights);
                 }
 
+                previousLayer = layer;
                 this.layerCollection.Add(layer);
             }
         }
 
         public void Train(IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
         {
-            this.trainer.Train(this.layerCollection, this.weightsCollection, dictionary, epochs);
+            this.trainer.Train(this.layerCollection, dictionary, epochs);
         }
 
         public double[] Predicate(double[] vector)
         {
-            double[][] tempActivations = new double[this.layerCollection.Count][];
+            var layer = this.layerCollection[0];
 
-            for (int i = 0; i < this.layerCollection.Count; i++)
+            for (int i = 0; i < layer.Activations.Length; i++)
             {
-                tempActivations[i] = new double[this.layerCollection[i].Activations.Length];
-
-                for (int j = 0; j < this.layerCollection[i].Activations.Length; j++)
-                {
-                    tempActivations[i][j] = this.layerCollection[i].Activations[j];
-                }
+                layer.Activations[i] = vector[i];
             }
 
-            for (int i = 0; i < tempActivations.Length; i++)
+            do
             {
-                if (i == 0)
-                {
-                    for (int j = 0; j < tempActivations[i].Length - 1; j++)
-                    {
-                        tempActivations[i][j] = vector[j];
-                    }
-                }
-                else
-                {
-                    double[] summations = new double[tempActivations[i].Length];
+                layer.PropagateForward();
+                layer = layer.Next;
+            } while (layer.Next != null);
 
-                    for (int j = 0; j < tempActivations[i].Length; j++)
-                    {
-                        double sum = 0;
-
-                        for (int k = 0; k < tempActivations[i - 1].Length; k++)
-                        {
-                            sum += tempActivations[i - 1][k] * this.weightsCollection[i - 1][k, j];
-                        }
-
-                        summations[j] = sum;
-                    }
-
-                    for (int j = 0; j < tempActivations[i].Length; j++)
-                    {
-                        tempActivations[i][j] = this.layerCollection[i].ActivationFunction.Function(summations, j);
-                    }
-                }
-            }
-
-            return tempActivations[tempActivations.Length - 1];
+            return layer.Activations;
         }
     }
 }

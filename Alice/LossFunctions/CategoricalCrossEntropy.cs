@@ -7,14 +7,14 @@ namespace Alice
         // Cross-entropy loss function for multiclass classification
         public class CategoricalCrossEntropy : ILossFunction
         {
-            public double Function(double y, double a)
+            public double Function(double y, double t)
             {
-                return -a * Math.Log(y, Math.E);
+                return -t * Math.Log(y + 1e-7, Math.E);
             }
 
-            public double Derivative(double y, double a)
+            public double Derivative(double y, double t)
             {
-                return -a / y;
+                return -t / y;
             }
         }
     }

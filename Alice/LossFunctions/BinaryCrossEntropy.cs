@@ -7,14 +7,14 @@ namespace Alice
         // Cross-entropy loss function for binary classification
         public class BinaryCrossEntropy : ILossFunction
         {
-            public double Function(double y, double a)
+            public double Function(double y, double t)
             {
-                return -a * Math.Log(y, Math.E) - (1.0 - a) * Math.Log(1.0 - a, Math.E);
+                return -t * Math.Log(y + 1e-7, Math.E) - (1.0 - t) * Math.Log(1.0 - t + 1e-7, Math.E);
             }
 
-            public double Derivative(double y, double a)
+            public double Derivative(double y, double t)
             {
-                return (y - a) / (y * (1.0 - y));
+                return (y - t) / (y * (1.0 - y));
             }
         }
     }

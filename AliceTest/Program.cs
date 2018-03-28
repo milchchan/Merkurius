@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using Alice;
 using Alice.ActivationFunctions;
+using Alice.Layers;
 using Alice.LossFunctions;
 using Alice.Optimizers;
 
@@ -16,7 +17,10 @@ namespace AliceTest
         {
             Random random = new Random(Environment.TickCount);
             Dictionary<double[], IEnumerable<double[]>> patternDictionary = new Dictionary<double[], IEnumerable<double[]>>();
-            Network autoencoder = new Network(random, new FullyConnectedLayer[] { new FullyConnectedLayer(3, new HyperbolicTangent()), new FullyConnectedLayer(2, new HyperbolicTangent()), new FullyConnectedLayer(1, new HyperbolicTangent()) }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new StackedDenoisingAutoencoder(random));
+            /*Network autoencoder = new Network(random, new FullyConnectedLayer[] {
+                new FullyConnectedLayer(3, 2, new HyperbolicTangent()),
+                new FullyConnectedLayer(1, new HyperbolicTangent())
+            }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new StackedDenoisingAutoencoder(random));*/
             //Model model = new Model(random, new Layer[] { new Layer(3, new HyperbolicTangent()), new Layer(2, new HyperbolicTangent()), new Layer(1, new HyperbolicTangent()) }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new Backpropagation(random, new AdaDelta(), new MeanSquaredError()) { ErrorThreshold = 0.001 });
             //Model model = new Model(random, new Layer[] { new Layer(3, new Sigmoid()), new Layer(2, new Sigmoid()), new Layer(1, new Sigmoid()) }, (x, y) => -Math.Sqrt(6 / (x + y)) * 4, (x, y) => Math.Sqrt(6 / (x + y)) * 4, new Backpropagation(random, new Momentum(0.5, 0.1), new MeanSquaredError()) { ErrorThreshold = 0.001 }); // For Sigmoid activation function
 
@@ -37,17 +41,17 @@ namespace AliceTest
 
             Console.WriteLine("XOR Test");
 
-            Console.Write("Pretraining...");
+            /*Console.Write("Pretraining...");*/
 
             Stopwatch sw = Stopwatch.StartNew();
 
-            autoencoder.Train(patternDictionary, 1000);
+            /*autoencoder.Train(patternDictionary, 1000);
 
             sw.Stop();
 
-            Console.WriteLine("Done ({0}).", sw.Elapsed.ToString());
+            Console.WriteLine("Done ({0}).", sw.Elapsed.ToString());*/
 
-            List<FullyConnectedLayer> layerList = new List<FullyConnectedLayer>();
+            /*List<FullyConnectedLayer> layerList = new List<FullyConnectedLayer>();
             List<double> weightList = new List<double>();
 
             foreach (FullyConnectedLayer layer in autoencoder.Layers)
@@ -71,9 +75,15 @@ namespace AliceTest
                         weightList.Add(weights[i, j]);
                     }
                 }
-            }
+            }*/
 
-            Network backpropagation = new Network(layerList, (i) => weightList[i], new Backpropagation(random, new AdaDelta(), new MeanSquaredError()) { ErrorThreshold = 0.001 });
+            //Network backpropagation = new Network(layerList, (i) => weightList[i], new Backpropagation(random, new AdaDelta(), new MeanSquaredError()) { ErrorThreshold = 0.001 });
+            Backpropagation backpropagation = new Backpropagation(random, new AdaDelta(), new MeanSquaredError());
+            Network network = new Network(random, new FullyConnectedLayer[] {
+                new FullyConnectedLayer(2, new Sigmoid()),
+                new FullyConnectedLayer(2, new Sigmoid()),
+                new FullyConnectedLayer(1, new Sigmoid())
+            }, (x, y) => -Math.Sqrt(6 / (x + y)) * 4, (x, y) => Math.Sqrt(6 / (x + y)) * 4, backpropagation);
 
             sw.Reset();
 
@@ -81,7 +91,7 @@ namespace AliceTest
 
             sw.Start();
 
-            backpropagation.Train(patternDictionary, 1000000);
+            network.Train(patternDictionary, 1000000);
 
             sw.Stop();
 
@@ -103,7 +113,7 @@ namespace AliceTest
                     x.Add(y.ToString());
 
                     return x;
-                })), String.Join(",", backpropagation.Predicate(vector).Aggregate<double, List<string>>(new List<string>(), (x, y) =>
+                })), String.Join(",", network.Predicate(vector).Aggregate<double, List<string>>(new List<string>(), (x, y) =>
                 {
                     x.Add(y.ToString());
 
@@ -112,6 +122,25 @@ namespace AliceTest
             }
 
             Console.WriteLine();
+            Console.WriteLine("Loss: {0}", backpropagation.Loss);
+            Console.WriteLine();
+        }
+
+        static private int ArgMax(double[] vector)
+        {
+            int index = 0;
+            var max = Double.MinValue;
+
+            for (int i = 0; i < vector.Length; i++)
+            {
+                if (vector[i] > max)
+                {
+                    max = vector[i];
+                    index = i;
+                }
+            }
+
+            return index;
         }
     }
 }

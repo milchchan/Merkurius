@@ -4,16 +4,16 @@ namespace Alice
 {
     namespace ActivationFunctions
     {
-        public class HyperbolicTangent : IActivationFunction
+        public class Identity : IActivationFunction
         {
             public double Function(double x)
             {
-                return Math.Tanh(x);
+                return x;
             }
 
             public double Derivative(double x)
             {
-                return 1.0 - x * x;
+                return 1.0;
             }
         }
     }

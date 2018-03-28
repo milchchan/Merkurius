@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Alice.Optimizers;
+using Alice.Layers;
 using Alice.LossFunctions;
 
 namespace Alice
@@ -10,19 +11,15 @@ namespace Alice
     public class Backpropagation : ITrainer
     {
         private Random random = null;
-        private double errorThreshold = 0.01;
+        private double loss = 0;
         private IOptimizer optimizer = null;
         private ILossFunction lossFunction = null;
 
-        public double ErrorThreshold
+        public double Loss
         {
             get
             {
-                return this.errorThreshold;
-            }
-            set
-            {
-                this.errorThreshold = value;
+                return this.loss;
             }
         }
 
@@ -49,12 +46,12 @@ namespace Alice
             this.lossFunction = lossFunction;
         }
 
-        public void Train(Collection<FullyConnectedLayer> layerCollection, Collection<double[,]> weightsCollection, IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
+        public void Train(Collection<Layer> layerCollection, IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
         {
             // Backpropagation
-            List<KeyValuePair<double[], double[]>> kvpList = dictionary.Aggregate<KeyValuePair<double[], IEnumerable<double[]>>, List<KeyValuePair<double[], double[]>>>(new List<KeyValuePair<double[], double[]>>(), (list, kvp) =>
+            List<KeyValuePair<double[], double[]>> keyValuePairList = dictionary.Aggregate<KeyValuePair<double[], IEnumerable<double[]>>, List<KeyValuePair<double[], double[]>>>(new List<KeyValuePair<double[], double[]>>(), (list, kvp) =>
             {
-                foreach (double[] vector in kvp.Value)
+                foreach (var vector in kvp.Value)
                 {
                     list.Add(new KeyValuePair<double[], double[]>(vector, kvp.Key));
                 }
@@ -62,129 +59,99 @@ namespace Alice
                 return list;
             });
             int t = 0;
-            int hiddenLayers = layerCollection.Count - 2;
-            FullyConnectedLayer outputLayer = layerCollection[layerCollection.Count - 1];
+            var inputLayer = layerCollection[0];
 
             // Stochastic gradient descent
             while (t < epochs)
             {
-                double error = 0;
-
-                foreach (KeyValuePair<double[], double[]> kvp in kvpList.Shuffle<KeyValuePair<double[], double[]>>(this.random))
+                foreach (var keyValuePair in keyValuePairList.Shuffle<KeyValuePair<double[], double[]>>(this.random))
                 {
-                    List<int[]> dropoutList;
-                    double[][] deltas;
+                    int identifier = 0;
                     int index = 0;
 
-                    ForwardPropagate(layerCollection, weightsCollection, kvp.Key, out dropoutList);
-
-                    BackwardPropagate(layerCollection, weightsCollection, kvp.Value, dropoutList, out deltas);
-
-                    for (int i = hiddenLayers; i >= 0; i--)
+                    foreach (var gradients in BackwardPropagate(ForwardPropagate(inputLayer, keyValuePair.Key), keyValuePair.Value))
                     {
-                        FullyConnectedLayer layer1 = layerCollection[i];
-                        FullyConnectedLayer layer2 = layerCollection[i + 1];
+                        var layer = layerCollection[index];
 
-                        for (int j = 0; j < layer1.Activations.Length; j++)
+                        for (int i = 0; i < layer.Activations.Length; i++)
                         {
-                            for (int k = 0; k < layer2.Activations.Length; k++)
+                            for (int j = 0; j < layer.Next.Activations.Length; j++)
                             {
-                                weightsCollection[i][j, k] = optimizer.Optimize(index, weightsCollection[i][j, k], deltas[i][k] * layer1.Activations[j]);
-                                index++;
+                                layer.Weights[i, j] = optimizer.Optimize(identifier, layer.Weights[i, j], gradients[j] * layer.Activations[i]);
+                                identifier++;
                             }
                         }
-                    }
 
-                    for (int i = 0; i < kvp.Value.Length; i++)
-                    {
-                        error += this.lossFunction.Function(kvp.Value[i], outputLayer.Activations[i]);
-                    }
-                }
+                        for (int i = 0; i < layer.Next.Activations.Length; i++)
+                        {
+                            layer.Biases[i] = optimizer.Optimize(identifier, layer.Biases[i], gradients[i]);
+                            identifier++;
+                        }
 
-                if (error < this.errorThreshold)
-                {
-                    break;
+                        index++;
+                    }
                 }
 
                 t++;
             }
+
+            this.loss = GetLoss(inputLayer, keyValuePairList);
         }
 
-        private void ForwardPropagate(Collection<FullyConnectedLayer> layerCollection, Collection<double[,]> weightsCollection, double[] vector, out List<int[]> dropoutList)
+        private double GetLoss(Layer inputLayer, IEnumerable<KeyValuePair<double[], double[]>> keyValuePairs)
         {
-            dropoutList = new List<int[]>();
+            double sum = 0.0;
 
-            for (int i = 0; i < layerCollection.Count; i++)
+            foreach (var keyValuePair in keyValuePairs)
             {
-                int[] mask = new int[layerCollection[i].Activations.Length];
+                var layer = ForwardPropagate(inputLayer, keyValuePair.Key);
 
-                if (i == 0)
+                for (int i = 0; i < layer.Activations.Length; i++)
                 {
-                    for (int j = 0; j < layerCollection[i].Activations.Length - 1; j++)
-                    {
-                        mask[j] = this.random.Binomial(1, layerCollection[i].DropoutProbability);
-                        layerCollection[i].Activations[j] = vector[j] * mask[j];
-                    }
+                    sum += this.lossFunction.Function(layer.Activations[i], keyValuePair.Value[i]);
                 }
-                else
-                {
-                    double[] summations = new double[layerCollection[i].Activations.Length];
-
-                    for (int j = 0; j < layerCollection[i].Activations.Length; j++)
-                    {
-                        double sum = 0;
-
-                        for (int k = 0; k < layerCollection[i - 1].Activations.Length; k++)
-                        {
-                            sum += layerCollection[i - 1].Activations[k] * weightsCollection[i - 1][k, j];
-                        }
-
-                        summations[j] = sum;
-                    }
-
-                    for (int j = 0; j < layerCollection[i].Activations.Length; j++)
-                    {
-                        mask[j] = this.random.Binomial(1, layerCollection[i].DropoutProbability);
-                        layerCollection[i].Activations[j] = layerCollection[i].ActivationFunction.Function(summations, j) * mask[j];
-                    }
-                }
-
-                dropoutList.Add(mask);
             }
+
+            return sum;
         }
 
-        private void BackwardPropagate(Collection<FullyConnectedLayer> layerCollection, Collection<double[,]> weightsCollection, double[] vector, List<int[]> dropoutList, out double[][] deltas)
+        private Layer ForwardPropagate(Layer inputLayer, double[] vector)
         {
-            FullyConnectedLayer outputLayer = layerCollection[layerCollection.Count - 1];
-            int index = layerCollection.Count - 2;
+            var layer = inputLayer;
 
-            deltas = new double[layerCollection.Count - 1][];
-            deltas[index] = new double[outputLayer.Activations.Length];
+            for (int i = 0; i < inputLayer.Activations.Length; i++)
+            {
+                inputLayer.Activations[i] = vector[i];
+            }
+
+            do
+            {
+                layer.PropagateForward();
+                layer = layer.Next;
+            } while (layer.Next != null);
+
+            return layer;
+        }
+
+        private IEnumerable<double[]> BackwardPropagate(Layer outputLayer, double[] vector)
+        {
+            var layer = outputLayer;
+            var gradientsList = new LinkedList<double[]>();
+            var gradients = new double[outputLayer.Activations.Length];
 
             for (int i = 0; i < outputLayer.Activations.Length; i++)
             {
-                deltas[index][i] = layerCollection[index].ActivationFunction.Derivative(outputLayer.Activations, i) * this.lossFunction.Derivative(outputLayer.Activations[i], vector[i]) * dropoutList[layerCollection.Count - 1][i];
+                gradients[i] = this.lossFunction.Derivative(outputLayer.Activations[i], vector[i]);
             }
 
-            for (int i = layerCollection.Count - 2; i > 0; i--)
+            do
             {
-                int previousIndex = i - 1;
-                int nextIndex = i + 1;
+                gradients = layer.PropagateBackward(gradients);
+                gradientsList.AddFirst(gradients);
+                layer = layer.Previous;
+            } while (layer.Previous != null);
 
-                deltas[previousIndex] = new double[layerCollection[i].Activations.Length];
-
-                for (int j = 0; j < layerCollection[i].Activations.Length; j++)
-                {
-                    double error = 0;
-
-                    for (int k = 0; k < layerCollection[nextIndex].Activations.Length; k++)
-                    {
-                        error += deltas[i][k] * weightsCollection[i][j, k];
-                    }
-
-                    deltas[previousIndex][j] = layerCollection[previousIndex].ActivationFunction.Derivative(layerCollection[i].Activations, j) * error * dropoutList[i][j];
-                }
-            }
+            return gradientsList;
         }
     }
 }

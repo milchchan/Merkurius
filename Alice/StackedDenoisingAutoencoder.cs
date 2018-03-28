@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Alice.ActivationFunctions;
+using Alice.Layers;
 
 namespace Alice
 {
@@ -10,6 +12,7 @@ namespace Alice
         private Random random = null;
         private double learningRate = 0.1;
         private double corruptionLevel = 0.3;
+        private IActivationFunction activationFunction = null;
 
         public double LearningRate
         {
@@ -35,17 +38,18 @@ namespace Alice
             }
         }
 
-        public StackedDenoisingAutoencoder(Random random)
+        public StackedDenoisingAutoencoder(Random random, IActivationFunction activationFunction)
         {
             this.random = random;
+            this.activationFunction = activationFunction;
         }
 
-        public void Train(Collection<FullyConnectedLayer> layerCollection, Collection<double[,]> weightsCollection, IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
+        public void Train(Collection<Layer> layerCollection, IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
         {
             // Stacked Denoising Autoencoders (SdA)
-            List<int[]> vectorList = dictionary.Values.Aggregate<IEnumerable<double[]>, List<int[]>>(new List<int[]>(), (list, vectors) =>
+            var vectorList = dictionary.Values.Aggregate<IEnumerable<double[]>, List<int[]>>(new List<int[]>(), (list, vectors) =>
             {
-                foreach (double[] vector1 in vectors)
+                foreach (var vector1 in vectors)
                 {
                     int[] vector2 = new int[vector1.Length];
 
@@ -59,13 +63,13 @@ namespace Alice
 
                 return list;
             });
-            List<double[]> inputBiasesList = new List<double[]>();
-            List<double[]> hiddenBiasesList = new List<double[]>();
+            var inputBiasesList = new List<double[]>();
+            var hiddenBiasesList = new List<double[]>();
 
             for (int i = 1; i < layerCollection.Count - 1; i++)
             {
-                double[] inputBiases = new double[layerCollection[i - 1].Activations.Length];
-                double[] hiddenBiases = new double[layerCollection[i].Activations.Length];
+                var inputBiases = new double[layerCollection[i - 1].Activations.Length];
+                var hiddenBiases = new double[layerCollection[i].Activations.Length];
 
                 for (int j = 0; j < layerCollection[i - 1].Activations.Length; j++)
                 {
@@ -88,9 +92,9 @@ namespace Alice
 
                 while (t < epochs)
                 {
-                    foreach (int[] vector in vectorList)
+                    foreach (var vector in vectorList)
                     {
-                        int[] inputVector = new int[vector.Length];
+                        var inputVector = new int[vector.Length];
                         int j = 1;
 
                         for (int k = 0; k < vector.Length; k++)
@@ -100,7 +104,7 @@ namespace Alice
 
                         while (j <= i)
                         {
-                            int[] tempVector = new int[inputVector.Length];
+                            var tempVector = new int[inputVector.Length];
 
                             for (int k = 0; k < inputVector.Length; k++)
                             {
@@ -109,7 +113,7 @@ namespace Alice
 
                             inputVector = new int[layerCollection[j].Activations.Length];
 
-                            double[] summations = new double[layerCollection[j].Activations.Length];
+                            var summations = new double[layerCollection[j].Activations.Length];
 
                             for (int k = 0; k < inputVector.Length; k++)
                             {
@@ -117,7 +121,7 @@ namespace Alice
 
                                 for (int l = 0; l < tempVector.Length; l++)
                                 {
-                                    sum += weightsCollection[j][k, l] * tempVector[l];
+                                    sum += layerCollection[j].Weights[k, l] * tempVector[l];
                                 }
 
                                 sum += inputBiasesList[j][k];
@@ -126,20 +130,19 @@ namespace Alice
 
                             for (int k = 0; k < summations.Length; k++)
                             {
-                                inputVector[k] = this.random.Binomial(1, layerCollection[j].ActivationFunction.Function(summations, k));
+                                inputVector[k] = this.random.Binomial(1, this.activationFunction.Function(summations[k]));
                             }
 
                             j++;
                         }
 
-                        FullyConnectedLayer yLayer = layerCollection[i + 1];
-                        int[] x = new int[i == 0 ? vector.Length : layerCollection[i].Activations.Length];
-                        double[] y = new double[yLayer.Activations.Length];
-                        double[] z = new double[x.Length];
-                        double[] ySummations = new double[y.Length];
-                        double[] zSummations = new double[z.Length];
-                        double[] tempInputBiases = new double[x.Length];
-                        double[] tempHiddenBiases = new double[y.Length];
+                        var x = new int[i == 0 ? vector.Length : layerCollection[i].Activations.Length];
+                        var y = new double[layerCollection[i + 1].Activations.Length];
+                        var z = new double[x.Length];
+                        var ySummations = new double[y.Length];
+                        var zSummations = new double[z.Length];
+                        var tempInputBiases = new double[x.Length];
+                        var tempHiddenBiases = new double[y.Length];
 
                         for (int n = 0; n < x.Length; n++)
                         {
@@ -160,7 +163,7 @@ namespace Alice
 
                             for (int m = 0; m < x.Length; m++)
                             {
-                                sum += weightsCollection[i][m, n] * x[m];
+                                sum += layerCollection[i].Weights[m, n] * x[m];
                             }
 
                             sum += hiddenBiasesList[i][n];
@@ -169,7 +172,7 @@ namespace Alice
 
                         for (int n = 0; n < ySummations.Length; n++)
                         {
-                            y[n] = yLayer.ActivationFunction.Function(ySummations, n);
+                            y[n] = this.activationFunction.Function(ySummations[n]);
                         }
 
                         // Decode
@@ -179,7 +182,7 @@ namespace Alice
 
                             for (int m = 0; m < y.Length; m++)
                             {
-                                sum += weightsCollection[i][n, m] * y[m];
+                                sum += layerCollection[i].Weights[n, m] * y[m];
                             }
 
                             sum += inputBiasesList[i][n];
@@ -188,7 +191,7 @@ namespace Alice
 
                         for (int n = 0; n < zSummations.Length; n++)
                         {
-                            z[n] = yLayer.ActivationFunction.Function(zSummations, n);
+                            z[n] = this.activationFunction.Function(zSummations[n]);
                         }
 
                         for (int n = 0; n < z.Length; n++)
@@ -203,7 +206,7 @@ namespace Alice
 
                             for (int m = 0; m < tempInputBiases.Length; m++)
                             {
-                                tempHiddenBiases[n] += weightsCollection[i][m, n] * tempInputBiases[m];
+                                tempHiddenBiases[n] += layerCollection[i].Weights[m, n] * tempInputBiases[m];
                             }
 
                             tempHiddenBiases[n] *= y[n] * (1 - y[n]);
@@ -216,11 +219,11 @@ namespace Alice
                             {
                                 if (n < x.Length)
                                 {
-                                    weightsCollection[i][n, m] += this.learningRate * (tempHiddenBiases[m] * x[n] + tempInputBiases[n] * y[m]) / vectorList.Count;
+                                    layerCollection[i].Weights[n, m] += this.learningRate * (tempHiddenBiases[m] * x[n] + tempInputBiases[n] * y[m]) / vectorList.Count;
                                 }
                                 else
                                 {
-                                    weightsCollection[i][n, m] = inputBiasesList[i][n];
+                                    layerCollection[i].Weights[n, m] = inputBiasesList[i][n];
                                 }
                             }
                         }
