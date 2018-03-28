@@ -9,6 +9,7 @@ This repository contains the deep laerning library implementation for .NET platf
 
 ### Activation Functions
 * Hyperbolic tangent
+* Identity
 * ReLU
 * Sigmoid
 * Softmax
