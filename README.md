@@ -1,9 +1,10 @@
 # Alice
 
-This repository contains the deep learning library implementation for .NET platform.
+This repository contains the portable deep learning library implementation for .NET platform.
 
 ## Features
 
+### Algorithms
 * Backpropagation
 * Stacked Denoising Autoencoders
 
