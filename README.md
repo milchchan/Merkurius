@@ -4,6 +4,9 @@ This repository contains the portable deep learning library implementation for .
 
 ## Features
 
+* High portability
+* Dependency-free
+
 ### Algorithms
 * Backpropagation
 * Stacked Denoising Autoencoders
