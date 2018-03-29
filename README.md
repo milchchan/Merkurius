@@ -15,7 +15,7 @@ This repository contains the deep laerning library implementation for .NET platf
 * Softmax
 
 ### Layers
-* Dropout layer (In development)
+* Dropout
 * Fully connected layer
 
 ### Loss Functions
