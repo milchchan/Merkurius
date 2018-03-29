@@ -9,11 +9,13 @@ This repository contains the deep laerning library implementation for .NET platf
 
 ### Activation Functions
 * Hyperbolic tangent
+* Identity
 * ReLU
 * Sigmoid
 * Softmax
 
 ### Layers
+* Dropout layer (In development)
 * Fully connected layer
 
 ### Loss Functions
