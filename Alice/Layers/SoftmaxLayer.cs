@@ -8,7 +8,7 @@ namespace Alice
         {
             public SoftmaxLayer(int nodes) : base(nodes) { }
 
-            public override void PropagateForward()
+            public override void PropagateForward(bool isTraining)
             {
                 double[] summations = new double[this.nextLayer.Activations.Length];
 
@@ -26,9 +26,19 @@ namespace Alice
                     summations[i] = sum;
                 }
 
-                for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                if (isTraining)
                 {
-                    this.nextLayer.Activations[i] = Softmax(summations, i);
+                    for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                    {
+                        this.nextLayer.Activations[i] = Softmax(summations, i);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                    {
+                        this.nextLayer.Activations[i] = summations[i];
+                    }
                 }
             }
 

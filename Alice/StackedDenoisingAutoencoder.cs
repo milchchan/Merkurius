@@ -66,19 +66,19 @@ namespace Alice
             var inputBiasesList = new List<double[]>();
             var hiddenBiasesList = new List<double[]>();
 
-            for (int i = 1; i < layerCollection.Count - 1; i++)
+            for (int i = 1, length = layerCollection.Count - 1; i < length; i++)
             {
                 var inputBiases = new double[layerCollection[i - 1].Activations.Length];
                 var hiddenBiases = new double[layerCollection[i].Activations.Length];
 
-                for (int j = 0; j < layerCollection[i - 1].Activations.Length; j++)
+                for (int j = 0; j < inputBiases.Length; j++)
                 {
                     inputBiases[i] = 0;
                 }
 
                 inputBiasesList.Add(inputBiases);
 
-                for (int j = 0; j < layerCollection[i].Activations.Length; j++)
+                for (int j = 0; j < hiddenBiases.Length; j++)
                 {
                     hiddenBiases[i] = 0;
                 }
@@ -86,7 +86,7 @@ namespace Alice
                 hiddenBiasesList.Add(hiddenBiases);
             }
 
-            for (int i = 0; i < layerCollection.Count - 2; i++)
+            for (int i = 0, length = layerCollection.Count - 2; i < length; i++)
             {
                 int t = 0;
 

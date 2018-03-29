@@ -108,7 +108,7 @@ namespace Alice
 
             do
             {
-                layer.PropagateForward();
+                layer.PropagateForward(false);
                 layer = layer.Next;
             } while (layer.Next != null);
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Alice.ActivationFunctions;
 
 namespace Alice
@@ -8,6 +9,7 @@ namespace Alice
         public class FullyConnectedLayer : Layer
         {
             private IActivationFunction activationFunction = null;
+            private IEnumerable<IFilter> filters = null;
 
             public IActivationFunction ActivationFunction
             {
@@ -22,7 +24,13 @@ namespace Alice
                 this.activationFunction = activationFunction;
             }
 
-            public override void PropagateForward()
+            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filter) : base(nodes)
+            {
+                this.activationFunction = activationFunction;
+                this.filters = filter;
+            }
+
+            public override void PropagateForward(bool isTraining)
             {
                 double[] summations = new double[this.nextLayer.Activations.Length];
 
@@ -40,9 +48,31 @@ namespace Alice
                     summations[i] = sum;
                 }
 
-                for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                if (this.filters == null)
                 {
-                    this.nextLayer.Activations[i] = this.activationFunction.Function(summations[i]);
+                    for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                    {
+                        this.nextLayer.Activations[i] = this.activationFunction.Function(summations[i]);
+                    }
+                }
+                else
+                {
+                    double[] tempActivations = new double[this.nextLayer.Activations.Length];
+
+                    for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                    {
+                        tempActivations[i] = this.activationFunction.Function(summations[i]);
+                    }
+
+                    foreach (var filter in this.filters)
+                    {
+                        tempActivations = filter.PropagateForward(isTraining, tempActivations);
+                    }
+
+                    for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                    {
+                        this.nextLayer.Activations[i] = tempActivations[i];
+                    }
                 }
             }
 
@@ -52,23 +82,74 @@ namespace Alice
 
                 if (this.nextLayer == null)
                 {
-                    for (int i = 0; i < this.Activations.Length; i++)
+                    if (this.filters == null)
                     {
-                        g[i] = this.activationFunction.Derivative(this.activations[i]) * gradients[i];
+                        for (int i = 0; i < this.activations.Length; i++)
+                        {
+                            g[i] = this.activationFunction.Derivative(this.activations[i]) * gradients[i];
+                        }
+                    }
+                    else
+                    {
+                        double[] tempGradients = new double[this.activations.Length];
+
+                        for (int i = 0; i < this.activations.Length; i++)
+                        {
+                            tempGradients[i] = this.activationFunction.Derivative(this.activations[i]) * gradients[i];
+                        }
+
+                        foreach (var filter in this.filters)
+                        {
+                            tempGradients = filter.PropagateBackward(tempGradients);
+                        }
+
+                        for (int i = 0; i < this.activations.Length; i++)
+                        {
+                            g[i] = tempGradients[i];
+                        }
                     }
                 }
                 else
                 {
-                    for (int i = 0; i < this.activations.Length; i++)
+                    if (this.filters == null)
                     {
-                        double error = 0;
-
-                        for (int j = 0; j < this.nextLayer.Activations.Length; j++)
+                        for (int i = 0; i < this.activations.Length; i++)
                         {
-                            error += gradients[j] * this.weights[i, j];
+                            double error = 0;
+
+                            for (int j = 0; j < this.nextLayer.Activations.Length; j++)
+                            {
+                                error += gradients[j] * this.weights[i, j];
+                            }
+
+                            g[i] = this.activationFunction.Derivative(this.activations[i]) * error;
+                        }
+                    }
+                    else
+                    {
+                        double[] tempGradients = new double[this.Activations.Length];
+
+                        for (int i = 0; i < this.activations.Length; i++)
+                        {
+                            double error = 0;
+
+                            for (int j = 0; j < this.nextLayer.Activations.Length; j++)
+                            {
+                                error += gradients[j] * this.weights[i, j];
+                            }
+
+                            tempGradients[i] = this.activationFunction.Derivative(this.activations[i]) * error;
                         }
 
-                        g[i] = this.activationFunction.Derivative(this.activations[i]) * error;
+                        foreach (var filter in this.filters)
+                        {
+                            tempGradients = filter.PropagateBackward(tempGradients);
+                        }
+
+                        for (int i = 0; i < this.activations.Length; i++)
+                        {
+                            g[i] = tempGradients[i];
+                        }
                     }
                 }
 

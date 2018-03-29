@@ -11,9 +11,18 @@ namespace Alice
     public class Backpropagation : ITrainer
     {
         private Random random = null;
+        private int batchSize = 32;
         private double loss = 0;
         private IOptimizer optimizer = null;
         private ILossFunction lossFunction = null;
+
+        public int BatchSize
+        {
+            get
+            {
+                return this.batchSize;
+            }
+        }
 
         public double Loss
         {
@@ -61,37 +70,49 @@ namespace Alice
             int t = 0;
             var inputLayer = layerCollection[0];
 
-            // Stochastic gradient descent
+            // Stochastic gradient descent (SGD)
             while (t < epochs)
             {
-                foreach (var keyValuePair in keyValuePairList.Shuffle<KeyValuePair<double[], double[]>>(this.random))
+                // Mini-batch
+                int remaining = keyValuePairList.Count;
+
+                do
                 {
-                    int identifier = 0;
+                    var batchOfGradients = new double[layerCollection.Count - 1][];
                     int index = 0;
 
-                    foreach (var gradients in BackwardPropagate(ForwardPropagate(inputLayer, keyValuePair.Key), keyValuePair.Value))
+                    foreach (var keyValuePair in keyValuePairList.Sample<KeyValuePair<double[], double[]>>(this.random, Math.Min(remaining, this.batchSize)))
                     {
-                        var layer = layerCollection[index];
+                        int i = 0;
 
-                        for (int i = 0; i < layer.Activations.Length; i++)
+                        foreach (var gradients in BackwardPropagate(ForwardPropagate(true, inputLayer, keyValuePair.Key), keyValuePair.Value))
                         {
-                            for (int j = 0; j < layer.Next.Activations.Length; j++)
+                            batchOfGradients[i] = gradients;
+                            i++;
+                        }
+                    }
+
+                    for (int i = 0; i < batchOfGradients.Length; i++)
+                    {
+                        for (int j = 0; j < layerCollection[i].Activations.Length; j++)
+                        {
+                            for (int k = 0; k < layerCollection[i].Next.Activations.Length; k++)
                             {
-                                layer.Weights[i, j] = optimizer.Optimize(identifier, layer.Weights[i, j], gradients[j] * layer.Activations[i]);
-                                identifier++;
+                                layerCollection[i].Weights[j, k] = optimizer.Optimize(index, layerCollection[i].Weights[j, k], batchOfGradients[i][k] * layerCollection[i].Activations[j] / batchOfGradients.Length);
+                                index++;
                             }
                         }
 
-                        for (int i = 0; i < layer.Next.Activations.Length; i++)
+                        for (int j = 0; j < layerCollection[i].Next.Activations.Length; j++)
                         {
-                            layer.Biases[i] = optimizer.Optimize(identifier, layer.Biases[i], gradients[i]);
-                            identifier++;
+                            layerCollection[i].Biases[j] = optimizer.Optimize(index, layerCollection[i].Biases[j], batchOfGradients[i][j] / batchOfGradients.Length);
+                            index++;
                         }
-
-                        index++;
                     }
-                }
 
+                    remaining -= this.batchSize;
+                } while (remaining > 0);
+                
                 t++;
             }
 
@@ -104,7 +125,7 @@ namespace Alice
 
             foreach (var keyValuePair in keyValuePairs)
             {
-                var layer = ForwardPropagate(inputLayer, keyValuePair.Key);
+                var layer = ForwardPropagate(false, inputLayer, keyValuePair.Key);
 
                 for (int i = 0; i < layer.Activations.Length; i++)
                 {
@@ -115,7 +136,7 @@ namespace Alice
             return sum;
         }
 
-        private Layer ForwardPropagate(Layer inputLayer, double[] vector)
+        private Layer ForwardPropagate(bool isTraining, Layer inputLayer, double[] vector)
         {
             var layer = inputLayer;
 
@@ -126,7 +147,7 @@ namespace Alice
 
             do
             {
-                layer.PropagateForward();
+                layer.PropagateForward(isTraining);
                 layer = layer.Next;
             } while (layer.Next != null);
 

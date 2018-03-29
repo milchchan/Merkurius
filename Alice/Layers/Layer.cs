@@ -63,52 +63,12 @@ namespace Alice
             public Layer(int nodes)
             {
                 this.activations = new double[nodes];
-
-                for (int i = 0; i < nodes; i++)
-                {
-                    this.activations[i] = 1.0;
-                }
-            }
-
-            public void Connect(Layer layer, Func<int, int, double> weightFunc, Func<int, double> biasFunc)
-            {
-                this.weights = new double[this.activations.Length, layer.activations.Length];
-                this.biases = new double[layer.activations.Length];
-
-                for (int i = 0; i < this.activations.Length; i++)
-                {
-                    for (int j = 0; j < layer.activations.Length; j++)
-                    {
-                        this.weights[i, j] = weightFunc(i, j);
-                    }
-                }
-
-                for (int i = 0; i < layer.activations.Length; i++)
-                {
-                    this.biases[i] = biasFunc(i);
-                }
-
-                layer.previousLayer = this;
-                this.nextLayer = layer;
             }
 
             public void Connect(Layer layer)
             {
                 this.weights = new double[this.activations.Length, layer.activations.Length];
                 this.biases = new double[layer.activations.Length];
-
-                for (int i = 0; i < this.activations.Length; i++)
-                {
-                    for (int j = 0; j < layer.activations.Length; j++)
-                    {
-                        this.weights[i, j] = 0;
-                    }
-                }
-
-                for (int i = 0; i < layer.activations.Length; i++)
-                {
-                    this.biases[i] = 0;
-                }
 
                 layer.previousLayer = this;
                 this.nextLayer = layer;
@@ -126,7 +86,7 @@ namespace Alice
                 }
             }
 
-            public abstract void PropagateForward();
+            public abstract void PropagateForward(bool isTraining);
             public abstract double[] PropagateBackward(double[] gradients);
         }
     }

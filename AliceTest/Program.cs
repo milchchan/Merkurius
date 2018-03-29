@@ -15,7 +15,8 @@ namespace AliceTest
     {
         static void Main(string[] args)
         {
-            Random random = new Random(Environment.TickCount);
+            int seed = Environment.TickCount;
+            Random random = new Random(seed);
             Dictionary<double[], IEnumerable<double[]>> patternDictionary = new Dictionary<double[], IEnumerable<double[]>>();
             /*Network autoencoder = new Network(random, new FullyConnectedLayer[] {
                 new FullyConnectedLayer(3, 2, new HyperbolicTangent()),
@@ -39,7 +40,7 @@ namespace AliceTest
                 layer.DropoutProbability = 0.5;
             }*/
 
-            Console.WriteLine("XOR Test");
+            Console.WriteLine("XOR Test ({0})", seed);
 
             /*Console.Write("Pretraining...");*/
 
@@ -91,7 +92,7 @@ namespace AliceTest
 
             sw.Start();
 
-            network.Train(patternDictionary, 1000000);
+            network.Train(patternDictionary, 10000000);
 
             sw.Stop();
 
