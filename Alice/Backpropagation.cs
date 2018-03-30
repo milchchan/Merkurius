@@ -10,6 +10,7 @@ namespace Alice
 {
     public class Backpropagation : ITrainer
     {
+        public event EventHandler<EventArgs> Stepped = null;
         private Random random = null;
         private int batchSize = 32;
         private double loss = 0;
@@ -68,7 +69,6 @@ namespace Alice
                 return list;
             });
             int t = 0;
-            var inputLayer = layerCollection[0];
 
             // Stochastic gradient descent (SGD)
             while (t < epochs)
@@ -85,7 +85,7 @@ namespace Alice
                     {
                         int i = 0;
 
-                        foreach (var gradients in BackwardPropagate(ForwardPropagate(true, inputLayer, keyValuePair.Key), keyValuePair.Value))
+                        foreach (var gradients in BackwardPropagate(ForwardPropagate(true, layerCollection[0], keyValuePair.Key), keyValuePair.Value))
                         {
                             batchOfGradients[i] = gradients;
                             i++;
@@ -112,11 +112,16 @@ namespace Alice
 
                     remaining -= this.batchSize;
                 } while (remaining > 0);
-                
+
+                this.loss = GetLoss(layerCollection[0], keyValuePairList);
+
+                if (this.Stepped != null)
+                {
+                    this.Stepped(this, new EventArgs());
+                }
+
                 t++;
             }
-
-            this.loss = GetLoss(inputLayer, keyValuePairList);
         }
 
         private double GetLoss(Layer inputLayer, IEnumerable<KeyValuePair<double[], double[]>> keyValuePairs)
