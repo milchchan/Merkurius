@@ -1,4 +1,4 @@
-# Alice
+# Megalopolis
 
 This repository contains the portable deep learning library implementation for .NET platform.
 
