@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Alice
+namespace Megalopolis
 {
     namespace ActivationFunctions
     {

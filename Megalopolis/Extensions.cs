@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Alice
+namespace Megalopolis
 {
     public static class Extensions
     {

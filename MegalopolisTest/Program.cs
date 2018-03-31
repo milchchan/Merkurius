@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using Alice;
-using Alice.ActivationFunctions;
-using Alice.Layers;
-using Alice.LossFunctions;
-using Alice.Optimizers;
+using Megalopolis;
+using Megalopolis.ActivationFunctions;
+using Megalopolis.Layers;
+using Megalopolis.LossFunctions;
+using Megalopolis.Optimizers;
 
 
 namespace MegalopolisTest

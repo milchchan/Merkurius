@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Alice
+namespace Megalopolis
 {
     namespace Optimizers
     {

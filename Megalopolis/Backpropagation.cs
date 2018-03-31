@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Alice.Optimizers;
-using Alice.Layers;
-using Alice.LossFunctions;
+using Megalopolis.Optimizers;
+using Megalopolis.Layers;
+using Megalopolis.LossFunctions;
 
-namespace Alice
+namespace Megalopolis
 {
     public class Backpropagation : ITrainer
     {

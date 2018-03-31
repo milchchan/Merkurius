@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Alice.ActivationFunctions;
-using Alice.Layers;
+using Megalopolis.ActivationFunctions;
+using Megalopolis.Layers;
 
-namespace Alice
+namespace Megalopolis
 {
     public class StackedDenoisingAutoencoder : ITrainer
     {

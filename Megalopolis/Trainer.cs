@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Alice.Layers;
+using Megalopolis.Layers;
 
-namespace Alice
+namespace Megalopolis
 {
     public interface ITrainer
     {

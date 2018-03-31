@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using Alice.ActivationFunctions;
+using Megalopolis.ActivationFunctions;
 
-namespace Alice
+namespace Megalopolis
 {
     namespace Layers
     {
