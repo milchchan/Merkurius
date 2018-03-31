@@ -9,7 +9,8 @@ using Alice.Layers;
 using Alice.LossFunctions;
 using Alice.Optimizers;
 
-namespace AliceTest
+
+namespace MegalopolisTest
 {
     class Program
     {
