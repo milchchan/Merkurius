@@ -8,10 +8,6 @@ This repository contains the portable deep learning library implementation for .
 * High portability
 * Dependency-free
 
-### Algorithms
-* Backpropagation
-* Stacked Denoising Autoencoders
-
 ### Activation Functions
 * Hyperbolic tangent
 * Identity
