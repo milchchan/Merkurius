@@ -4,7 +4,7 @@ This repository contains the portable deep learning library implementation for .
 
 ## Features
 
-* .NET Standard 2.0 Library
+* .NET Standard 2.0 library
 * High portability
 * Dependency-free
 
