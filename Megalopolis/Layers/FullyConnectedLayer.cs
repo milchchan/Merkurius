@@ -30,6 +30,21 @@ namespace Megalopolis
                 this.filters = filter;
             }
 
+            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction) : base(inputs)
+            {
+                this.weights = new double[inputs, outputs];
+                this.biases = new double[outputs];
+                this.activationFunction = activationFunction;
+            }
+
+            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, IEnumerable<IFilter> filter) : base(inputs)
+            {
+                this.weights = new double[inputs, outputs];
+                this.biases = new double[outputs];
+                this.activationFunction = activationFunction;
+                this.filters = filter;
+            }
+
             public override void PropagateForward(bool isTraining)
             {
                 double[] summations = new double[this.nextLayer.Activations.Length];
@@ -76,7 +91,7 @@ namespace Megalopolis
                 }
             }
 
-            public override double[] PropagateBackward(double[] gradients)
+            public override double[] PropagateBackward(ref double[] gradients)
             {
                 var g = new double[this.activations.Length];
 
@@ -127,7 +142,7 @@ namespace Megalopolis
                     }
                     else
                     {
-                        double[] tempGradients = new double[this.Activations.Length];
+                        double[] tempGradients = new double[this.activations.Length];
 
                         for (int i = 0; i < this.activations.Length; i++)
                         {
@@ -154,6 +169,22 @@ namespace Megalopolis
                 }
 
                 return g;
+            }
+
+            public override void Update(double[] gradients, Func<double, double, double> func)
+            {
+                for (int i = 0; i < this.activations.Length; i++)
+                {
+                    for (int j = 0; j < gradients.Length; j++)
+                    {
+                        this.weights[i, j] = func(this.weights[i, j], gradients[j] * this.activations[i]);
+                    }
+                }
+
+                for (int i = 0; i < gradients.Length; i++)
+                {
+                    this.biases[i] = func(this.biases[i], gradients[i]);
+                }
             }
         }
     }

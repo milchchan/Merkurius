@@ -23,26 +23,26 @@ namespace Megalopolis
                 this.dictionary = new Dictionary<int, KeyValuePair<double, double>>();
             }
 
-            public double Optimize(int index, double weight, double gradient)
+            public double Optimize(int i, double w, double dw)
             {
                 KeyValuePair<double, double> kvp;
                 double e;
                 double dx;
 
-                if (this.dictionary.TryGetValue(index, out kvp))
+                if (this.dictionary.TryGetValue(i, out kvp))
                 {
-                    e = this.rho * kvp.Key + (1 - kvp.Key) * gradient * gradient;
-                    dx = -Math.Sqrt(kvp.Value + this.epsilon) / Math.Sqrt(e + this.epsilon) * gradient;
-                    this.dictionary[index] = new KeyValuePair<double, double>(e, this.rho * kvp.Value + (1 - this.rho) * dx * dx);
+                    e = this.rho * kvp.Key + (1 - kvp.Key) * dw * dw;
+                    dx = -Math.Sqrt(kvp.Value + this.epsilon) / Math.Sqrt(e + this.epsilon) * dw;
+                    this.dictionary[i] = new KeyValuePair<double, double>(e, this.rho * kvp.Value + (1 - this.rho) * dx * dx);
                 }
                 else
                 {
-                    e = gradient * gradient;
-                    dx = -Math.Sqrt(this.epsilon) / Math.Sqrt(e + this.epsilon) * gradient;
-                    this.dictionary.Add(index, new KeyValuePair<double, double>(e, (1 - this.rho) * dx * dx));
+                    e = dw * dw;
+                    dx = -Math.Sqrt(this.epsilon) / Math.Sqrt(e + this.epsilon) * dw;
+                    this.dictionary.Add(i, new KeyValuePair<double, double>(e, (1 - this.rho) * dx * dx));
                 }
 
-                return weight + dx;
+                return w + dx;
             }
         }
     }

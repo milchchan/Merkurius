@@ -23,21 +23,21 @@ namespace Megalopolis
                 this.gDictionary = new Dictionary<int, double>();
             }
 
-            public double Optimize(int index, double weight, double gradient)
+            public double Optimize(int i, double w, double dw)
             {
                 double g;
 
-                if (this.gDictionary.TryGetValue(index, out g))
+                if (this.gDictionary.TryGetValue(i, out g))
                 {
-                    this.gDictionary[index] = gradient;
+                    this.gDictionary[i] = dw;
                 }
                 else
                 {
                     g = 0;
-                    this.gDictionary.Add(index, gradient);
+                    this.gDictionary.Add(i, dw);
                 }
 
-                return weight - this.eta * gradient + this.alpha * g;
+                return w - this.eta * dw + this.alpha * g;
             }
         }
     }

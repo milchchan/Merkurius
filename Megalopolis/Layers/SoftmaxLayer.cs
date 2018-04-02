@@ -42,7 +42,7 @@ namespace Megalopolis
                 }
             }
 
-            public override double[] PropagateBackward(double[] gradients)
+            public override double[] PropagateBackward(ref double[] gradients)
             {
                 var g = new double[this.activations.Length];
 
@@ -59,6 +59,22 @@ namespace Megalopolis
                 }
 
                 return g;
+            }
+
+            public override void Update(double[] gradients, Func<double, double, double> func)
+            {
+                for (int i = 0; i < this.activations.Length; i++)
+                {
+                    for (int j = 0; j < gradients.Length; j++)
+                    {
+                        this.weights[i, j] = func(this.weights[i, j], gradients[j] * this.activations[i]);
+                    }
+                }
+
+                for (int i = 0; i < gradients.Length; i++)
+                {
+                    this.biases[i] = func(this.biases[i], gradients[i]);
+                }
             }
 
             private double Softmax(double[] x, int i)

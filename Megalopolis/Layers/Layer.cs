@@ -65,20 +65,21 @@ namespace Megalopolis
                 this.activations = new double[nodes];
             }
 
+            /*public Layer(int nodes, Layer layer)
+            {
+                this.activations = new double[nodes];
+                layer.previousLayer = this;
+                this.nextLayer = layer;
+            }*/
+
             public void Connect(Layer layer)
             {
-                this.weights = new double[this.activations.Length, layer.activations.Length];
-                this.biases = new double[layer.activations.Length];
-
                 layer.previousLayer = this;
                 this.nextLayer = layer;
             }
 
             public void Disconnect()
             {
-                this.weights = null;
-                this.biases = null;
-
                 if (this.nextLayer != null)
                 {
                     this.nextLayer.previousLayer = null;
@@ -87,7 +88,8 @@ namespace Megalopolis
             }
 
             public abstract void PropagateForward(bool isTraining);
-            public abstract double[] PropagateBackward(double[] gradients);
+            public abstract double[] PropagateBackward(ref double[] gradients);
+            public abstract void Update(double[] gradients, Func<double, double, double> func);
         }
     }
 }

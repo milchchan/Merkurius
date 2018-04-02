@@ -80,12 +80,14 @@ namespace MegalopolisTest
             }*/
 
             //Network backpropagation = new Network(layerList, (i) => weightList[i], new Backpropagation(random, new AdaDelta(), new MeanSquaredError()) { ErrorThreshold = 0.001 });
-            Backpropagation backpropagation = new Backpropagation(random, new AdaDelta(), new MeanSquaredError());
+
+
+
             Network network = new Network(random, new FullyConnectedLayer[] {
-                new FullyConnectedLayer(2, new Sigmoid()),
-                new FullyConnectedLayer(2, new Sigmoid()),
+                new FullyConnectedLayer(2, 2, new Sigmoid()),
+                new FullyConnectedLayer(2, 1, new Sigmoid()),
                 new FullyConnectedLayer(1, new Sigmoid())
-            }, (x, y) => -Math.Sqrt(6 / (x + y)) * 4, (x, y) => Math.Sqrt(6 / (x + y)) * 4, backpropagation);
+            }, (x, y) => -Math.Sqrt(6 / (x + y)) * 4, (x, y) => Math.Sqrt(6 / (x + y)) * 4, new AdaDelta(), new MeanSquaredError());
 
             sw.Reset();
 
@@ -124,7 +126,7 @@ namespace MegalopolisTest
             }
 
             Console.WriteLine();
-            Console.WriteLine("Loss: {0}", backpropagation.Loss);
+            Console.WriteLine("Loss: {0}", network.Loss);
             Console.WriteLine();
         }
 

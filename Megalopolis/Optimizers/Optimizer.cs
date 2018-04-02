@@ -6,7 +6,7 @@ namespace Megalopolis
     {
         public interface IOptimizer
         {
-            double Optimize(int index, double weight, double gradient);
+            double Optimize(int i, double w, double dw);
         }
     }
 }
