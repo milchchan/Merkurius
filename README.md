@@ -16,8 +16,10 @@ This repository contains the portable deep learning library implementation for .
 * Softmax
 
 ### Layers
+* Convolutional
 * Dropout
-* Fully connected layer
+* Fully connected
+* Pooling
 
 ### Loss Functions
 * Cross-entropy
