@@ -8,6 +8,7 @@ namespace Megalopolis
     {
         public class FullyConnectedLayer : Layer
         {
+            //double[,] _weights = null;
             private IActivationFunction activationFunction = null;
             private IEnumerable<IFilter> filters = null;
 
@@ -19,43 +20,95 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction) : base(nodes)
+            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, Func<int, double> func) : base(inputs, outputs)
             {
-                this.activationFunction = activationFunction;
-            }
+                var length = inputs * outputs;
 
-            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filter) : base(nodes)
-            {
-                this.activationFunction = activationFunction;
-                this.filters = filter;
-            }
-
-            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction) : base(inputs)
-            {
-                this.weights = new double[inputs, outputs];
+                this.weights = new double[length];
                 this.biases = new double[outputs];
                 this.activationFunction = activationFunction;
+
+                for (int i = 0; i < length; i++)
+                {
+                    this.weights[i] = func(i);
+                }
+
+                for (int i = 0; i < outputs; i++)
+                {
+                    this.biases[i] = 0;
+                }
             }
 
-            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, IEnumerable<IFilter> filter) : base(inputs)
+            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, Func<int, double> func, Layer layer) : base(nodes, layer)
             {
-                this.weights = new double[inputs, outputs];
+                var length = nodes * layer.InputActivations.Length;
+
+                this.weights = new double[length];
+                this.biases = new double[layer.InputActivations.Length];
+                this.activationFunction = activationFunction;
+
+                for (int i = 0; i < length; i++)
+                {
+                    this.weights[i] = func(i);
+                }
+
+                for (int i = 0; i < layer.InputActivations.Length; i++)
+                {
+                    this.biases[i] = 0;
+                }
+            }
+
+            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, IEnumerable<IFilter> filter, Func<int, double> func) : base(inputs, outputs)
+            {
+                var length = inputs * outputs;
+
+                this.weights = new double[length];
                 this.biases = new double[outputs];
                 this.activationFunction = activationFunction;
                 this.filters = filter;
+
+                for (int i = 0; i < length; i++)
+                {
+                    this.weights[i] = func(i);
+                }
+
+                for (int i = 0; i < outputs; i++)
+                {
+                    this.biases[i] = 0;
+                }
+            }
+
+            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filter, Func<int, double> func, Layer layer) : base(nodes, layer)
+            {
+                var length = nodes * layer.InputActivations.Length;
+
+                this.weights = new double[length];
+                this.biases = new double[layer.InputActivations.Length];
+                this.activationFunction = activationFunction;
+                this.filters = filter;
+
+                for (int i = 0; i < length; i++)
+                {
+                    this.weights[i] = func(i);
+                }
+
+                for (int i = 0; i < layer.InputActivations.Length; i++)
+                {
+                    this.biases[i] = 0;
+                }
             }
 
             public override void PropagateForward(bool isTraining)
             {
-                double[] summations = new double[this.nextLayer.Activations.Length];
+                double[] summations = new double[this.outputActivations.Length];
 
-                for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                for (int i = 0; i < this.outputActivations.Length; i++)
                 {
                     double sum = 0;
 
-                    for (int j = 0; j < this.activations.Length; j++)
+                    for (int j = 0; j < this.inputActivations.Length; j++)
                     {
-                        sum += this.activations[j] * this.weights[j, i];
+                        sum += this.inputActivations[j] * this.weights[this.outputActivations.Length * j + i];
                     }
 
                     sum += this.biases[i];
@@ -65,16 +118,16 @@ namespace Megalopolis
 
                 if (this.filters == null)
                 {
-                    for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                    for (int i = 0; i < this.outputActivations.Length; i++)
                     {
-                        this.nextLayer.Activations[i] = this.activationFunction.Function(summations[i]);
+                        this.outputActivations[i] = this.activationFunction.Function(summations[i]);
                     }
                 }
                 else
                 {
-                    double[] tempActivations = new double[this.nextLayer.Activations.Length];
+                    double[] tempActivations = new double[this.outputActivations.Length];
 
-                    for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                    for (int i = 0; i < this.outputActivations.Length; i++)
                     {
                         tempActivations[i] = this.activationFunction.Function(summations[i]);
                     }
@@ -84,100 +137,88 @@ namespace Megalopolis
                         tempActivations = filter.PropagateForward(isTraining, tempActivations);
                     }
 
-                    for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                    for (int i = 0; i < this.outputActivations.Length; i++)
                     {
-                        this.nextLayer.Activations[i] = tempActivations[i];
+                        this.outputActivations[i] = tempActivations[i];
                     }
                 }
             }
 
-            public override double[] PropagateBackward(ref double[] gradients)
+            public override IEnumerable<double[]> PropagateBackward(ref double[] gradients)
             {
-                var g = new double[this.activations.Length];
-
                 if (this.nextLayer == null)
                 {
-                    if (this.filters == null)
+                    var g1 = new double[this.outputActivations.Length];
+                    var g2 = new double[this.inputActivations.Length];
+
+                    for (int i = 0; i < this.outputActivations.Length; i++)
                     {
-                        for (int i = 0; i < this.activations.Length; i++)
-                        {
-                            g[i] = this.activationFunction.Derivative(this.activations[i]) * gradients[i];
-                        }
+                        g1[i] = this.activationFunction.Derivative(this.outputActivations[i]) * gradients[i];
                     }
-                    else
+
+                    if (this.filters != null)
                     {
-                        double[] tempGradients = new double[this.activations.Length];
-
-                        for (int i = 0; i < this.activations.Length; i++)
-                        {
-                            tempGradients[i] = this.activationFunction.Derivative(this.activations[i]) * gradients[i];
-                        }
-
                         foreach (var filter in this.filters)
                         {
-                            tempGradients = filter.PropagateBackward(tempGradients);
-                        }
-
-                        for (int i = 0; i < this.activations.Length; i++)
-                        {
-                            g[i] = tempGradients[i];
+                            g1 = filter.PropagateBackward(g1);
                         }
                     }
+
+                    for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
+                    {
+                        double error = 0;
+
+                        for (int k = 0; k < this.outputActivations.Length; k++)
+                        {
+                            error += g1[k] * this.weights[j];
+                            j++;
+                        }
+
+                        g2[i] = error;
+                    }
+
+                    return new double[][] { g1, g2 };
                 }
-                else
+
+                var g = new double[this.inputActivations.Length];
+
+                for (int i = 0; i < this.outputActivations.Length; i++)
                 {
-                    if (this.filters == null)
+                    gradients[i] = this.activationFunction.Derivative(this.outputActivations[i]) * gradients[i];
+                }
+
+                if (this.filters != null)
+                {
+                    foreach (var filter in this.filters)
                     {
-                        for (int i = 0; i < this.activations.Length; i++)
-                        {
-                            double error = 0;
-
-                            for (int j = 0; j < this.nextLayer.Activations.Length; j++)
-                            {
-                                error += gradients[j] * this.weights[i, j];
-                            }
-
-                            g[i] = this.activationFunction.Derivative(this.activations[i]) * error;
-                        }
-                    }
-                    else
-                    {
-                        double[] tempGradients = new double[this.activations.Length];
-
-                        for (int i = 0; i < this.activations.Length; i++)
-                        {
-                            double error = 0;
-
-                            for (int j = 0; j < this.nextLayer.Activations.Length; j++)
-                            {
-                                error += gradients[j] * this.weights[i, j];
-                            }
-
-                            tempGradients[i] = this.activationFunction.Derivative(this.activations[i]) * error;
-                        }
-
-                        foreach (var filter in this.filters)
-                        {
-                            tempGradients = filter.PropagateBackward(tempGradients);
-                        }
-
-                        for (int i = 0; i < this.activations.Length; i++)
-                        {
-                            g[i] = tempGradients[i];
-                        }
+                        gradients = filter.PropagateBackward(gradients);
                     }
                 }
 
-                return g;
+                for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
+                {
+                    double error = 0;
+
+                    for (int k = 0; k < this.outputActivations.Length; k++)
+                    {
+                        error += gradients[k] * this.weights[j];
+                        j++;
+                    }
+
+                    g[i] = error;
+                }
+
+                return new double[][] { g };
             }
 
             public override void Update(double[] gradients, Func<double, double, double> func)
             {
-                for (int i = 0; i < this.activations.Length; i++)
+                for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
                 {
-                    for (int j = 0; j < gradients.Length; j++)
+                    for (int k = 0; k < gradients.Length; k++)
                     {
-                        this.weights[i, j] = func(this.weights[i, j], gradients[j] * this.activations[i]);
+                        this.weights[j] = func(this.weights[j], gradients[k] * this.inputActivations[i]);
+                        j++;
                     }
                 }
 

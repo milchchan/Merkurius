@@ -12,6 +12,7 @@ namespace Megalopolis
     {
         public event EventHandler<EventArgs> Stepped = null;
         private Random random = null;
+        private Layer inputLayer = null;
         private Collection<Layer> layerCollection = null;
         private int batchSize = 32;
         private double loss = 0;
@@ -58,79 +59,19 @@ namespace Megalopolis
             }
         }
 
-        public Network(Random random, IEnumerable<Layer> layers, Func<int, int, double> minFunc, Func<int, int, double> maxFunc, IOptimizer optimizer, ILossFunction lossFunction)
+        public Network(Random random, Layer layer, IOptimizer optimizer, ILossFunction lossFunction)
         {
-            Layer previousLayer = null;
-
             this.random = random;
+            this.inputLayer = layer;
             this.layerCollection = new Collection<Layer>();
             this.optimizer = optimizer;
             this.lossFunction = lossFunction;
 
-            foreach (var layer in layers)
+            do
             {
-                if (previousLayer != null)
-                {
-                    double min = minFunc(previousLayer.Activations.Length, layer.Activations.Length);
-                    double max = maxFunc(previousLayer.Activations.Length, layer.Activations.Length);
-
-                    previousLayer.Connect(layer);
-
-                    for (int i = 0; i < previousLayer.Activations.Length; i++)
-                    {
-                        for (int j = 0; j < layer.Activations.Length; j++)
-                        {
-                            previousLayer.Weights[i, j] = random.Uniform(min, max);
-                        }
-                    }
-
-                    for (int i = 0; i < layer.Activations.Length; i++)
-                    {
-                        previousLayer.Biases[i] = random.Uniform(min, max);
-                    }
-                }
-
-                previousLayer = layer;
                 this.layerCollection.Add(layer);
-            }
-        }
-
-        public Network(Random random, IEnumerable<Layer> layers, Func<int, double> weightFunc, Func<int, double> biasFunc, IOptimizer optimizer, ILossFunction lossFunction)
-        {
-            Layer previousLayer = null;
-            int weightIndex = 0;
-            int biasIndex = 0;
-
-            this.random = random;
-            this.layerCollection = new Collection<Layer>();
-            this.optimizer = optimizer;
-            this.lossFunction = lossFunction;
-
-            foreach (var layer in layers)
-            {
-                if (previousLayer != null)
-                {
-                    previousLayer.Connect(layer);
-
-                    for (int i = 0; i < previousLayer.Activations.Length; i++)
-                    {
-                        for (int j = 0; j < layer.Activations.Length; j++)
-                        {
-                            previousLayer.Weights[i, j] = weightFunc(weightIndex);
-                            weightIndex++;
-                        }
-                    }
-
-                    for (int i = 0; i < layer.Activations.Length; i++)
-                    {
-                        previousLayer.Biases[i] = biasFunc(biasIndex);
-                        biasIndex++;
-                    }
-                }
-
-                previousLayer = layer;
-                this.layerCollection.Add(layer);
-            }
+                layer = layer.Next;
+            } while (layer != null);
         }
 
         public void Train(IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
@@ -155,13 +96,13 @@ namespace Megalopolis
 
                 do
                 {
-                    var batchOfGradients = new double[this.layerCollection.Count - 1][];
+                    var batchOfGradients = new double[this.layerCollection.Count][];
 
                     foreach (var keyValuePair in keyValuePairList.Sample<KeyValuePair<double[], double[]>>(this.random, Math.Min(remaining, this.batchSize)))
                     {
                         int i = 0;
 
-                        foreach (var gradients in BackwardPropagate(ForwardPropagate(true, this.layerCollection[0], keyValuePair.Key), keyValuePair.Value))
+                        foreach (var gradients in BackwardPropagate(ForwardPropagate(true, this.inputLayer, keyValuePair.Key), keyValuePair.Value))
                         {
                             batchOfGradients[i] = gradients;
                             i++;
@@ -183,7 +124,7 @@ namespace Megalopolis
                     remaining -= this.batchSize;
                 } while (remaining > 0);
 
-                this.loss = GetLoss(this.layerCollection[0], keyValuePairList);
+                this.loss = GetLoss(this.inputLayer, keyValuePairList);
 
                 if (this.Stepped != null)
                 {
@@ -196,20 +137,22 @@ namespace Megalopolis
 
         public double[] Predicate(double[] vector)
         {
-            var layer = this.layerCollection[0];
+            var layer = this.inputLayer;
+            Layer outputLayer;
 
-            for (int i = 0; i < layer.Activations.Length; i++)
+            for (int i = 0; i < layer.InputActivations.Length; i++)
             {
-                layer.Activations[i] = vector[i];
+                layer.InputActivations[i] = vector[i];
             }
 
             do
             {
                 layer.PropagateForward(false);
+                outputLayer = layer;
                 layer = layer.Next;
-            } while (layer.Next != null);
+            } while (layer != null);
 
-            return layer.Activations;
+            return outputLayer.OutputActivations;
         }
 
         private double GetLoss(Layer inputLayer, IEnumerable<KeyValuePair<double[], double[]>> keyValuePairs)
@@ -220,9 +163,9 @@ namespace Megalopolis
             {
                 var layer = ForwardPropagate(false, inputLayer, keyValuePair.Key);
 
-                for (int i = 0; i < layer.Activations.Length; i++)
+                for (int i = 0; i < layer.OutputActivations.Length; i++)
                 {
-                    sum += this.lossFunction.Function(layer.Activations[i], keyValuePair.Value[i]);
+                    sum += this.lossFunction.Function(layer.OutputActivations[i], keyValuePair.Value[i]);
                 }
             }
 
@@ -232,44 +175,62 @@ namespace Megalopolis
         private Layer ForwardPropagate(bool isTraining, Layer inputLayer, double[] vector)
         {
             var layer = inputLayer;
+            Layer outputLayer;
 
-            for (int i = 0; i < inputLayer.Activations.Length; i++)
+            for (int i = 0; i < inputLayer.InputActivations.Length; i++)
             {
-                inputLayer.Activations[i] = vector[i];
+                inputLayer.InputActivations[i] = vector[i];
             }
 
             do
             {
                 layer.PropagateForward(isTraining);
+                outputLayer = layer;
                 layer = layer.Next;
-            } while (layer.Next != null);
+            } while (layer != null);
 
-            return layer;
+            return outputLayer;
         }
 
         private IEnumerable<double[]> BackwardPropagate(Layer outputLayer, double[] vector)
         {
             var layer = outputLayer.Previous;
             var gradientsList = new LinkedList<double[]>();
-            var gradients = new double[outputLayer.Activations.Length];
+            var gradients = new double[outputLayer.OutputActivations.Length];
 
-            for (int i = 0; i < outputLayer.Activations.Length; i++)
+            for (int i = 0; i < outputLayer.OutputActivations.Length; i++)
             {
-                gradients[i] = this.lossFunction.Derivative(outputLayer.Activations[i], vector[i]);
+                gradients[i] = this.lossFunction.Derivative(outputLayer.OutputActivations[i], vector[i]);
             }
 
-            gradients = outputLayer.PropagateBackward(ref gradients);
-            gradientsList.AddFirst(gradients);
-
-            do
+            foreach (var g in outputLayer.PropagateBackward(ref gradients))
             {
-                var tempGradients = layer.PropagateBackward(ref gradients);
+                gradientsList.AddFirst(g);
+            }
+
+            gradients = gradientsList.First.Value;
+
+            while (layer != null)
+            {
+                var tempGradientsList = new LinkedList<double[]>();
+
+                foreach (var g in layer.PropagateBackward(ref gradients))
+                {
+                    tempGradientsList.AddLast(g);
+                }
 
                 gradientsList.First.Value = gradients;
-                gradients = tempGradients;
-                gradientsList.AddFirst(gradients);
+                gradients = tempGradientsList.Last.Value;
+
+                foreach (var g in tempGradientsList)
+                {
+                    gradientsList.AddFirst(g);
+                }
+
                 layer = layer.Previous;
-            } while (layer.Previous != null);
+            }
+
+            gradientsList.RemoveFirst();
 
             return gradientsList;
         }

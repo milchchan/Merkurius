@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Megalopolis
 {
@@ -6,21 +7,30 @@ namespace Megalopolis
     {
         public abstract class Layer
         {
-            protected double[] activations = null;
-            protected double[,] weights = null;
+            protected double[] inputActivations = null;
+            protected double[] outputActivations = null;
+            protected double[] weights = null;
             protected double[] biases = null;
             protected Layer previousLayer = null;
             protected Layer nextLayer = null;
 
-            public double[] Activations
+            public double[] InputActivations
             {
                 get
                 {
-                    return this.activations;
+                    return this.inputActivations;
                 }
             }
 
-            public double[,] Weights
+            public double[] OutputActivations
+            {
+                get
+                {
+                    return this.outputActivations;
+                }
+            }
+
+            public double[] Weights
             {
                 get
                 {
@@ -60,35 +70,58 @@ namespace Megalopolis
                 }
             }
 
-            public Layer(int nodes)
+            public Layer(int inputs, int outputs)
             {
-                this.activations = new double[nodes];
+                this.inputActivations = new double[inputs];
+                this.outputActivations = new double[outputs];
             }
 
-            /*public Layer(int nodes, Layer layer)
+            public Layer(int nodes, Layer layer)
             {
-                this.activations = new double[nodes];
-                layer.previousLayer = this;
-                this.nextLayer = layer;
-            }*/
+                this.inputActivations = new double[nodes];
+                this.outputActivations = layer.inputActivations;
 
-            public void Connect(Layer layer)
-            {
                 layer.previousLayer = this;
                 this.nextLayer = layer;
             }
 
-            public void Disconnect()
+            public Layer(Layer layer)
             {
-                if (this.nextLayer != null)
+                this.inputActivations = new double[layer.inputActivations.Length];
+                this.outputActivations = new double[layer.outputActivations.Length];
+
+                for (int i = 0; i < layer.inputActivations.Length; i++)
                 {
-                    this.nextLayer.previousLayer = null;
-                    this.nextLayer = null;
+                    this.inputActivations[i] = layer.inputActivations[i];
+                }
+
+                for (int i = 0; i < layer.outputActivations.Length; i++)
+                {
+                    this.outputActivations[i] = layer.outputActivations[i];
+                }
+            }
+
+            public Layer(Layer sourceLayer, Layer targetLayer)
+            {
+                this.inputActivations = new double[sourceLayer.inputActivations.Length];
+                this.outputActivations = new double[sourceLayer.outputActivations.Length];
+
+                targetLayer.previousLayer = this;
+                this.nextLayer = targetLayer;
+
+                for (int i = 0; i < sourceLayer.inputActivations.Length; i++)
+                {
+                    this.inputActivations[i] = sourceLayer.inputActivations[i];
+                }
+
+                for (int i = 0; i < sourceLayer.outputActivations.Length; i++)
+                {
+                    this.outputActivations[i] = sourceLayer.outputActivations[i];
                 }
             }
 
             public abstract void PropagateForward(bool isTraining);
-            public abstract double[] PropagateBackward(ref double[] gradients);
+            public abstract IEnumerable<double[]> PropagateBackward(ref double[] gradients);
             public abstract void Update(double[] gradients, Func<double, double, double> func);
         }
     }

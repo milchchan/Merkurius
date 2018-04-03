@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using Megalopolis.ActivationFunctions;
 
 namespace Megalopolis
 {
@@ -6,19 +8,35 @@ namespace Megalopolis
     {
         public class SoftmaxLayer : Layer
         {
-            public SoftmaxLayer(int nodes) : base(nodes) { }
+            public SoftmaxLayer(int inputs, int outputs, Func<int, double> func) : base(inputs, outputs)
+            {
+                var length = inputs * outputs;
+
+                this.weights = new double[length];
+                this.biases = new double[outputs];
+
+                for (int i = 0; i < length; i++)
+                {
+                    this.weights[i] = func(i);
+                }
+
+                for (int i = 0; i < outputs; i++)
+                {
+                    this.biases[i] = 0;
+                }
+            }
 
             public override void PropagateForward(bool isTraining)
             {
-                double[] summations = new double[this.nextLayer.Activations.Length];
+                double[] summations = new double[this.outputActivations.Length];
 
-                for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                for (int i = 0; i < this.outputActivations.Length; i++)
                 {
                     double sum = 0;
 
-                    for (int j = 0; j < this.activations.Length; j++)
+                    for (int j = 0; j < this.inputActivations.Length; j++)
                     {
-                        sum += this.activations[j] * this.weights[j, i];
+                        sum += this.inputActivations[j] * this.weights[this.outputActivations.Length * j + i];
                     }
 
                     sum += this.biases[i];
@@ -28,46 +46,61 @@ namespace Megalopolis
 
                 if (isTraining)
                 {
-                    for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                    for (int i = 0; i < this.outputActivations.Length; i++)
                     {
-                        this.nextLayer.Activations[i] = Softmax(summations, i);
+                        this.outputActivations[i] = Softmax(summations, i);
                     }
                 }
                 else
                 {
-                    for (int i = 0; i < this.nextLayer.Activations.Length; i++)
+                    for (int i = 0; i < this.outputActivations.Length; i++)
                     {
-                        this.nextLayer.Activations[i] = summations[i];
+                        this.outputActivations[i] = summations[i];
                     }
                 }
             }
 
-            public override double[] PropagateBackward(ref double[] gradients)
+            public override IEnumerable<double[]> PropagateBackward(ref double[] gradients)
             {
-                var g = new double[this.activations.Length];
+                var g1 = new double[this.outputActivations.Length];
+                var g2 = new double[this.inputActivations.Length];
 
-                for (int i = 0; i < this.activations.Length; i++)
+                for (int i = 0; i < this.outputActivations.Length; i++)
                 {
-                    var vector = DerivativeOfSoftmax(this.activations, i);
+                    var vector = DerivativeOfSoftmax(this.outputActivations, i);
 
-                    g[i] = 0;
+                    g1[i] = 0;
 
-                    for (int j = 0; j < this.activations.Length; j++)
+                    for (int j = 0; j < this.outputActivations.Length; j++)
                     {
-                        g[i] += vector[j] * gradients[i];
+                        g1[i] += vector[j] * gradients[i];
                     }
                 }
 
-                return g;
+                for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
+                {
+                    double error = 0;
+
+                    for (int k = 0; k < this.outputActivations.Length; k++)
+                    {
+                        error += g1[k] * this.weights[j];
+                        j++;
+                    }
+
+                    g2[i] = error;
+                }
+
+                return new double[][] { g1, g2 };
             }
 
             public override void Update(double[] gradients, Func<double, double, double> func)
             {
-                for (int i = 0; i < this.activations.Length; i++)
+                for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
                 {
-                    for (int j = 0; j < gradients.Length; j++)
+                    for (int k = 0; k < gradients.Length; k++)
                     {
-                        this.weights[i, j] = func(this.weights[i, j], gradients[j] * this.activations[i]);
+                        this.weights[j] = func(this.weights[j], gradients[k] * this.inputActivations[i]);
+                        j++;
                     }
                 }
 

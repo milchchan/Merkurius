@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Diagnostics;
@@ -16,9 +17,10 @@ namespace MegalopolisTest
     {
         static void Main(string[] args)
         {
-            int seed = Environment.TickCount;
-            Random random = new Random(seed);
-            Dictionary<double[], IEnumerable<double[]>> patternDictionary = new Dictionary<double[], IEnumerable<double[]>>();
+            int seed = 197150843;// Environment.TickCount;
+            var random = new Random(seed);
+            var patternDictionary = new Dictionary<double[], IEnumerable<double[]>>();
+            var logDictionary = new Dictionary<string, IEnumerable<double>>();
             /*Network autoencoder = new Network(random, new FullyConnectedLayer[] {
                 new FullyConnectedLayer(3, 2, new HyperbolicTangent()),
                 new FullyConnectedLayer(1, new HyperbolicTangent())
@@ -43,51 +45,48 @@ namespace MegalopolisTest
 
             Console.WriteLine("XOR Test ({0})", seed);
 
-            /*Console.Write("Pretraining...");*/
-
-            Stopwatch sw = Stopwatch.StartNew();
-
-            /*autoencoder.Train(patternDictionary, 1000);
-
-            sw.Stop();
-
-            Console.WriteLine("Done ({0}).", sw.Elapsed.ToString());*/
-
-            /*List<FullyConnectedLayer> layerList = new List<FullyConnectedLayer>();
-            List<double> weightList = new List<double>();
-
-            foreach (FullyConnectedLayer layer in autoencoder.Layers)
+            var sw = Stopwatch.StartNew();
+            var keyValuePairList = patternDictionary.Aggregate<KeyValuePair<double[], IEnumerable<double[]>>, List<KeyValuePair<double[], double[]>>>(new List<KeyValuePair<double[], double[]>>(), (list, kvp) =>
             {
-                FullyConnectedLayer copiedLayer = new FullyConnectedLayer(layer.Activations.Length, new HyperbolicTangent());
-
-                for (int i = 0; i < layer.Activations.Length; i++)
+                foreach (var vector in kvp.Value)
                 {
-                    copiedLayer.Activations[i] = layer.Activations[i];
+                    list.Add(new KeyValuePair<double[], double[]>(vector, kvp.Key));
                 }
 
-                layerList.Add(copiedLayer);
-            }
-
-            foreach (double[,] weights in autoencoder.Weights)
+                return list;
+            });
+            var accuracyList = new List<double>();
+            var lossList = new List<double>();
+            Func<int, int, double> weightFunc = (x, y) =>
             {
-                for (int i = 0; i < weights.GetLength(0); i++)
+                var a = 4 * Math.Sqrt(6 / (x + y));
+
+                return random.Uniform(-a, a);
+            };
+            var network = new Network(random,
+                new FullyConnectedLayer(2, new Sigmoid(), x => weightFunc(2, 2),
+                new FullyConnectedLayer(2, 1, new Sigmoid(), x => weightFunc(2, 1))),
+                new AdaDelta(), new MeanSquaredError());
+
+            network.Stepped += (sender, e) =>
+            {
+                double tptn = 0;
+
+                keyValuePairList.ForEach(kvp =>
                 {
-                    for (int j = 0; j < weights.GetLength(1); j++)
+                    var vector = network.Predicate(kvp.Key);
+                    var i = ArgMax(vector);
+                    var j = ArgMax(kvp.Value);
+
+                    if (i == j && Math.Round(vector[i]) == kvp.Value[j])
                     {
-                        weightList.Add(weights[i, j]);
+                        tptn += 1.0;
                     }
-                }
-            }*/
+                });
 
-            //Network backpropagation = new Network(layerList, (i) => weightList[i], new Backpropagation(random, new AdaDelta(), new MeanSquaredError()) { ErrorThreshold = 0.001 });
-
-
-
-            Network network = new Network(random, new FullyConnectedLayer[] {
-                new FullyConnectedLayer(2, 2, new Sigmoid()),
-                new FullyConnectedLayer(2, 1, new Sigmoid()),
-                new FullyConnectedLayer(1, new Sigmoid())
-            }, (x, y) => -Math.Sqrt(6 / (x + y)) * 4, (x, y) => Math.Sqrt(6 / (x + y)) * 4, new AdaDelta(), new MeanSquaredError());
+                accuracyList.Add(tptn / keyValuePairList.Count);
+                lossList.Add(network.Loss);
+            };
 
             sw.Reset();
 
@@ -102,9 +101,9 @@ namespace MegalopolisTest
             Console.WriteLine("Done ({0}).", sw.Elapsed.ToString());
             Console.WriteLine();
 
-            foreach (double[] vector in patternDictionary.Values.Aggregate<IEnumerable<double[]>, List<double[]>>(new List<double[]>(), (list, vectors) =>
+            foreach (var vector in patternDictionary.Values.Aggregate<IEnumerable<double[]>, List<double[]>>(new List<double[]>(), (list, vectors) =>
             {
-                foreach (double[] vector in vectors)
+                foreach (var vector in vectors)
                 {
                     list.Add(vector);
                 }
@@ -126,8 +125,20 @@ namespace MegalopolisTest
             }
 
             Console.WriteLine();
-            Console.WriteLine("Loss: {0}", network.Loss);
+            Console.WriteLine("Accuracy: {0}", accuracyList.Last());
+            Console.WriteLine("Loss: {0}", lossList.Last());
+            /*
+            logDictionary.Add("Accuracy", accuracyList);
+            logDictionary.Add("Loss", lossList);
+
+            var path = "Log.csv";
+
             Console.WriteLine();
+            Console.Write("Writing to {0}...", path);
+
+            ToCsv(path, logDictionary);
+
+            Console.WriteLine("Done.");*/
         }
 
         static private int ArgMax(double[] vector)
@@ -145,6 +156,61 @@ namespace MegalopolisTest
             }
 
             return index;
+        }
+
+        static private void ToCsv(string path, Dictionary<string, IEnumerable<double>> dictionary)
+        {
+            using (var fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
+            using (var s = new StreamWriter(fs, System.Text.Encoding.UTF8))
+            {
+                s.Write(String.Join(",", dictionary.Keys));
+                s.Write("\r\n");
+
+                var values = dictionary.Values.ToArray();
+                var table = new List<List<string>>();
+                int maxLines = 0;
+
+                foreach (var data in dictionary.Values)
+                {
+                    var array = data.ToArray();
+                    var list = new List<string>();
+
+                    if (array.Length > maxLines)
+                    {
+                        maxLines = array.Length;
+                    }
+
+                    foreach (var item in array)
+                    {
+                        list.Add(item.ToString());
+                    }
+
+                    table.Add(list);
+                }
+
+                for (int i = 0; i < table.Count; i++)
+                {
+                    for (int j = table[i].Count; table[i].Count < maxLines; j++)
+                    {
+                        table[i].Add(String.Empty);
+                    }
+                }
+
+                for (int i = 0; i < maxLines; i++)
+                {
+                    var dataList = new List<string>();
+
+                    for (int j = 0; j < values.Length; j++)
+                    {
+                        dataList.Add(table[j][i].ToString());
+                    }
+
+                    s.Write(String.Join(",", dataList));
+                    s.Write("\r\n");
+                }
+
+                fs.Flush();
+            }
         }
     }
 }
