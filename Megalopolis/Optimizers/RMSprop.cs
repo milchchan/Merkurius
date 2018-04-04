@@ -25,22 +25,22 @@ namespace Megalopolis
                 this.rDictionary = new Dictionary<int, double>();
             }
 
-            public double Optimize(int i, double w, double dw)
+            public double Optimize(int index, double weight, double gradient)
             {
                 double r;
 
-                if (this.rDictionary.TryGetValue(i, out r))
+                if (this.rDictionary.TryGetValue(index, out r))
                 {
-                    r += this.rho * r + (1.0 - r) * dw * dw;
-                    this.rDictionary[i] = r;
+                    r += this.rho * r + (1.0 - r) * gradient * gradient;
+                    this.rDictionary[index] = r;
                 }
                 else
                 {
-                    r = dw * dw + this.epsilon;
-                    this.rDictionary.Add(i, r);
+                    r = gradient * gradient + this.epsilon;
+                    this.rDictionary.Add(index, r);
                 }
 
-                return w - this.eta / Math.Sqrt(r) * dw;
+                return weight - this.eta / Math.Sqrt(r) * gradient;
             }
         }
     }

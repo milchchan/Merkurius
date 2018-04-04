@@ -18,17 +18,29 @@ namespace Megalopolis
                 }
             }
 
-            public Dropout(Random random, int nodes)
+            public Dropout(int nodes)
             {
-                this.random = random;
+                this.random = RandomProvider.GetRandom();
                 this.masks = new int[nodes];
             }
 
-            public Dropout(Random random, int nodes, double rate)
+            public Dropout(int nodes, double rate)
             {
-                this.random = random;
+                this.random = RandomProvider.GetRandom();
                 this.rate = rate;
                 this.masks = new int[nodes];
+            }
+
+            public Dropout(Dropout dropout)
+            {
+                this.random = RandomProvider.GetRandom();
+                this.rate = dropout.rate;
+                this.masks = new int[dropout.masks.Length];
+
+                for (int i = 0; i < dropout.masks.Length; i++)
+                {
+                    this.masks[i] = dropout.masks[i];
+                }
             }
 
             public double[] PropagateForward(bool isTraining, double[] activations)
@@ -53,6 +65,11 @@ namespace Megalopolis
                 }
 
                 return gradients;
+            }
+
+            public IFilter Copy()
+            {
+                return new Dropout(this);
             }
         }
     }

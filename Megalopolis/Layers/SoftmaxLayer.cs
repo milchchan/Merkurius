@@ -26,6 +26,38 @@ namespace Megalopolis
                 }
             }
 
+            public SoftmaxLayer(SoftmaxLayer layer) : base(layer)
+            {
+                this.weights = new double[layer.weights.Length];
+                this.biases = new double[layer.biases.Length];
+
+                for (int i = 0; i < layer.weights.Length; i++)
+                {
+                    this.weights[i] = layer.weights[i];
+                }
+
+                for (int i = 0; i < layer.biases.Length; i++)
+                {
+                    this.biases[i] = layer.biases[i];
+                }
+            }
+
+            public SoftmaxLayer(SoftmaxLayer sourceLayer, Layer targetLayer) : base(sourceLayer, targetLayer)
+            {
+                this.weights = new double[sourceLayer.weights.Length];
+                this.biases = new double[sourceLayer.biases.Length];
+
+                for (int i = 0; i < sourceLayer.weights.Length; i++)
+                {
+                    this.weights[i] = sourceLayer.weights[i];
+                }
+
+                for (int i = 0; i < sourceLayer.biases.Length; i++)
+                {
+                    this.biases[i] = sourceLayer.biases[i];
+                }
+            }
+
             public override void PropagateForward(bool isTraining)
             {
                 double[] summations = new double[this.outputActivations.Length];
@@ -60,20 +92,22 @@ namespace Megalopolis
                 }
             }
 
-            public override IEnumerable<double[]> PropagateBackward(ref double[] gradients)
+            public override IEnumerable<double[]> PropagateBackward(ref double[] deltas, out double[] gradients)
             {
-                var g1 = new double[this.outputActivations.Length];
-                var g2 = new double[this.inputActivations.Length];
+                var d1 = new double[this.outputActivations.Length];
+                var d2 = new double[this.inputActivations.Length];
+
+                gradients = new double[this.inputActivations.Length * this.outputActivations.Length];
 
                 for (int i = 0; i < this.outputActivations.Length; i++)
                 {
                     var vector = DerivativeOfSoftmax(this.outputActivations, i);
 
-                    g1[i] = 0;
+                    d1[i] = 0;
 
                     for (int j = 0; j < this.outputActivations.Length; j++)
                     {
-                        g1[i] += vector[j] * gradients[i];
+                        d1[i] += vector[j] * deltas[i];
                     }
                 }
 
@@ -83,31 +117,40 @@ namespace Megalopolis
 
                     for (int k = 0; k < this.outputActivations.Length; k++)
                     {
-                        error += g1[k] * this.weights[j];
+                        error += d1[k] * this.weights[j];
+                        gradients[j] = d1[k] * this.inputActivations[i];
                         j++;
                     }
 
-                    g2[i] = error;
+                    d2[i] = error;
                 }
 
-                return new double[][] { g1, g2 };
+                return new double[][] { d1, d2 };
             }
 
-            public override void Update(double[] gradients, Func<double, double, double> func)
+            public override void Update(double[] gradients, double[] deltas, Func<double, double, double> func)
             {
-                for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
+                var length = this.inputActivations.Length * this.outputActivations.Length;
+
+                for (int i = 0; i < length; i++)
                 {
-                    for (int k = 0; k < gradients.Length; k++)
-                    {
-                        this.weights[j] = func(this.weights[j], gradients[k] * this.inputActivations[i]);
-                        j++;
-                    }
+                    this.weights[i] = func(this.weights[i], gradients[i]);
                 }
 
-                for (int i = 0; i < gradients.Length; i++)
+                for (int i = 0; i < this.outputActivations.Length; i++)
                 {
-                    this.biases[i] = func(this.biases[i], gradients[i]);
+                    this.biases[i] = func(this.biases[i], deltas[i]);
                 }
+            }
+
+            public override Layer Copy()
+            {
+                return new SoftmaxLayer(this);
+            }
+
+            public override Layer Copy(Layer layer)
+            {
+                return new SoftmaxLayer(this, layer);
             }
 
             private double Softmax(double[] x, int i)

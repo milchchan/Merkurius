@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using Megalopolis.Optimizers;
 using Megalopolis.Layers;
 using Megalopolis.LossFunctions;
@@ -14,7 +15,6 @@ namespace Megalopolis
         private Random random = null;
         private Layer inputLayer = null;
         private Collection<Layer> layerCollection = null;
-        private int batchSize = 32;
         private double loss = 0;
         private IOptimizer optimizer = null;
         private ILossFunction lossFunction = null;
@@ -24,14 +24,6 @@ namespace Megalopolis
             get
             {
                 return this.layerCollection;
-            }
-        }
-
-        public int BatchSize
-        {
-            get
-            {
-                return this.batchSize;
             }
         }
 
@@ -59,9 +51,9 @@ namespace Megalopolis
             }
         }
 
-        public Network(Random random, Layer layer, IOptimizer optimizer, ILossFunction lossFunction)
+        public Network(Layer layer, IOptimizer optimizer, ILossFunction lossFunction)
         {
-            this.random = random;
+            this.random = RandomProvider.GetRandom();
             this.inputLayer = layer;
             this.layerCollection = new Collection<Layer>();
             this.optimizer = optimizer;
@@ -74,7 +66,7 @@ namespace Megalopolis
             } while (layer != null);
         }
 
-        public void Train(IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs)
+        public void Train(IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs, int batchSize = 32)
         {
             // Backpropagation
             List<KeyValuePair<double[], double[]>> keyValuePairList = dictionary.Aggregate<KeyValuePair<double[], IEnumerable<double[]>>, List<KeyValuePair<double[], double[]>>>(new List<KeyValuePair<double[], double[]>>(), (list, kvp) =>
@@ -86,7 +78,10 @@ namespace Megalopolis
 
                 return list;
             });
+            ParallelOptions parallelOptions = new ParallelOptions();
             int t = 0;
+
+            parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
             // Stochastic gradient descent (SGD)
             while (t < epochs)
@@ -96,32 +91,81 @@ namespace Megalopolis
 
                 do
                 {
-                    var batchOfGradients = new double[this.layerCollection.Count][];
+                    var batchedDataList = new List<IEnumerable<Tuple<double[], double[]>>>();
+                    var mergedDataTuples = new Tuple<double[], double[]>[this.layerCollection.Count];
+                    int index = 0;
 
-                    foreach (var keyValuePair in keyValuePairList.Sample<KeyValuePair<double[], double[]>>(this.random, Math.Min(remaining, this.batchSize)))
+                    Parallel.ForEach(keyValuePairList.Sample<KeyValuePair<double[], double[]>>(this.random, Math.Min(remaining, batchSize)).Aggregate<KeyValuePair<double[], double[]>, List<KeyValuePair<Layer, KeyValuePair<double[], double[]>>>>(new List<KeyValuePair<Layer, KeyValuePair<double[], double[]>>>(), (list, keyValuePair) =>
                     {
-                        int i = 0;
+                        list.Add(new KeyValuePair<Layer, KeyValuePair<double[], double[]>>(Copy(this.inputLayer), keyValuePair));
 
-                        foreach (var gradients in BackwardPropagate(ForwardPropagate(true, this.inputLayer, keyValuePair.Key), keyValuePair.Value))
+                        return list;
+                    }), parallelOptions, () => new List<IEnumerable<Tuple<double[], double[]>>>(), (x, state, list) =>
+                    {
+                        list.Add(BackwardPropagate(ForwardPropagate(true, x.Key, x.Value.Key), x.Value.Value));
+
+                        return list;
+                    }, list =>
+                    {
+                        lock (batchedDataList)
                         {
-                            batchOfGradients[i] = gradients;
-                            i++;
+                            batchedDataList.AddRange(list);
+                        }
+                    });
+
+                    foreach (var (gradients, deltas) in batchedDataList.First())
+                    {
+                        mergedDataTuples[index] = Tuple.Create<double[], double[]>(new double[gradients.Length], new double[deltas.Length]);
+
+                        for (int j = 0; j < gradients.Length; j++)
+                        {
+                            mergedDataTuples[index].Item1[j] = gradients[j];
+                        }
+
+                        for (int j = 0; j < deltas.Length; j++)
+                        {
+                            mergedDataTuples[index].Item2[j] = deltas[j];
+                        }
+
+                        index++;
+                    }
+
+                    for (int i = 1; i < batchedDataList.Count; i++)
+                    {
+                        index = 0;
+
+                        foreach (var (gradients, deltas) in batchedDataList[i])
+                        {
+                            for (int j = 0; j < gradients.Length; j++)
+                            {
+                                mergedDataTuples[index].Item1[j] += gradients[j];
+                            }
+
+                            for (int j = 0; j < deltas.Length; j++)
+                            {
+                                mergedDataTuples[index].Item2[j] += deltas[j];
+                            }
+
+                            index++;
                         }
                     }
 
-                    for (int i = 0, j = 0; i < batchOfGradients.Length; i++)
+                    for (int i = 0, j = 0; i < this.layerCollection.Count; i++)
                     {
-                        var gradients = new double[batchOfGradients[i].Length];
-
-                        for (int k = 0; k < batchOfGradients[i].Length; k++)
+                        for (int k = 0; k < mergedDataTuples[i].Item1.Length; k++)
                         {
-                            gradients[k] = batchOfGradients[i][k] / batchOfGradients.Length;
+                            mergedDataTuples[i].Item1[k] = mergedDataTuples[i].Item1[k] / batchedDataList.Count;
                         }
 
-                        this.layerCollection[i].Update(gradients, (weight, gradient) => optimizer.Optimize(j++, weight, gradient));
+                        for (int k = 0; k < mergedDataTuples[i].Item2.Length; k++)
+                        {
+                            mergedDataTuples[i].Item2[k] = mergedDataTuples[i].Item2[k] / batchedDataList.Count;
+                        }
+
+                        this.layerCollection[i].Update(mergedDataTuples[i].Item1, mergedDataTuples[i].Item2, (weight, gradient) => optimizer.Optimize(j++, weight, gradient));
                     }
 
-                    remaining -= this.batchSize;
+                    remaining -= batchSize;
                 } while (remaining > 0);
 
                 this.loss = GetLoss(this.inputLayer, keyValuePairList);
@@ -192,47 +236,80 @@ namespace Megalopolis
             return outputLayer;
         }
 
-        private IEnumerable<double[]> BackwardPropagate(Layer outputLayer, double[] vector)
+        private IEnumerable<Tuple<double[], double[]>> BackwardPropagate(Layer outputLayer, double[] vector)
         {
             var layer = outputLayer.Previous;
+            var deltas = new double[outputLayer.OutputActivations.Length];
+            var deltasList = new LinkedList<double[]>();
+            double[] gradients;
             var gradientsList = new LinkedList<double[]>();
-            var gradients = new double[outputLayer.OutputActivations.Length];
+            int length = 1;
+            var tupleList = new List<Tuple<double[], double[]>>();
 
             for (int i = 0; i < outputLayer.OutputActivations.Length; i++)
             {
-                gradients[i] = this.lossFunction.Derivative(outputLayer.OutputActivations[i], vector[i]);
+                deltas[i] = this.lossFunction.Derivative(outputLayer.OutputActivations[i], vector[i]);
             }
 
-            foreach (var g in outputLayer.PropagateBackward(ref gradients))
+            foreach (var g in outputLayer.PropagateBackward(ref deltas, out gradients))
             {
-                gradientsList.AddFirst(g);
+                deltasList.AddFirst(g);
             }
 
-            gradients = gradientsList.First.Value;
+            gradientsList.AddFirst(gradients);
+            deltas = deltasList.First.Value;
 
             while (layer != null)
             {
-                var tempGradientsList = new LinkedList<double[]>();
+                var tempDeltasList = new LinkedList<double[]>(layer.PropagateBackward(ref deltas, out gradients));
 
-                foreach (var g in layer.PropagateBackward(ref gradients))
+                gradientsList.AddFirst(gradients);
+                deltasList.First.Value = deltas;
+                deltas = tempDeltasList.Last.Value;
+
+                foreach (var g in tempDeltasList)
                 {
-                    tempGradientsList.AddLast(g);
-                }
-
-                gradientsList.First.Value = gradients;
-                gradients = tempGradientsList.Last.Value;
-
-                foreach (var g in tempGradientsList)
-                {
-                    gradientsList.AddFirst(g);
+                    deltasList.AddFirst(g);
                 }
 
                 layer = layer.Previous;
+                length++;
             }
 
-            gradientsList.RemoveFirst();
+            deltasList.RemoveFirst();
 
-            return gradientsList;
+            var gradientsNode = gradientsList.First;
+            var deltasNode = deltasList.First;
+
+            for (int i = 0; i < length; i++)
+            {
+                tupleList.Add(Tuple.Create<double[], double[]>(gradientsNode.Value, deltasNode.Value));
+
+                gradientsNode = gradientsNode.Next;
+                deltasNode = deltasNode.Next;
+            }
+
+            return tupleList;
+        }
+
+        private Layer Copy(Layer inputLayer)
+        {
+            var layer = inputLayer;
+
+            while (layer.Next != null)
+            {
+                layer = layer.Next;
+            }
+
+            var copiedLayer = layer.Copy();
+
+            while (layer.Previous != null)
+            {
+                copiedLayer = layer.Previous.Copy(copiedLayer);
+                layer = layer.Previous;
+            }
+
+            return copiedLayer;
         }
     }
 }

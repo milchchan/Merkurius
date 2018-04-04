@@ -9,35 +9,35 @@ namespace Megalopolis
         {
             private double eta = 0.5; // Learning rate
             private double alpha = 0.1; // Momentum
-            private Dictionary<int, double> gDictionary = null;
+            private Dictionary<int, double> dictionary = null;
 
             public Momentum()
             {
-                this.gDictionary = new Dictionary<int, double>();
+                this.dictionary = new Dictionary<int, double>();
             }
 
             public Momentum(double eta, double momentum)
             {
                 this.eta = eta;
                 this.alpha = momentum;
-                this.gDictionary = new Dictionary<int, double>();
+                this.dictionary = new Dictionary<int, double>();
             }
 
-            public double Optimize(int i, double w, double dw)
+            public double Optimize(int index, double weight, double gradient)
             {
                 double g;
 
-                if (this.gDictionary.TryGetValue(i, out g))
+                if (this.dictionary.TryGetValue(index, out g))
                 {
-                    this.gDictionary[i] = dw;
+                    this.dictionary[index] = gradient;
                 }
                 else
                 {
                     g = 0;
-                    this.gDictionary.Add(i, dw);
+                    this.dictionary.Add(index, gradient);
                 }
 
-                return w - this.eta * dw + this.alpha * g;
+                return weight - this.eta * gradient + this.alpha * g;
             }
         }
     }

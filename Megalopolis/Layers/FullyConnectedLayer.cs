@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Megalopolis.ActivationFunctions;
 
 namespace Megalopolis
@@ -8,9 +9,8 @@ namespace Megalopolis
     {
         public class FullyConnectedLayer : Layer
         {
-            //double[,] _weights = null;
             private IActivationFunction activationFunction = null;
-            private IEnumerable<IFilter> filters = null;
+            private Collection<IFilter> filterCollection = null;
 
             public IActivationFunction ActivationFunction
             {
@@ -27,6 +27,7 @@ namespace Megalopolis
                 this.weights = new double[length];
                 this.biases = new double[outputs];
                 this.activationFunction = activationFunction;
+                this.filterCollection = new Collection<IFilter>();
 
                 for (int i = 0; i < length; i++)
                 {
@@ -46,6 +47,7 @@ namespace Megalopolis
                 this.weights = new double[length];
                 this.biases = new double[layer.InputActivations.Length];
                 this.activationFunction = activationFunction;
+                this.filterCollection = new Collection<IFilter>();
 
                 for (int i = 0; i < length; i++)
                 {
@@ -58,14 +60,14 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, IEnumerable<IFilter> filter, Func<int, double> func) : base(inputs, outputs)
+            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, double> func) : base(inputs, outputs)
             {
                 var length = inputs * outputs;
 
                 this.weights = new double[length];
                 this.biases = new double[outputs];
                 this.activationFunction = activationFunction;
-                this.filters = filter;
+                this.filterCollection = new Collection<IFilter>();
 
                 for (int i = 0; i < length; i++)
                 {
@@ -76,16 +78,21 @@ namespace Megalopolis
                 {
                     this.biases[i] = 0;
                 }
+
+                foreach (var filter in filters)
+                {
+                    this.filterCollection.Add(filter);
+                }
             }
 
-            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filter, Func<int, double> func, Layer layer) : base(nodes, layer)
+            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, double> func, Layer layer) : base(nodes, layer)
             {
                 var length = nodes * layer.InputActivations.Length;
 
                 this.weights = new double[length];
                 this.biases = new double[layer.InputActivations.Length];
                 this.activationFunction = activationFunction;
-                this.filters = filter;
+                this.filterCollection = new Collection<IFilter>();
 
                 for (int i = 0; i < length; i++)
                 {
@@ -96,11 +103,63 @@ namespace Megalopolis
                 {
                     this.biases[i] = 0;
                 }
+
+                foreach (var filter in filters)
+                {
+                    this.filterCollection.Add(filter);
+                }
+            }
+
+            public FullyConnectedLayer(FullyConnectedLayer layer) : base(layer)
+            {
+                this.weights = new double[layer.weights.Length];
+                this.biases = new double[layer.biases.Length];
+                this.activationFunction = layer.activationFunction;
+                this.filterCollection = new Collection<IFilter>();
+
+                for (int i = 0; i < layer.weights.Length; i++)
+                {
+                    this.weights[i] = layer.weights[i];
+                }
+
+                for (int i = 0; i < layer.biases.Length; i++)
+                {
+                    this.biases[i] = layer.biases[i];
+                }
+
+                foreach (var filter in layer.filterCollection)
+                {
+                    this.filterCollection.Add(filter.Copy());
+                }
+            }
+
+            public FullyConnectedLayer(FullyConnectedLayer sourceLayer, Layer targetLayer) : base(sourceLayer, targetLayer)
+            {
+                this.weights = new double[sourceLayer.weights.Length];
+                this.biases = new double[sourceLayer.biases.Length];
+                this.activationFunction = sourceLayer.activationFunction;
+                this.filterCollection = new Collection<IFilter>(sourceLayer.filterCollection);
+
+                for (int i = 0; i < sourceLayer.weights.Length; i++)
+                {
+                    this.weights[i] = sourceLayer.weights[i];
+                }
+
+                for (int i = 0; i < sourceLayer.biases.Length; i++)
+                {
+                    this.biases[i] = sourceLayer.biases[i];
+                }
+
+                foreach (var filter in sourceLayer.filterCollection)
+                {
+                    this.filterCollection.Add(filter.Copy());
+                }
             }
 
             public override void PropagateForward(bool isTraining)
             {
                 double[] summations = new double[this.outputActivations.Length];
+                double[] tempActivations = new double[this.outputActivations.Length];
 
                 for (int i = 0; i < this.outputActivations.Length; i++)
                 {
@@ -116,52 +175,39 @@ namespace Megalopolis
                     summations[i] = sum;
                 }
 
-                if (this.filters == null)
+                for (int i = 0; i < this.outputActivations.Length; i++)
                 {
-                    for (int i = 0; i < this.outputActivations.Length; i++)
-                    {
-                        this.outputActivations[i] = this.activationFunction.Function(summations[i]);
-                    }
+                    tempActivations[i] = this.activationFunction.Function(summations[i]);
                 }
-                else
+
+                foreach (var filter in this.filterCollection)
                 {
-                    double[] tempActivations = new double[this.outputActivations.Length];
+                    tempActivations = filter.PropagateForward(isTraining, tempActivations);
+                }
 
-                    for (int i = 0; i < this.outputActivations.Length; i++)
-                    {
-                        tempActivations[i] = this.activationFunction.Function(summations[i]);
-                    }
-
-                    foreach (var filter in this.filters)
-                    {
-                        tempActivations = filter.PropagateForward(isTraining, tempActivations);
-                    }
-
-                    for (int i = 0; i < this.outputActivations.Length; i++)
-                    {
-                        this.outputActivations[i] = tempActivations[i];
-                    }
+                for (int i = 0; i < this.outputActivations.Length; i++)
+                {
+                    this.outputActivations[i] = tempActivations[i];
                 }
             }
 
-            public override IEnumerable<double[]> PropagateBackward(ref double[] gradients)
+            public override IEnumerable<double[]> PropagateBackward(ref double[] deltas, out double[] gradients)
             {
+                gradients = new double[this.inputActivations.Length * this.outputActivations.Length];
+
                 if (this.nextLayer == null)
                 {
-                    var g1 = new double[this.outputActivations.Length];
-                    var g2 = new double[this.inputActivations.Length];
+                    var d1 = new double[this.outputActivations.Length];
+                    var d2 = new double[this.inputActivations.Length];
 
                     for (int i = 0; i < this.outputActivations.Length; i++)
                     {
-                        g1[i] = this.activationFunction.Derivative(this.outputActivations[i]) * gradients[i];
+                        d1[i] = this.activationFunction.Derivative(this.outputActivations[i]) * deltas[i];
                     }
 
-                    if (this.filters != null)
+                    foreach (var filter in this.filterCollection)
                     {
-                        foreach (var filter in this.filters)
-                        {
-                            g1 = filter.PropagateBackward(g1);
-                        }
+                        d1 = filter.PropagateBackward(d1);
                     }
 
                     for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
@@ -170,29 +216,27 @@ namespace Megalopolis
 
                         for (int k = 0; k < this.outputActivations.Length; k++)
                         {
-                            error += g1[k] * this.weights[j];
+                            error += d1[k] * this.weights[j];
+                            gradients[j] = d1[k] * this.inputActivations[i];
                             j++;
                         }
 
-                        g2[i] = error;
+                        d2[i] = error;
                     }
 
-                    return new double[][] { g1, g2 };
+                    return new double[][] { d1, d2 };
                 }
 
-                var g = new double[this.inputActivations.Length];
+                var d = new double[this.inputActivations.Length];
 
                 for (int i = 0; i < this.outputActivations.Length; i++)
                 {
-                    gradients[i] = this.activationFunction.Derivative(this.outputActivations[i]) * gradients[i];
+                    deltas[i] = this.activationFunction.Derivative(this.outputActivations[i]) * deltas[i];
                 }
 
-                if (this.filters != null)
+                foreach (var filter in this.filterCollection)
                 {
-                    foreach (var filter in this.filters)
-                    {
-                        gradients = filter.PropagateBackward(gradients);
-                    }
+                    deltas = filter.PropagateBackward(deltas);
                 }
 
                 for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
@@ -201,31 +245,40 @@ namespace Megalopolis
 
                     for (int k = 0; k < this.outputActivations.Length; k++)
                     {
-                        error += gradients[k] * this.weights[j];
+                        error += deltas[k] * this.weights[j];
+                        gradients[j] = deltas[k] * this.inputActivations[i];
                         j++;
                     }
 
-                    g[i] = error;
+                    d[i] = error;
                 }
 
-                return new double[][] { g };
+                return new double[][] { d };
             }
 
-            public override void Update(double[] gradients, Func<double, double, double> func)
+            public override void Update(double[] gradients, double[] deltas, Func<double, double, double> func)
             {
-                for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
+                var length = this.inputActivations.Length * this.outputActivations.Length;
+
+                for (int i = 0; i < length; i++)
                 {
-                    for (int k = 0; k < gradients.Length; k++)
-                    {
-                        this.weights[j] = func(this.weights[j], gradients[k] * this.inputActivations[i]);
-                        j++;
-                    }
+                    this.weights[i] = func(this.weights[i], gradients[i]);
                 }
 
-                for (int i = 0; i < gradients.Length; i++)
+                for (int i = 0; i < this.outputActivations.Length; i++)
                 {
-                    this.biases[i] = func(this.biases[i], gradients[i]);
+                    this.biases[i] = func(this.biases[i], deltas[i]);
                 }
+            }
+
+            public override Layer Copy()
+            {
+                return new FullyConnectedLayer(this);
+            }
+
+            public override Layer Copy(Layer layer)
+            {
+                return new FullyConnectedLayer(this, layer);
             }
         }
     }

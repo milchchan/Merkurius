@@ -104,7 +104,7 @@ namespace Megalopolis
             public Layer(Layer sourceLayer, Layer targetLayer)
             {
                 this.inputActivations = new double[sourceLayer.inputActivations.Length];
-                this.outputActivations = new double[sourceLayer.outputActivations.Length];
+                this.outputActivations = targetLayer.inputActivations;
 
                 targetLayer.previousLayer = this;
                 this.nextLayer = targetLayer;
@@ -113,16 +113,13 @@ namespace Megalopolis
                 {
                     this.inputActivations[i] = sourceLayer.inputActivations[i];
                 }
-
-                for (int i = 0; i < sourceLayer.outputActivations.Length; i++)
-                {
-                    this.outputActivations[i] = sourceLayer.outputActivations[i];
-                }
             }
 
             public abstract void PropagateForward(bool isTraining);
-            public abstract IEnumerable<double[]> PropagateBackward(ref double[] gradients);
-            public abstract void Update(double[] gradients, Func<double, double, double> func);
+            public abstract IEnumerable<double[]> PropagateBackward(ref double[] deltas, out double[] gradients);
+            public abstract void Update(double[] gradients, double[] deltas, Func<double, double, double> func);
+            public abstract Layer Copy();
+            public abstract Layer Copy(Layer layer);
         }
     }
 }

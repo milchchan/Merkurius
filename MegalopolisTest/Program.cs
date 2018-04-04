@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Megalopolis;
@@ -10,15 +11,26 @@ using Megalopolis.Layers;
 using Megalopolis.LossFunctions;
 using Megalopolis.Optimizers;
 
-
 namespace MegalopolisTest
 {
     class Program
     {
         static void Main(string[] args)
         {
-            int seed = 197150843;// Environment.TickCount;
-            var random = new Random(seed);
+            int seed;
+
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                var buffer = new byte[sizeof(int)];
+
+                rng.GetBytes(buffer);
+                seed = BitConverter.ToInt32(buffer, 0);
+            }
+
+            RandomProvider.SetSeed(seed);
+            //RandomProvider.SetSeed(1900740164);
+
+            var random = RandomProvider.GetRandom();
             var patternDictionary = new Dictionary<double[], IEnumerable<double[]>>();
             var logDictionary = new Dictionary<string, IEnumerable<double>>();
             /*Network autoencoder = new Network(random, new FullyConnectedLayer[] {
@@ -63,10 +75,7 @@ namespace MegalopolisTest
 
                 return random.Uniform(-a, a);
             };
-            var network = new Network(random,
-                new FullyConnectedLayer(2, new Sigmoid(), x => weightFunc(2, 2),
-                new FullyConnectedLayer(2, 1, new Sigmoid(), x => weightFunc(2, 1))),
-                new AdaDelta(), new MeanSquaredError());
+            var network = new Network(new FullyConnectedLayer(2, new Sigmoid(), x => weightFunc(2, 2), new FullyConnectedLayer(2, 1, new Sigmoid(), x => weightFunc(2, 1))), new AdaDelta(), new MeanSquaredError());
 
             network.Stepped += (sender, e) =>
             {
@@ -94,7 +103,7 @@ namespace MegalopolisTest
 
             sw.Start();
 
-            network.Train(patternDictionary, 10000000);
+            network.Train(patternDictionary, 1000000);
 
             sw.Stop();
 

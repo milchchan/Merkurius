@@ -8,6 +8,7 @@ namespace Megalopolis
         {
             double[] PropagateForward(bool isTraining, double[] activations);
             double[] PropagateBackward(double[] gradients);
+            IFilter Copy();
         }
     }
 }
