@@ -1,6 +1,6 @@
 # Megalopolis
 
-This repository contains the portable deep learning library implementation for .NET platform. This library is written by C#.
+This repository contains the portable deep learning library (deep neural networks) implementation for .NET platform. This library is written by C#.
 
 ## Features
 
