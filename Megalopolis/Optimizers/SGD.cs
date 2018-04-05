@@ -1,21 +1,24 @@
 ﻿using System;
 
-namespace Megalopolis.Optimizers
+namespace Megalopolis
 {
-    public class SGD
+    namespace Optimizers
     {
-        public double lr = 0.001; // Learning rate
-
-        public SGD() { }
-
-        public SGD(double lr)
+        public class SGD : IOptimizer
         {
-            this.lr = lr;
-        }
+            public double lr = 0.001; // Learning rate
 
-        public double Optimize(int index, double weight, double gradient)
-        {
-            return weight - this.lr * gradient;
+            public SGD() { }
+
+            public SGD(double lr)
+            {
+                this.lr = lr;
+            }
+
+            public double Optimize(int index, double weight, double gradient)
+            {
+                return weight - this.lr * gradient;
+            }
         }
     }
 }
