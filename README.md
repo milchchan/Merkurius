@@ -28,5 +28,7 @@ This repository contains the portable deep learning (deep neural networks) libra
 ### Optimizers
 * AdaDelta
 * AdaGrad
+* Adam
 * Momentum
 * RMSprop
+* SGD
