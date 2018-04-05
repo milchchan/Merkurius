@@ -26,25 +26,6 @@ namespace Megalopolis
             return (max - min) * random.NextDouble() + min;
         }
 
-        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> collection, Random random)
-        {
-            // Fisher-Yates algorithm
-            T[] array = collection.ToArray();
-            int n = array.Length; // The number of items left to shuffle (loop invariant).
-
-            while (n > 1)
-            {
-                int k = random.Next(n); // 0 <= k < n.
-
-                n--; // n is now the last pertinent index;
-                T temp = array[n]; // swap list[n] with list[k] (does nothing if k == n).
-                array[n] = array[k];
-                array[k] = temp;
-            }
-
-            return array;
-        }
-
         public static IEnumerable<T> Sample<T>(this IEnumerable<T> collection, Random random, int size)
         {
             // Generates a random sample from a given 1-D collection
