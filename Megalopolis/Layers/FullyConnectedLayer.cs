@@ -138,7 +138,7 @@ namespace Megalopolis
                 this.weights = new double[sourceLayer.weights.Length];
                 this.biases = new double[sourceLayer.biases.Length];
                 this.activationFunction = sourceLayer.activationFunction;
-                this.filterCollection = new Collection<IFilter>(sourceLayer.filterCollection);
+                this.filterCollection = new Collection<IFilter>();
 
                 for (int i = 0; i < sourceLayer.weights.Length; i++)
                 {

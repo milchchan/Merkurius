@@ -34,8 +34,8 @@ namespace Megalopolis
                 var activationMapWidth = imageWidth - filterWidth + 1;
                 var activationMapHeight = imageHeight - filterHeight + 1;
                 var length = filters * activationMapWidth * activationMapHeight;
-                var outputWidth = GetOutputWidth(activationMapWidth);
-                var outputHeight = GetOutputHeight(activationMapHeight);
+                var outputWidth = activationMapWidth / poolWidth;
+                var outputHeight = activationMapHeight / poolHeight;
 
                 this.weights = new double[length];
                 this.biases = new double[length];
@@ -64,8 +64,8 @@ namespace Megalopolis
                 var activationMapWidth = layer.imageWidth - layer.filterWidth + 1;
                 var activationMapHeight = layer.imageHeight - layer.filterHeight + 1;
                 var length = layer.filters * activationMapWidth * activationMapHeight;
-                var outputWidth = GetOutputWidth(activationMapWidth);
-                var outputHeight = GetOutputHeight(activationMapHeight);
+                var outputWidth = activationMapWidth / layer.poolWidth;
+                var outputHeight = activationMapHeight / layer.poolHeight;
 
                 this.weights = new double[length];
                 this.biases = new double[length];
@@ -117,8 +117,8 @@ namespace Megalopolis
                 var activationMapWidth = sourceLayer.imageWidth - sourceLayer.filterWidth + 1;
                 var activationMapHeight = sourceLayer.imageHeight - sourceLayer.filterHeight + 1;
                 var length = sourceLayer.filters * activationMapWidth * activationMapHeight;
-                var outputWidth = GetOutputWidth(activationMapWidth);
-                var outputHeight = GetOutputHeight(activationMapHeight);
+                var outputWidth = activationMapWidth / sourceLayer.poolWidth;
+                var outputHeight = activationMapHeight / sourceLayer.poolHeight;
 
                 this.weights = new double[length];
                 this.biases = new double[length];
@@ -169,7 +169,7 @@ namespace Megalopolis
             {
                 var unflattenInputs = new double[this.channels, this.imageHeight, this.imageWidth];
 
-                for (int i = 0, j = 0; i < this.filters; i++)
+                for (int i = 0, j = 0; i < this.channels; i++)
                 {
                     for (int k = 0; k < this.imageHeight; k++)
                     {
@@ -204,7 +204,7 @@ namespace Megalopolis
                 var activationMapHeight = GetActivationMapHeight();
                 var outputWidth = GetOutputWidth(activationMapWidth);
                 var outputHeight = GetOutputHeight(activationMapHeight);
-                var unflattenDeltas = new double[this.channels, this.imageHeight, this.imageWidth];
+                var unflattenDeltas = new double[this.filters, outputHeight, outputWidth];
                 
                 for (int i = 0, j = 0; i < this.filters; i++)
                 {
@@ -239,11 +239,11 @@ namespace Megalopolis
                 var d2 = DerivativeOfConvolve(d1);
                 var flattenDeltas = new double[this.channels * this.imageWidth * this.imageHeight];
 
-                for (int i = 0, j = 0; i < this.filters; i++)
+                for (int i = 0, j = 0; i < this.channels; i++)
                 {
-                    for (int k = 0; k < outputHeight; k++)
+                    for (int k = 0; k < this.imageHeight; k++)
                     {
-                        for (int l = 0; l < outputWidth; l++)
+                        for (int l = 0; l < this.imageWidth; l++)
                         {
                             flattenDeltas[j] = d2[i, k, l];
                             j++;
@@ -443,6 +443,16 @@ namespace Megalopolis
                 }
 
                 return d;
+            }
+
+            public static int GetOutputLength(int imageLength, int filterLength)
+            {
+                return imageLength - filterLength + 1;
+            }
+
+            public static int GetOutputLength(int imageLength, int filterLength, int poolLength)
+            {
+                return (imageLength - filterLength + 1) / poolLength;
             }
 
             public static double[] Flatten(double[,,] inputs, int channels, int imageWidth, int imageHeight)
