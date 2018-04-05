@@ -89,9 +89,9 @@ namespace Megalopolis
 
                 do
                 {
-                    var batchDataQueue = new Queue<KeyValuePair<Layer, KeyValuePair<double[], double[]>>>(keyValuePairList.Sample<KeyValuePair<double[], double[]>>(this.random, Math.Min(remaining, batchSize)).Aggregate<KeyValuePair<double[], double[]>, List<KeyValuePair<Layer, KeyValuePair<double[], double[]>>>>(new List<KeyValuePair<Layer, KeyValuePair<double[], double[]>>>(), (list, keyValuePair) =>
+                    var batchDataQueue = new Queue<Tuple<Layer, double[], double[]>>(keyValuePairList.Sample<KeyValuePair<double[], double[]>>(this.random, Math.Min(remaining, batchSize)).Aggregate<KeyValuePair<double[], double[]>, List<Tuple<Layer, double[], double[]>>>(new List<Tuple<Layer, double[], double[]>>(), (list, keyValuePair) =>
                     {
-                        list.Add(new KeyValuePair<Layer, KeyValuePair<double[], double[]>>(Copy(this.inputLayer), keyValuePair));
+                        list.Add(Tuple.Create<Layer, double[], double[]>(Copy(this.inputLayer), keyValuePair.Key, keyValuePair.Value));
 
                         return list;
                     }));
@@ -106,9 +106,9 @@ namespace Megalopolis
                         {
                             var task = new Task<IEnumerable<Tuple<double[], double[]>>>(delegate (object state)
                             {
-                                var keyValuePair = (KeyValuePair<Layer, KeyValuePair<double[], double[]>>)state;
+                                var tuple = (Tuple<Layer, double[], double[]>)state;
 
-                                return BackwardPropagate(ForwardPropagate(true, keyValuePair.Key, keyValuePair.Value.Key), keyValuePair.Value.Value);
+                                return BackwardPropagate(ForwardPropagate(true, tuple.Item1, tuple.Item2), tuple.Item3);
                             }, batchDataQueue.Dequeue());
 
                             batchTaskList.Add(task);

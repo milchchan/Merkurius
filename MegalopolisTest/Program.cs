@@ -33,27 +33,11 @@ namespace MegalopolisTest
             var random = RandomProvider.GetRandom();
             var patternDictionary = new Dictionary<double[], IEnumerable<double[]>>();
             var logDictionary = new Dictionary<string, IEnumerable<double>>();
-            /*Network autoencoder = new Network(random, new FullyConnectedLayer[] {
-                new FullyConnectedLayer(3, 2, new HyperbolicTangent()),
-                new FullyConnectedLayer(1, new HyperbolicTangent())
-            }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new StackedDenoisingAutoencoder(random));*/
-            //Model model = new Model(random, new Layer[] { new Layer(3, new HyperbolicTangent()), new Layer(2, new HyperbolicTangent()), new Layer(1, new HyperbolicTangent()) }, (x, y) => -Math.Sqrt(6 / (x + y)), (x, y) => Math.Sqrt(6 / (x + y)), new Backpropagation(random, new AdaDelta(), new MeanSquaredError()) { ErrorThreshold = 0.001 });
-            //Model model = new Model(random, new Layer[] { new Layer(3, new Sigmoid()), new Layer(2, new Sigmoid()), new Layer(1, new Sigmoid()) }, (x, y) => -Math.Sqrt(6 / (x + y)) * 4, (x, y) => Math.Sqrt(6 / (x + y)) * 4, new Backpropagation(random, new Momentum(0.5, 0.1), new MeanSquaredError()) { ErrorThreshold = 0.001 }); // For Sigmoid activation function
 
             patternDictionary.Add(new double[] { 0 }, new double[][] { new double[] { 0, 0 } });
             patternDictionary.Add(new double[] { 1 }, new double[][] { new double[] { 0, 1 } });
             patternDictionary.Add(new double[] { 1 }, new double[][] { new double[] { 1, 0 } });
             patternDictionary.Add(new double[] { 0 }, new double[][] { new double[] { 1, 1 } });
-
-            /*patternDictionary.Add(new double[] { 0, 1 }, new double[][] { new double[] { 0, 0 } });
-            patternDictionary.Add(new double[] { 1, 0 }, new double[][] { new double[] { 0, 1 } });
-            patternDictionary.Add(new double[] { 1, 0 }, new double[][] { new double[] { 1, 0 } });
-            patternDictionary.Add(new double[] { 0, 1 }, new double[][] { new double[] { 1, 1 } });*/
-
-            /*foreach (Layer layer in model.Layers)
-            {
-                layer.DropoutProbability = 0.5;
-            }*/
 
             Console.WriteLine("XOR Test ({0})", seed);
 
@@ -76,6 +60,18 @@ namespace MegalopolisTest
                 return random.Uniform(-a, a);
             };
             var network = new Network(new FullyConnectedLayer(2, new Sigmoid(), x => weightFunc(2, 2), new FullyConnectedLayer(2, 1, new Sigmoid(), x => weightFunc(2, 1))), new AdaDelta(), new MeanSquaredError());
+            /*Func<int, int, double> weightFunc = (x, y) =>
+            {
+                var a = Math.Sqrt(6 / (x + y));
+
+                return random.Uniform(-a, a);
+            };
+            var network = new Network(
+                new ConvolutionalPoolingLayer(12, 12, 1, 10, 3, 3, 2, 2, new ReLU(), x => weightFunc(20, 20),
+                new ConvolutionalPoolingLayer(12, 1, 1, 20, 2, 2, 2, 2, new ReLU(), x => weightFunc(20, 20),
+                new FullyConnectedLayer(20, new ReLU(), x => weightFunc(20, 20),
+                new SoftmaxLayer(20, 3, x => weightFunc(20, 3))))),
+                new SGD(), new CategoricalCrossEntropy());*/
 
             network.Stepped += (sender, e) =>
             {

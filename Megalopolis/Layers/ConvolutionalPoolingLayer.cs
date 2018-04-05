@@ -29,7 +29,7 @@ namespace Megalopolis
                 }
             }
 
-            public ConvolutionalPoolingLayer(int nodes, int imageWidth, int imageHeight, int channels, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, double> func, Layer layer) : base(channels * imageWidth * imageHeight, layer)
+            public ConvolutionalPoolingLayer(int imageWidth, int imageHeight, int channels, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, double> func, Layer layer) : base(channels * imageWidth * imageHeight, layer)
             {
                 var activationMapWidth = imageWidth - filterWidth + 1;
                 var activationMapHeight = imageHeight - filterHeight + 1;
