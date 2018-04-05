@@ -78,10 +78,8 @@ namespace Megalopolis
 
                 return list;
             });
-            ParallelOptions parallelOptions = new ParallelOptions();
+            int maxThreads = 2 * Environment.ProcessorCount;
             int t = 0;
-
-            parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
             // Stochastic gradient descent (SGD)
             while (t < epochs)
@@ -91,29 +89,67 @@ namespace Megalopolis
 
                 do
                 {
-                    var batchedDataList = new List<IEnumerable<Tuple<double[], double[]>>>();
-                    var mergedDataTuples = new Tuple<double[], double[]>[this.layerCollection.Count];
-                    int index = 0;
-
-                    Parallel.ForEach(keyValuePairList.Sample<KeyValuePair<double[], double[]>>(this.random, Math.Min(remaining, batchSize)).Aggregate<KeyValuePair<double[], double[]>, List<KeyValuePair<Layer, KeyValuePair<double[], double[]>>>>(new List<KeyValuePair<Layer, KeyValuePair<double[], double[]>>>(), (list, keyValuePair) =>
+                    var batchDataQueue = new Queue<KeyValuePair<Layer, KeyValuePair<double[], double[]>>>(keyValuePairList.Sample<KeyValuePair<double[], double[]>>(this.random, Math.Min(remaining, batchSize)).Aggregate<KeyValuePair<double[], double[]>, List<KeyValuePair<Layer, KeyValuePair<double[], double[]>>>>(new List<KeyValuePair<Layer, KeyValuePair<double[], double[]>>>(), (list, keyValuePair) =>
                     {
                         list.Add(new KeyValuePair<Layer, KeyValuePair<double[], double[]>>(Copy(this.inputLayer), keyValuePair));
 
                         return list;
-                    }), parallelOptions, () => new List<IEnumerable<Tuple<double[], double[]>>>(), (x, state, list) =>
-                    {
-                        list.Add(BackwardPropagate(ForwardPropagate(true, x.Key, x.Value.Key), x.Value.Value));
+                    }));
+                    var batchTaskList = new List<Task<IEnumerable<Tuple<double[], double[]>>>>();
+                    var batchedDataList = new LinkedList<IEnumerable<Tuple<double[], double[]>>>();
+                    var mergedDataTuples = new Tuple<double[], double[]>[this.layerCollection.Count];
+                    int index = 0;
 
-                        return list;
-                    }, list =>
+                    do
                     {
-                        lock (batchedDataList)
+                        do
                         {
-                            batchedDataList.AddRange(list);
-                        }
-                    });
+                            var task = new Task<IEnumerable<Tuple<double[], double[]>>>(delegate (object state)
+                            {
+                                var keyValuePair = (KeyValuePair<Layer, KeyValuePair<double[], double[]>>)state;
 
-                    foreach (var (gradients, deltas) in batchedDataList.First())
+                                return BackwardPropagate(ForwardPropagate(true, keyValuePair.Key, keyValuePair.Value.Key), keyValuePair.Value.Value);
+                            }, batchDataQueue.Dequeue());
+
+                            batchTaskList.Add(task);
+                            task.Start();
+                        } while (batchDataQueue.Count > 0 && batchTaskList.Count < maxThreads);
+
+                        var tasks = batchTaskList.ToArray();
+                        var i = Task<IEnumerable<Tuple<double[], double[]>>>.WaitAny(tasks);
+
+                        for (int j = 0; j < tasks.Length; j++)
+                        {
+                            if (i == j)
+                            {
+                                if (tasks[j].Exception == null)
+                                {
+                                    batchedDataList.AddLast(tasks[j].Result);
+                                }
+
+                                batchTaskList.RemoveAt(i);
+
+                                break;
+                            }
+                        }
+                    } while (batchDataQueue.Count > 0);
+
+                    if (batchTaskList.Count > 0)
+                    {
+                        var tasks = batchTaskList.ToArray();
+
+                        Task<IEnumerable<Tuple<double[], double[]>>>.WaitAll(tasks);
+
+                        foreach (var task in tasks)
+                        {
+                            if (task.Exception == null)
+                            {
+                                batchedDataList.AddLast(task.Result);
+                            }
+                        }
+                    }
+
+                    foreach (var (gradients, deltas) in batchedDataList.First.Value)
                     {
                         mergedDataTuples[index] = Tuple.Create<double[], double[]>(new double[gradients.Length], new double[deltas.Length]);
 
@@ -130,11 +166,11 @@ namespace Megalopolis
                         index++;
                     }
 
-                    for (int i = 1; i < batchedDataList.Count; i++)
+                    for (var tuplesNode = batchedDataList.First.Next; tuplesNode != null; tuplesNode = tuplesNode.Next)
                     {
                         index = 0;
 
-                        foreach (var (gradients, deltas) in batchedDataList[i])
+                        foreach (var (gradients, deltas) in tuplesNode.Value)
                         {
                             for (int j = 0; j < gradients.Length; j++)
                             {
