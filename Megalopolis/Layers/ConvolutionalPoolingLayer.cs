@@ -29,13 +29,15 @@ namespace Megalopolis
                 }
             }
 
-            public ConvolutionalPoolingLayer(int imageWidth, int imageHeight, int channels, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, double> func, Layer layer) : base(channels * imageWidth * imageHeight, layer)
+            public ConvolutionalPoolingLayer(int imageWidth, int imageHeight, int channels, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, int, int, double> func, Layer layer) : base(channels * imageWidth * imageHeight, layer)
             {
                 var activationMapWidth = imageWidth - filterWidth + 1;
                 var activationMapHeight = imageHeight - filterHeight + 1;
                 var length = filters * activationMapWidth * activationMapHeight;
                 var outputWidth = activationMapWidth / poolWidth;
                 var outputHeight = activationMapHeight / poolHeight;
+                var fanIn = channels * filterWidth * filterHeight;
+                var fanOut = filters * filterWidth * filterHeight / (poolWidth * poolHeight);
 
                 this.weights = new double[length];
                 this.biases = new double[length];
@@ -54,7 +56,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i);
+                    this.weights[i] = func(i, fanIn, fanOut);
                     this.biases[i] = 0;
                 }
             }

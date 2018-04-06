@@ -8,7 +8,7 @@ namespace Megalopolis
     {
         public class SoftmaxLayer : Layer
         {
-            public SoftmaxLayer(int inputs, int outputs, Func<int, double> func) : base(inputs, outputs)
+            public SoftmaxLayer(int inputs, int outputs, Func<int, int, int, double> func) : base(inputs, outputs)
             {
                 var length = inputs * outputs;
 
@@ -17,7 +17,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i);
+                    this.weights[i] = func(i, inputs, outputs);
                 }
 
                 for (int i = 0; i < outputs; i++)

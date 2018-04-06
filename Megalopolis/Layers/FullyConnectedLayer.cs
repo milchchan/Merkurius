@@ -20,7 +20,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, Func<int, double> func) : base(inputs, outputs)
+            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(inputs, outputs)
             {
                 var length = inputs * outputs;
 
@@ -31,7 +31,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i);
+                    this.weights[i] = func(i, inputs, outputs);
                 }
 
                 for (int i = 0; i < outputs; i++)
@@ -40,7 +40,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, Func<int, double> func, Layer layer) : base(nodes, layer)
+            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 var length = nodes * layer.InputActivations.Length;
 
@@ -51,7 +51,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i);
+                    this.weights[i] = func(i, nodes, layer.InputActivations.Length);
                 }
 
                 for (int i = 0; i < layer.InputActivations.Length; i++)
@@ -60,7 +60,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, double> func) : base(inputs, outputs)
+            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, int, int, double> func) : base(inputs, outputs)
             {
                 var length = inputs * outputs;
 
@@ -71,7 +71,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i);
+                    this.weights[i] = func(i, inputs, outputs);
                 }
 
                 for (int i = 0; i < outputs; i++)
@@ -85,7 +85,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, double> func, Layer layer) : base(nodes, layer)
+            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 var length = nodes * layer.InputActivations.Length;
 
@@ -96,7 +96,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i);
+                    this.weights[i] = func(i, nodes, layer.InputActivations.Length);
                 }
 
                 for (int i = 0; i < layer.InputActivations.Length; i++)
