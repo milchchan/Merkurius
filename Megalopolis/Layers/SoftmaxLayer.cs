@@ -76,19 +76,9 @@ namespace Megalopolis
                     summations[i] = sum;
                 }
 
-                if (isTraining)
+                for (int i = 0; i < this.outputActivations.Length; i++)
                 {
-                    for (int i = 0; i < this.outputActivations.Length; i++)
-                    {
-                        this.outputActivations[i] = Softmax(summations, i);
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < this.outputActivations.Length; i++)
-                    {
-                        this.outputActivations[i] = summations[i];
-                    }
+                    this.outputActivations[i] = Softmax(summations, i);
                 }
             }
 
@@ -107,7 +97,7 @@ namespace Megalopolis
 
                     for (int j = 0; j < this.outputActivations.Length; j++)
                     {
-                        d1[i] += vector[j] * deltas[i];
+                        d1[j] += vector[j] * deltas[i];
                     }
                 }
 
