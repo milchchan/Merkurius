@@ -66,18 +66,10 @@ namespace Megalopolis
             } while (layer != null);
         }
 
-        public void Train(IDictionary<double[], IEnumerable<double[]>> dictionary, int epochs, int batchSize = 32)
+        public void Train(IEnumerable<Tuple<double[], double[]>> collection, int epochs, int batchSize = 32)
         {
             // Backpropagation
-            List<KeyValuePair<double[], double[]>> keyValuePairList = dictionary.Aggregate<KeyValuePair<double[], IEnumerable<double[]>>, List<KeyValuePair<double[], double[]>>>(new List<KeyValuePair<double[], double[]>>(), (list, kvp) =>
-            {
-                foreach (var vector in kvp.Value)
-                {
-                    list.Add(new KeyValuePair<double[], double[]>(vector, kvp.Key));
-                }
-
-                return list;
-            });
+            int dataSize = collection.Count();
             int maxThreads = 2 * Environment.ProcessorCount;
             int t = 0;
 
@@ -85,13 +77,13 @@ namespace Megalopolis
             while (t < epochs)
             {
                 // Mini-batch
-                int remaining = keyValuePairList.Count;
+                int remaining = dataSize;
 
                 do
                 {
-                    var batchDataQueue = new Queue<Tuple<Layer, double[], double[]>>(keyValuePairList.Sample<KeyValuePair<double[], double[]>>(this.random, Math.Min(remaining, batchSize)).Aggregate<KeyValuePair<double[], double[]>, List<Tuple<Layer, double[], double[]>>>(new List<Tuple<Layer, double[], double[]>>(), (list, keyValuePair) =>
+                    var batchDataQueue = new Queue<Tuple<Layer, double[], double[]>>(collection.Sample<Tuple<double[], double[]>>(this.random, Math.Min(remaining, batchSize)).Aggregate<Tuple<double[], double[]>, List<Tuple<Layer, double[], double[]>>>(new List<Tuple<Layer, double[], double[]>>(), (list, tuple) =>
                     {
-                        list.Add(Tuple.Create<Layer, double[], double[]>(Copy(this.inputLayer), keyValuePair.Key, keyValuePair.Value));
+                        list.Add(Tuple.Create<Layer, double[], double[]>(Copy(this.inputLayer), tuple.Item1, tuple.Item2));
 
                         return list;
                     }));
@@ -204,7 +196,7 @@ namespace Megalopolis
                     remaining -= batchSize;
                 } while (remaining > 0);
 
-                this.loss = GetLoss(this.inputLayer, keyValuePairList);
+                this.loss = GetLoss(this.inputLayer, collection);
 
                 if (this.Stepped != null)
                 {
@@ -235,21 +227,22 @@ namespace Megalopolis
             return outputLayer.OutputActivations;
         }
 
-        private double GetLoss(Layer inputLayer, IEnumerable<KeyValuePair<double[], double[]>> keyValuePairs)
+        private double GetLoss(Layer inputLayer, IEnumerable<Tuple<double[], double[]>> collection)
         {
             double sum = 0.0;
+            int size = collection.Count();
 
-            foreach (var keyValuePair in keyValuePairs)
+            foreach (var tuple in collection)
             {
-                var layer = ForwardPropagate(false, inputLayer, keyValuePair.Key);
+                var layer = ForwardPropagate(false, inputLayer, tuple.Item1);
 
                 for (int i = 0; i < layer.OutputActivations.Length; i++)
                 {
-                    sum += this.lossFunction.Function(layer.OutputActivations[i], keyValuePair.Value[i]);
+                    sum += this.lossFunction.Function(layer.OutputActivations[i], tuple.Item2[i]);
                 }
             }
 
-            return sum;
+            return sum / size;
         }
 
         private Layer ForwardPropagate(bool isTraining, Layer inputLayer, double[] vector)
@@ -284,7 +277,8 @@ namespace Megalopolis
 
             for (int i = 0; i < outputLayer.OutputActivations.Length; i++)
             {
-                deltas[i] = this.lossFunction.Derivative(outputLayer.OutputActivations[i], vector[i]);
+                //deltas[i] = this.lossFunction.Derivative(outputLayer.OutputActivations[i], vector[i]);
+                deltas[i] = vector[i];
             }
 
             foreach (var g in outputLayer.PropagateBackward(ref deltas, out gradients))

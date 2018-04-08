@@ -99,6 +99,8 @@ namespace Megalopolis
                     {
                         d1[j] += vector[j] * deltas[i];
                     }
+
+                    d1[i] = this.outputActivations[i] - deltas[i];
                 }
 
                 for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
