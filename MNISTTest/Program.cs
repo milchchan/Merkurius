@@ -20,7 +20,6 @@ namespace MNISTTest
         static void Main(string[] args)
         {
             Console.WriteLine("MNIST Test");
-            Console.WriteLine();
 
             int seed;
 
@@ -96,7 +95,6 @@ namespace MNISTTest
                 }
             }
 
-            var stopwatch = Stopwatch.StartNew();
             var accuracyList = new List<double>();
             var lossList = new List<double>();
             var network = new Network(
@@ -104,7 +102,8 @@ namespace MNISTTest
                 new FullyConnectedLayer(filters * ConvolutionalPoolingLayer.GetOutputLength(imageWidth, filterWidth, poolWidth) * ConvolutionalPoolingLayer.GetOutputLength(imageHeight, filterHeight, poolHeight), new ReLU(), (index, fanIn, fanOut) => Initializers.GlorotUniform(fanIn, fanOut),
                 new SoftmaxLayer(100, 10, (index, fanIn, fanOut) => Initializers.GlorotUniform(fanIn, fanOut)))),
                 new Adam(), new CategoricalCrossEntropy());
-            int epochs = 1;
+            int epochs = 50;
+            int iterations = 1;
 
             network.Stepped += (sender, e) =>
             {
@@ -127,25 +126,37 @@ namespace MNISTTest
                 accuracyList.Add(accuracy);
                 lossList.Add(network.Loss);
 
-                Console.WriteLine("Epochs: {0} (Accuracy: {1} / Loss: {2})", epochs, accuracy, network.Loss);
+                Console.WriteLine("Epoch {0}/{1}", iterations, epochs);
+                Console.WriteLine("Accuracy: {0}, Loss: {1}", accuracy, network.Loss);
 
-                epochs++;
+                iterations++;
             };
-
-            stopwatch.Reset();
 
             Console.WriteLine("Training...");
 
-            stopwatch.Start();
+            var stopwatch = Stopwatch.StartNew();
 
-            network.Train(trainingList, 50, 100);
+            network.Train(trainingList, epochs, 100);
 
             stopwatch.Stop();
 
             Console.WriteLine("Done ({0}).", stopwatch.Elapsed.ToString());
-            Console.WriteLine();
-            Console.WriteLine("Accuracy: {0}", accuracyList.Last());
-            Console.WriteLine("Loss: {0}", lossList.Last());
+
+            double testTptn = 0;
+
+            testList.ForEach(x =>
+            {
+                var vector = network.Predicate(x.Item1);
+                var i = ArgMax(vector);
+                var j = ArgMax(x.Item2);
+
+                if (i == j && Math.Round(vector[i]) == x.Item2[j])
+                {
+                    testTptn += 1.0;
+                }
+            });
+
+            Console.WriteLine("Accuracy: {0}", testTptn / testList.Count);
             /*
             logDictionary.Add("Accuracy", accuracyList);
             logDictionary.Add("Loss", lossList);

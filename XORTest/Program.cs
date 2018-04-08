@@ -16,7 +16,6 @@ namespace XORTest
         static void Main(string[] args)
         {
             Console.WriteLine("XOR Test");
-            Console.WriteLine();
 
             int seed;
 
@@ -39,11 +38,11 @@ namespace XORTest
             patternList.Add(Tuple.Create<double[], double[]>(new double[] { 1, 0 }, new double[] { 1 }));
             patternList.Add(Tuple.Create<double[], double[]>(new double[] { 1, 1 }, new double[] { 0 }));
 
-            var stopwatch = Stopwatch.StartNew();
             var accuracyList = new List<double>();
             var lossList = new List<double>();
             var network = new Network(new FullyConnectedLayer(2, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(), new FullyConnectedLayer(2, 1, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())), new Momentum(), new MeanSquaredError());
-            int epochs = 1;
+            int epochs = 10000;
+            int iterations = 1;
 
             network.Stepped += (sender, e) =>
             {
@@ -66,26 +65,24 @@ namespace XORTest
                 accuracyList.Add(accuracy);
                 lossList.Add(network.Loss);
 
-                if (epochs % 1000 == 0)
+                if (iterations % 2500 == 0)
                 {
-                    Console.WriteLine("Epochs: {0} (Accuracy: {1} / Loss: {2})", epochs, accuracy, network.Loss);
+                    Console.WriteLine("Epoch {0}/{1}", iterations, epochs);
+                    Console.WriteLine("Accuracy: {0}, Loss: {1}", accuracy, network.Loss);
                 }
-                
-                epochs++;
-            };
 
-            stopwatch.Reset();
+                iterations++;
+            };
 
             Console.WriteLine("Training...");
 
-            stopwatch.Start();
+            var stopwatch = Stopwatch.StartNew();
 
-            network.Train(patternList, 10000);
+            network.Train(patternList, epochs);
 
             stopwatch.Stop();
 
             Console.WriteLine("Done ({0}).", stopwatch.Elapsed.ToString());
-            Console.WriteLine();
 
             foreach (var tuple in patternList)
             {
@@ -102,9 +99,7 @@ namespace XORTest
                 })));
             }
 
-            Console.WriteLine();
-            Console.WriteLine("Accuracy: {0}", accuracyList.Last());
-            Console.WriteLine("Loss: {0}", lossList.Last());
+            Console.WriteLine("Accuracy: {0}, Loss: {1}", accuracyList.Last(), lossList.Last());
         }
 
         static private int ArgMax(double[] vector)
