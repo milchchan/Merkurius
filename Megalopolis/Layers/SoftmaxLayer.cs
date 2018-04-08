@@ -84,24 +84,9 @@ namespace Megalopolis
 
             public override IEnumerable<double[]> PropagateBackward(ref double[] deltas, out double[] gradients)
             {
-                var d1 = new double[this.outputActivations.Length];
-                var d2 = new double[this.inputActivations.Length];
+                var d = new double[this.inputActivations.Length];
 
                 gradients = new double[this.inputActivations.Length * this.outputActivations.Length];
-
-                for (int i = 0; i < this.outputActivations.Length; i++)
-                {
-                    /*var vector = DerivativeOfSoftmax(this.outputActivations, i);
-
-                    d1[i] = 0;
-
-                    for (int j = 0; j < this.outputActivations.Length; j++)
-                    {
-                        d1[j] += vector[j] * deltas[i];
-                    }*/
-
-                    d1[i] = deltas[i];
-                }
 
                 for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
                 {
@@ -109,15 +94,15 @@ namespace Megalopolis
 
                     for (int k = 0; k < this.outputActivations.Length; k++)
                     {
-                        error += d1[k] * this.weights[j];
-                        gradients[j] = d1[k] * this.inputActivations[i];
+                        error += deltas[k] * this.weights[j];
+                        gradients[j] = deltas[k] * this.inputActivations[i];
                         j++;
                     }
 
-                    d2[i] = error;
+                    d[i] = error;
                 }
 
-                return new double[][] { d1, d2 };
+                return new double[][] { deltas, d };
             }
 
             public override void Update(double[] gradients, double[] deltas, Func<double, double, double> func)

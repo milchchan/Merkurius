@@ -40,7 +40,7 @@ namespace XORTest
 
             var accuracyList = new List<double>();
             var lossList = new List<double>();
-            var network = new Network(new FullyConnectedLayer(2, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(), new FullyConnectedLayer(2, 1, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())), new Momentum(), new MeanSquaredError());
+            var network = new Network(new FullyConnectedLayer(2, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(), new FullyConnectedLayer(2, 1, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())), new Momentum(0.5, 0.1), new MeanSquaredError());
             int epochs = 10000;
             int iterations = 1;
 

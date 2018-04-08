@@ -7,8 +7,8 @@ namespace Megalopolis
     {
         public class Momentum : IOptimizer
         {
-            private double eta = 0.5; // Learning rate
-            private double alpha = 0.1; // Momentum
+            private double eta = 0.01; // Learning rate
+            private double alpha = 0.9; // Momentum
             private Dictionary<int, double> dictionary = null;
 
             public Momentum()
@@ -25,19 +25,19 @@ namespace Megalopolis
 
             public double Optimize(int index, double weight, double gradient)
             {
-                double g;
+                double v;
 
-                if (this.dictionary.TryGetValue(index, out g))
+                if (this.dictionary.TryGetValue(index, out v))
                 {
                     this.dictionary[index] = gradient;
                 }
                 else
                 {
-                    g = 0;
+                    v = 0;
                     this.dictionary.Add(index, gradient);
                 }
 
-                return weight - this.eta * gradient + this.alpha * g;
+                return weight - this.eta * gradient + this.alpha * v;
             }
         }
     }

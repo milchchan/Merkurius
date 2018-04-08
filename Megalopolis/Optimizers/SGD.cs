@@ -6,7 +6,7 @@ namespace Megalopolis
     {
         public class SGD : IOptimizer
         {
-            public double lr = 0.001; // Learning rate
+            private double lr = 0.001; // Learning rate
 
             public SGD() { }
 
