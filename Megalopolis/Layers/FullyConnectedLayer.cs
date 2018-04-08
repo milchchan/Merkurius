@@ -202,8 +202,7 @@ namespace Megalopolis
 
                     for (int i = 0; i < this.outputActivations.Length; i++)
                     {
-                        //d1[i] = this.activationFunction.Derivative(this.outputActivations[i]) * deltas[i];
-                        d1[i] = this.activationFunction.Derivative(this.outputActivations[i]) * (this.outputActivations[i] - deltas[i]);
+                        d1[i] = this.activationFunction.Derivative(this.outputActivations[i]) * deltas[i];
                     }
 
                     foreach (var filter in this.filterCollection)

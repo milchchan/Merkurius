@@ -101,7 +101,7 @@ namespace MNISTTest
                 new ConvolutionalPoolingLayer(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, poolWidth, poolHeight, new ReLU(), (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
                 new FullyConnectedLayer(filters * ConvolutionalPoolingLayer.GetOutputLength(imageWidth, filterWidth, poolWidth) * ConvolutionalPoolingLayer.GetOutputLength(imageHeight, filterHeight, poolHeight), new ReLU(), (index, fanIn, fanOut) => Initializers.GlorotUniform(fanIn, fanOut),
                 new SoftmaxLayer(100, 10, (index, fanIn, fanOut) => Initializers.GlorotUniform(fanIn, fanOut)))),
-                new Adam(), new CategoricalCrossEntropy());
+                new Adam(), new SoftmaxCrossEntropy());
             int epochs = 50;
             int iterations = 1;
 

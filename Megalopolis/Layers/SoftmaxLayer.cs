@@ -91,16 +91,16 @@ namespace Megalopolis
 
                 for (int i = 0; i < this.outputActivations.Length; i++)
                 {
-                    var vector = DerivativeOfSoftmax(this.outputActivations, i);
+                    /*var vector = DerivativeOfSoftmax(this.outputActivations, i);
 
                     d1[i] = 0;
 
                     for (int j = 0; j < this.outputActivations.Length; j++)
                     {
                         d1[j] += vector[j] * deltas[i];
-                    }
+                    }*/
 
-                    d1[i] = this.outputActivations[i] - deltas[i];
+                    d1[i] = deltas[i];
                 }
 
                 for (int i = 0, j = 0; i < this.inputActivations.Length; i++)

@@ -277,8 +277,7 @@ namespace Megalopolis
 
             for (int i = 0; i < outputLayer.OutputActivations.Length; i++)
             {
-                //deltas[i] = this.lossFunction.Derivative(outputLayer.OutputActivations[i], vector[i]);
-                deltas[i] = vector[i];
+                deltas[i] = this.lossFunction.Derivative(outputLayer.OutputActivations[i], vector[i]);
             }
 
             foreach (var g in outputLayer.PropagateBackward(ref deltas, out gradients))
