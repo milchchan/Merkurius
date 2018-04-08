@@ -19,7 +19,7 @@ This repository contains the portable deep learning (deep neural networks) libra
 * Convolutional
 * Dropout
 * Fully connected
-* Pooling
+* Max pooling
 
 ### Loss Functions
 * Cross-entropy
