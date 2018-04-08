@@ -30,5 +30,6 @@ This repository contains the portable deep learning (deep neural networks) libra
 * AdaGrad
 * Adam
 * Momentum
+* Nesterov
 * RMSprop
 * SGD
