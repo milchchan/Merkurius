@@ -16,10 +16,8 @@ namespace Megalopolis
             private int filterHeight = 0;
             private int poolWidth = 0;
             private int poolHeight = 0;
-            private double[,,] inputs = null;
             private double[,,] convolvedInputs = null;
             private double[,,] activationMaps = null;
-            private double[,,] outputs = null;
             private IActivationFunction activationFunction = null;
 
             public IActivationFunction ActivationFunction
@@ -36,8 +34,6 @@ namespace Megalopolis
                 var activationMapHeight = imageHeight - filterHeight + 1;
                 var length1 = filters * channels * filterWidth * filterHeight;
                 var length2 = filters * activationMapWidth * activationMapHeight;
-                var outputWidth = activationMapWidth / poolWidth;
-                var outputHeight = activationMapHeight / poolHeight;
                 var fanIn = channels * filterWidth * filterHeight;
                 var fanOut = filters * filterWidth * filterHeight / (poolWidth * poolHeight);
 
@@ -53,7 +49,6 @@ namespace Megalopolis
                 this.poolHeight = poolHeight;
                 this.convolvedInputs = new double[this.filters, activationMapHeight, activationMapWidth];
                 this.activationMaps = new double[this.filters, activationMapHeight, activationMapWidth];
-                this.outputs = new double[this.filters, outputHeight, outputWidth];
                 this.activationFunction = activationFunction;
 
                 for (int i = 0; i < length1; i++)
@@ -72,8 +67,6 @@ namespace Megalopolis
                 var activationMapWidth = layer.imageWidth - layer.filterWidth + 1;
                 var activationMapHeight = layer.imageHeight - layer.filterHeight + 1;
                 var length = layer.filters * layer.channels * layer.filterWidth * layer.filterHeight;
-                var outputWidth = activationMapWidth / layer.poolWidth;
-                var outputHeight = activationMapHeight / layer.poolHeight;
 
                 this.weights = new double[length];
                 this.biases = new double[layer.filters * activationMapWidth * activationMapHeight];
@@ -87,7 +80,6 @@ namespace Megalopolis
                 this.poolHeight = layer.poolHeight;
                 this.convolvedInputs = new double[layer.filters, activationMapHeight, activationMapWidth];
                 this.activationMaps = new double[layer.filters, activationMapHeight, activationMapWidth];
-                this.outputs = new double[this.filters, outputHeight, outputWidth];
                 this.activationFunction = layer.activationFunction;
 
                 for (int i = 0; i < length; i++)
@@ -108,17 +100,6 @@ namespace Megalopolis
                         }
                     }
                 }
-
-                for (int i = 0; i < layer.filters; i++)
-                {
-                    for (int j = 0; j < outputHeight; j++)
-                    {
-                        for (int k = 0; k < outputWidth; k++)
-                        {
-                            this.outputs[i, j, k] = layer.outputs[i, j, k];
-                        }
-                    }
-                }
             }
 
             public ConvolutionalPoolingLayer(ConvolutionalPoolingLayer sourceLayer, Layer targetLayer) : base(sourceLayer, targetLayer)
@@ -126,8 +107,6 @@ namespace Megalopolis
                 var activationMapWidth = sourceLayer.imageWidth - sourceLayer.filterWidth + 1;
                 var activationMapHeight = sourceLayer.imageHeight - sourceLayer.filterHeight + 1;
                 var length = sourceLayer.filters * sourceLayer.channels * sourceLayer.filterWidth * sourceLayer.filterHeight;
-                var outputWidth = activationMapWidth / sourceLayer.poolWidth;
-                var outputHeight = activationMapHeight / sourceLayer.poolHeight;
 
                 this.weights = new double[length];
                 this.biases = new double[sourceLayer.filters * activationMapWidth * activationMapHeight];
@@ -141,7 +120,6 @@ namespace Megalopolis
                 this.poolHeight = sourceLayer.poolHeight;
                 this.convolvedInputs = new double[sourceLayer.filters, activationMapHeight, activationMapWidth];
                 this.activationMaps = new double[sourceLayer.filters, activationMapHeight, activationMapWidth];
-                this.outputs = new double[this.filters, outputHeight, outputWidth];
                 this.activationFunction = sourceLayer.activationFunction;
 
                 for (int i = 0; i < length; i++)
@@ -162,50 +140,14 @@ namespace Megalopolis
                         }
                     }
                 }
-
-                for (int i = 0; i < sourceLayer.filters; i++)
-                {
-                    for (int j = 0; j < outputHeight; j++)
-                    {
-                        for (int k = 0; k < outputWidth; k++)
-                        {
-                            this.outputs[i, j, k] = sourceLayer.outputs[i, j, k];
-                        }
-                    }
-                }
             }
 
             public override void PropagateForward(bool isTraining)
             {
-                var unflattenInputs = new double[this.channels, this.imageHeight, this.imageWidth];
+                var activationMapWidth = GetActivationMapWidth();
+                var activationMapHeight = GetActivationMapHeight();
 
-                for (int i = 0, j = 0; i < this.channels; i++)
-                {
-                    for (int k = 0; k < this.imageHeight; k++)
-                    {
-                        for (int l = 0; l < this.imageWidth; l++)
-                        {
-                            unflattenInputs[i, k, l] = this.inputActivations[j];
-                            j++;
-                        }
-                    }
-                }
-
-                var unflattenOutputs = MaxPooling(Convolve(unflattenInputs));
-                var outputWidth = GetOutputWidth(GetActivationMapWidth());
-                var outputHeight = GetOutputHeight(GetActivationMapHeight());
-
-                for (int i = 0, j = 0; i < this.filters; i++)
-                {
-                    for (int k = 0; k < outputHeight; k++)
-                    {
-                        for (int l = 0; l < outputWidth; l++)
-                        {
-                            this.outputActivations[j] = unflattenOutputs[i, k, l];
-                            j++;
-                        }
-                    }
-                }
+                MaxPooling(Convolve(activationMapWidth, activationMapHeight), GetOutputWidth(activationMapWidth), GetOutputHeight(activationMapHeight));
             }
 
             public override IEnumerable<double[]> PropagateBackward(ref double[] deltas, out double[] gradients)
@@ -214,23 +156,9 @@ namespace Megalopolis
                 var activationMapHeight = GetActivationMapHeight();
                 var outputWidth = GetOutputWidth(activationMapWidth);
                 var outputHeight = GetOutputHeight(activationMapHeight);
-                var unflattenDeltas = new double[this.filters, outputHeight, outputWidth];
-
-                for (int i = 0, j = 0; i < this.filters; i++)
-                {
-                    for (int k = 0; k < outputHeight; k++)
-                    {
-                        for (int l = 0; l < outputWidth; l++)
-                        {
-                            unflattenDeltas[i, k, l] = deltas[j];
-                            j++;
-                        }
-                    }
-                }
-
-                var d1 = DerivativeOfMaxPooling(unflattenDeltas, activationMapWidth, activationMapHeight);
                 var length = this.filters * this.channels * this.filterWidth * this.filterHeight;
-
+                var d = DerivativeOfMaxPooling(deltas, activationMapWidth, activationMapHeight, outputWidth, outputHeight);
+                
                 gradients = new double[length];
                 deltas = new double[this.filters * activationMapWidth * activationMapHeight];
 
@@ -245,16 +173,16 @@ namespace Megalopolis
                     {
                         for (int l = 0; l < activationMapWidth; l++)
                         {
-                            deltas[j] = this.activationFunction.Derivative(this.convolvedInputs[i, k, l] + this.biases[j]) * d1[i, k, l];
+                            deltas[j] = this.activationFunction.Derivative(this.convolvedInputs[i, k, l] + this.biases[j]) * d[i, k, l];
 
-                            for (int m = 0, n = this.channels * this.filterWidth * this.filterHeight * i; m < this.channels; m++)
+                            for (int m = 0, n = 0, o = this.channels * this.filterWidth * this.filterHeight * i; m < this.channels; m++, n += this.imageWidth * this.imageHeight)
                             {
-                                for (int o = 0; o < this.filterHeight; o++)
+                                for (int p = 0; p < this.filterHeight; p++)
                                 {
-                                    for (int p = 0; p < this.filterWidth; p++)
+                                    for (int q = 0; q < this.filterWidth; q++)
                                     {
-                                        gradients[n] += deltas[j] * this.inputs[m, k + o, l + p];
-                                        n++;
+                                        gradients[o] += deltas[j] * this.inputActivations[n + this.imageWidth * (k + p) + l + q];
+                                        o++;
                                     }
                                 }
                             }
@@ -264,22 +192,7 @@ namespace Megalopolis
                     }
                 }
 
-                var d2 = DerivativeOfConvolve(d1);
-                var flattenDeltas = new double[this.channels * this.imageWidth * this.imageHeight];
-
-                for (int i = 0, j = 0; i < this.channels; i++)
-                {
-                    for (int k = 0; k < this.imageHeight; k++)
-                    {
-                        for (int l = 0; l < this.imageWidth; l++)
-                        {
-                            flattenDeltas[j] = d2[i, k, l];
-                            j++;
-                        }
-                    }
-                }
-
-                return new double[][] { flattenDeltas };
+                return new double[][] { DerivativeOfConvolve(d, activationMapWidth, activationMapHeight) };
             }
 
             public override void Update(double[] gradients, double[] deltas, Func<double, double, double> func)
@@ -308,11 +221,8 @@ namespace Megalopolis
                 return new ConvolutionalPoolingLayer(this, layer);
             }
 
-            private double[,,] Convolve(double[,,] inputs)
+            private double[,,] Convolve(int activationMapWidth, int activationMapHeight)
             {
-                var activationMapWidth = GetActivationMapWidth();
-                var activationMapHeight = GetActivationMapHeight();
-
                 for (int i = 0; i < this.filters; i++)
                 {
                     for (int j = 0; j < activationMapHeight; j++)
@@ -330,14 +240,14 @@ namespace Megalopolis
                     {
                         for (int l = 0; l < activationMapWidth; l++)
                         {
-                            for (int m = 0, n = this.channels * this.filterWidth * this.filterHeight * i; m < this.channels; m++)
+                            for (int m = 0, n = 0, o = this.channels * this.filterWidth * this.filterHeight * i; m < this.channels; m++, n += this.imageWidth * this.imageHeight)
                             {
-                                for (int o = 0; o < this.filterHeight; o++)
+                                for (int p = 0; p < this.filterHeight; p++)
                                 {
-                                    for (int p = 0; p < this.filterWidth; p++)
+                                    for (int q = 0; q < this.filterWidth; q++)
                                     {
-                                        this.convolvedInputs[i, k, l] += inputs[m, k + o, l + p] * this.weights[n];
-                                        n++;
+                                        this.convolvedInputs[i, k, l] += this.inputActivations[n + this.imageWidth * (k + p) + l + q] * this.weights[o];
+                                        o++;
                                     }
                                 }
                             }
@@ -348,47 +258,43 @@ namespace Megalopolis
                     }
                 }
 
-                this.inputs = inputs;
-
                 return this.activationMaps;
             }
 
-            private double[,,] DerivativeOfConvolve(double[,,] deltas)
+            private double[] DerivativeOfConvolve(double[,,] deltas, int activationMapWidth, int activationMapHeight)
             {
-                var activationMapWidth = GetActivationMapWidth();
-                var activationMapHeight = GetActivationMapHeight();
-                var d = new double[this.channels, this.imageHeight, this.imageWidth];
+                var length = this.channels * this.imageHeight * this.imageWidth;
+                var d = new double[length];
 
-                for (int i = 0; i < this.channels; i++)
+                for (int i = 0; i < length; i++)
                 {
-                    for (int j = 0; j < this.imageHeight; j++)
-                    {
-                        for (int k = 0; k < this.imageWidth; k++)
-                        {
-                            d[i, j, k] = 0;
-                        }
-                    }
+                    d[i] = 0;
                 }
 
-                for (int i = 0; i < this.channels; i++)
+                for (int i = 0, j = 0, k = 0; i < this.channels; i++, j += this.filterWidth * this.filterHeight)
                 {
-                    for (int j = 0; j < this.imageHeight; j++)
+                    for (int l = 0; l < this.imageHeight; l++)
                     {
-                        for (int k = 0; k < this.imageWidth; k++)
+                        for (int m = 0; m < this.imageWidth; m++)
                         {
-                            for (int l = 0; l < this.filters; l++)
+                            for (int n = 0, o = 0; n < this.filters; n++, o += this.channels * this.filterWidth * this.filterHeight)
                             {
-                                for (int m = 0; m < this.filterHeight; m++)
+                                for (int p = 0, q = 0; p < this.filterHeight; p++, q += this.filterWidth)
                                 {
-                                    for (int n = 0; n < this.filterWidth; n++)
+                                    for (int r = 0; r < this.filterWidth; r++)
                                     {
-                                        if (j - (this.filterHeight - 1) - m >= 0 && k - (this.filterWidth - 1) - n >= 0)
+                                        var x = m - (this.filterWidth - 1) - r;
+                                        var y = l - (this.filterHeight - 1) - p;
+
+                                        if (y >= 0 && x >= 0)
                                         {
-                                            d[i, j, k] += deltas[l, j - (this.filterHeight - 1) - m, k - (this.filterWidth - 1) - n] * this.activationFunction.Derivative(this.convolvedInputs[l, j - (this.filterHeight - 1) - m, k - (this.filterWidth - 1) - n] + this.biases[activationMapWidth * activationMapHeight * l + activationMapWidth * (j - (this.filterHeight - 1) - m) + k - (this.filterWidth - 1) - n]) * this.weights[this.channels * this.filterWidth * this.filterHeight * l + this.filterWidth * this.filterHeight * i + this.filterWidth * m + n];
+                                            d[k] += deltas[n, y, x] * this.activationFunction.Derivative(this.convolvedInputs[n, y, x] + this.biases[activationMapWidth * activationMapHeight * n + activationMapWidth * y + x]) * this.weights[o + j + q + r];
                                         }
                                     }
                                 }
                             }
+
+                            k++;
                         }
                     }
                 }
@@ -396,64 +302,66 @@ namespace Megalopolis
                 return d;
             }
 
-            private double[,,] MaxPooling(double[,,] inputs)
+            private void MaxPooling(double[,,] inputs, int outputWidth, int outputHeight)
             {
-                var outputWidth = GetOutputWidth(GetActivationMapWidth());
-                var outputHeight = GetOutputHeight(GetActivationMapHeight());
-
-                for (int i = 0; i < this.filters; i++)
+                for (int i = 0, j = 0; i < this.filters; i++)
                 {
-                    for (int j = 0; j < outputHeight; j++)
+                    for (int k = 0; k < outputHeight; k++)
                     {
-                        for (int k = 0; k < outputWidth; k++)
+                        for (int l = 0; l < outputWidth; l++)
                         {
                             var max = Double.MinValue;
 
-                            for (int l = 0; l < this.poolHeight; l++)
+                            for (int m = 0; m < this.poolHeight; m++)
                             {
-                                for (int m = 0; m < this.poolWidth; m++)
+                                for (int n = 0; n < this.poolWidth; n++)
                                 {
-                                    if (max < inputs[i, this.poolHeight * j + l, this.poolWidth * k + m])
+                                    var x = this.poolWidth * l + n;
+                                    var y = this.poolHeight * k + m;
+
+                                    if (max < inputs[i, y, x])
                                     {
-                                        max = inputs[i, this.poolHeight * j + l, this.poolWidth * k + m];
+                                        max = inputs[i, y, x];
                                     }
                                 }
                             }
 
-                            this.outputs[i, j, k] = max;
+                            this.outputActivations[j] = max;
+                            j++;
                         }
                     }
                 }
-
-                return this.outputs;
             }
 
-            private double[,,] DerivativeOfMaxPooling(double[,,] deltas, int activationMapWidth, int activationMapHeight)
+            private double[,,] DerivativeOfMaxPooling(double[] deltas, int activationMapWidth, int activationMapHeight, int outputWidth, int outputHeight)
             {
-                var outputWidth = GetOutputWidth(activationMapWidth);
-                var outputHeight = GetOutputHeight(activationMapHeight);
                 var d = new double[this.filters, activationMapHeight, activationMapWidth];
 
-                for (int i = 0; i < this.filters; i++)
+                for (int i = 0, j = 0; i < this.filters; i++)
                 {
-                    for (int j = 0; j < outputHeight; j++)
+                    for (int k = 0; k < outputHeight; k++)
                     {
-                        for (int k = 0; k < outputWidth; k++)
+                        for (int l = 0; l < outputWidth; l++)
                         {
-                            for (int l = 0; l < this.poolHeight; l++)
+                            for (int m = 0; m < this.poolHeight; m++)
                             {
-                                for (int m = 0; m < this.poolWidth; m++)
+                                for (int n = 0; n < this.poolWidth; n++)
                                 {
-                                    if (this.outputs[i, j, k] == this.activationMaps[i, this.poolHeight * j + l, this.poolWidth * k + m])
+                                    var x = this.poolWidth * l + n;
+                                    var y = this.poolHeight * k + m;
+
+                                    if (this.outputActivations[j] == this.activationMaps[i, y, x])
                                     {
-                                        d[i, this.poolHeight * j + l, this.poolWidth * k + m] = deltas[i, j, k];
+                                        d[i, y, x] = deltas[j];
                                     }
                                     else
                                     {
-                                        d[i, this.poolHeight * j + l, this.poolWidth * k + m] = 0;
+                                        d[i, y, x] = 0;
                                     }
                                 }
                             }
+
+                            j++;
                         }
                     }
                 }
