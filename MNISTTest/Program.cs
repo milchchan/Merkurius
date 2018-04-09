@@ -38,6 +38,7 @@ namespace MNISTTest
             var trainingList = new List<Tuple<double[], double[]>>();
             var testList = new List<Tuple<double[], double[]>>();
             var logDictionary = new Dictionary<string, IEnumerable<double>>();
+            var logPath = "Log.csv";
             var channels = 1;
             var imageWidth = 28;
             var imageHeight = 28;
@@ -157,18 +158,13 @@ namespace MNISTTest
             });
 
             Console.WriteLine("Accuracy: {0}", testTptn / testList.Count);
-            /*
+
             logDictionary.Add("Accuracy", accuracyList);
             logDictionary.Add("Loss", lossList);
 
-            var path = "Log.csv";
+            ToCsv(logPath, logDictionary);
 
-            Console.WriteLine();
-            Console.Write("Writing to {0}...", path);
-
-            ToCsv(path, logDictionary);
-
-            Console.WriteLine("Done.");*/
+            Console.Write("Saved log to {0}...", path);
         }
 
         static private int ArgMax(double[] vector)
