@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Megalopolis
 {
@@ -8,7 +9,7 @@ namespace Megalopolis
         {
             private Random random = null;
             private double rate = 0.5;
-            private int[] masks = null;
+            private Dictionary<int, double> maskDictionary = null;
 
             public double Rate
             {
@@ -18,28 +19,28 @@ namespace Megalopolis
                 }
             }
 
-            public Dropout(int nodes)
+            public Dropout()
             {
                 this.random = RandomProvider.GetRandom();
-                this.masks = new int[nodes];
+                this.maskDictionary = new Dictionary<int, double>();
             }
 
-            public Dropout(int nodes, double rate)
+            public Dropout(double rate)
             {
                 this.random = RandomProvider.GetRandom();
                 this.rate = rate;
-                this.masks = new int[nodes];
+                this.maskDictionary = new Dictionary<int, double>();
             }
 
             public Dropout(Dropout dropout)
             {
                 this.random = RandomProvider.GetRandom();
                 this.rate = dropout.rate;
-                this.masks = new int[dropout.masks.Length];
+                this.maskDictionary = new Dictionary<int, double>();
 
-                for (int i = 0; i < dropout.masks.Length; i++)
+                foreach (var keyValuePair in dropout.maskDictionary)
                 {
-                    this.masks[i] = dropout.masks[i];
+                    this.maskDictionary.Add(keyValuePair.Key, keyValuePair.Value);
                 }
             }
 
@@ -49,8 +50,18 @@ namespace Megalopolis
                 {
                     for (int i = 0; i < activations.Length; i++)
                     {
-                        this.masks[i] = this.random.Binomial(1, this.rate);
-                        activations[i] *= this.masks[i];
+                        double probability = this.random.Binomial(1, this.rate);
+
+                        activations[i] *= probability;
+
+                        if (this.maskDictionary.TryGetValue(i, out probability))
+                        {
+                            this.maskDictionary[i] = probability;
+                        }
+                        else
+                        {
+                            this.maskDictionary.Add(i, probability);
+                        }
                     }
                 }
 
@@ -61,7 +72,7 @@ namespace Megalopolis
             {
                 for (int i = 0; i < gradients.Length; i++)
                 {
-                    gradients[i] *= this.masks[i];
+                    gradients[i] *= this.maskDictionary[i];
                 }
 
                 return gradients;

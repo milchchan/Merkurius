@@ -164,7 +164,7 @@ namespace MNISTTest
 
             ToCsv(logPath, logDictionary);
 
-            Console.Write("Saved log to {0}...", path);
+            Console.Write("Saved log to {0}...", logPath);
         }
 
         static private int ArgMax(double[] vector)
