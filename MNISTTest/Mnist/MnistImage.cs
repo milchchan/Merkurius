@@ -63,14 +63,14 @@ namespace Mnist
         public double[] Normalize()
         {
             var length = this.height * this.width;
-            var normalizeDpixels = new double[length];
+            var normalizedPixels = new double[length];
 
             for (int i = 0; i < length; ++i)
             {
-                normalizeDpixels[i] = (double)this.pixels[i] / Byte.MaxValue;
+                normalizedPixels[i] = (double)this.pixels[i] / Byte.MaxValue;
             }
 
-            return normalizeDpixels;
+            return normalizedPixels;
         }
 
         public static IEnumerable<MnistImage> Load(Stream imagesStream, Stream labelsStream)
@@ -79,34 +79,24 @@ namespace Mnist
             const int maxImageWidth = 28;
             const int maxImageHeight = 28;
             var maxPixels = maxImageHeight * maxImageWidth;
-            byte[] pixels = new byte[maxPixels];
-            List<MnistImage> imageList = new List<MnistImage>();
+            var pixels = new byte[maxPixels];
+            var imageList = new List<MnistImage>();
 
             using (BinaryReader imagesBinaryReader = new BinaryReader(imagesStream), labelsBinaryReader = new BinaryReader(labelsStream))
             {
-                long maxImages = (imagesBinaryReader.BaseStream.Length - 4 * 4) / (28 * 28);
-                int magic1 = imagesBinaryReader.ReadInt32(); // stored as Big Endian
+                var maxImages = (imagesBinaryReader.BaseStream.Length - 4 * 4) / (28 * 28);
+                var magic1 = imagesBinaryReader.ReadInt32(); // stored as Big Endian
+                var imageCount = imagesBinaryReader.ReadInt32();
+                var numRows = imagesBinaryReader.ReadInt32();
+                var numCols = imagesBinaryReader.ReadInt32();
+                var magic2 = labelsBinaryReader.ReadInt32();
+                var numLabels = labelsBinaryReader.ReadInt32();
 
                 magic1 = ReverseBytes(magic1); // convert to Intel format
-
-                int imageCount = imagesBinaryReader.ReadInt32();
-
                 imageCount = ReverseBytes(imageCount);
-
-                int numRows = imagesBinaryReader.ReadInt32();
-
                 numRows = ReverseBytes(numRows);
-
-                int numCols = imagesBinaryReader.ReadInt32();
-
                 numCols = ReverseBytes(numCols);
-
-                int magic2 = labelsBinaryReader.ReadInt32();
-
                 magic2 = ReverseBytes(magic2);
-
-                int numLabels = labelsBinaryReader.ReadInt32();
-
                 numLabels = ReverseBytes(numLabels);
 
                 for (int i = 0; i < maxImages; ++i)
@@ -128,7 +118,7 @@ namespace Mnist
             // bit-manipulation version
             //  return (v & 0x000000FF) << 24 | (v & 0x0000FF00) << 8 |
             //         (v & 0x00FF0000) >> 8 | ((int)(v & 0xFF000000)) >> 24;
-            byte[] intAsBytes = BitConverter.GetBytes(v);
+            var intAsBytes = BitConverter.GetBytes(v);
 
             Array.Reverse(intAsBytes);
 
