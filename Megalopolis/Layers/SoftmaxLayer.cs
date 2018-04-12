@@ -153,8 +153,8 @@ namespace Megalopolis
 
             private double[] DerivativeOfSoftmax(double[] x, int i)
             {
-                // yi(1 - yi) i = j
-                // -yiyj i ≠ j
+                // yi(1 - yi) if i = j
+                // -yiyj otherwise
                 double[] vector = new double[x.Length];
 
                 for (int j = 0; j < x.Length; j++)
