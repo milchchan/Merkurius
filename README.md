@@ -9,11 +9,15 @@ This repository contains the portable deep learning (deep neural networks) libra
 * Dependency-free
 
 ### Activation Functions
+* ELU (Exponential linear unit)
 * Hyperbolic tangent
 * Identity
-* ReLU
+* ReLU (Rectified linear unit)
+* SELU (Scaled exponential linear unit)
 * Sigmoid
 * Softmax
+* SoftPlus
+* Softsign
 
 ### Layers
 * Convolutional
