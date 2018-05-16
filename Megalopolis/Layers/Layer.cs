@@ -7,26 +7,26 @@ namespace Megalopolis
     {
         public abstract class Layer
         {
-            protected double[] inputActivations = null;
-            protected double[] outputActivations = null;
+            protected int inputs = 0;
+            protected int outputs = 0;
             protected double[] weights = null;
             protected double[] biases = null;
             protected Layer previousLayer = null;
             protected Layer nextLayer = null;
 
-            public double[] InputActivations
+            public int Inputs
             {
                 get
                 {
-                    return this.inputActivations;
+                    return this.inputs;
                 }
             }
 
-            public double[] OutputActivations
+            public int Outputs
             {
                 get
                 {
-                    return this.outputActivations;
+                    return this.outputs;
                 }
             }
 
@@ -72,54 +72,22 @@ namespace Megalopolis
 
             public Layer(int inputs, int outputs)
             {
-                this.inputActivations = new double[inputs];
-                this.outputActivations = new double[outputs];
+                this.inputs = inputs;
+                this.outputs = outputs;
             }
 
-            public Layer(int nodes, Layer layer)
+            public Layer(Layer layer, int nodes)
             {
-                this.inputActivations = new double[nodes];
-                this.outputActivations = layer.inputActivations;
+                this.inputs = layer.outputs;
+                this.outputs = nodes;
 
-                layer.previousLayer = this;
-                this.nextLayer = layer;
+                layer.nextLayer = this;
+                this.previousLayer = layer;
             }
 
-            public Layer(Layer layer)
-            {
-                this.inputActivations = new double[layer.inputActivations.Length];
-                this.outputActivations = new double[layer.outputActivations.Length];
-
-                for (int i = 0; i < layer.inputActivations.Length; i++)
-                {
-                    this.inputActivations[i] = layer.inputActivations[i];
-                }
-
-                for (int i = 0; i < layer.outputActivations.Length; i++)
-                {
-                    this.outputActivations[i] = layer.outputActivations[i];
-                }
-            }
-
-            public Layer(Layer sourceLayer, Layer targetLayer)
-            {
-                this.inputActivations = new double[sourceLayer.inputActivations.Length];
-                this.outputActivations = targetLayer.inputActivations;
-
-                targetLayer.previousLayer = this;
-                this.nextLayer = targetLayer;
-
-                for (int i = 0; i < sourceLayer.inputActivations.Length; i++)
-                {
-                    this.inputActivations[i] = sourceLayer.inputActivations[i];
-                }
-            }
-
-            public abstract void PropagateForward(bool isTraining);
-            public abstract IEnumerable<double[]> PropagateBackward(ref double[] deltas, out double[] gradients);
-            public abstract void Update(double[] gradients, double[] deltas, Func<double, double, double> func);
-            public abstract Layer Copy();
-            public abstract Layer Copy(Layer layer);
+            public abstract Batch<double[]> PropagateForward(Batch<double[]> inputs, bool isTraining);
+            public abstract Tuple<Batch<double[]>, Batch<double[]>> PropagateBackward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas);
+            public abstract void Update(Batch<double[]> gradients, Func<double, double, double> func);
         }
     }
 }

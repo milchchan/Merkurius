@@ -6,9 +6,8 @@ namespace Megalopolis
     {
         public interface IFilter
         {
-            double[] PropagateForward(bool isTraining, double[] activations);
-            double[] PropagateBackward(double[] gradients);
-            IFilter Copy();
+            Batch<double[]> PropagateForward(Batch<double[]> batch, bool isTraining);
+            Batch<double[]> PropagateBackward(Batch<double[]> batch);
         }
     }
 }

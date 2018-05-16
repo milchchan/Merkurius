@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Megalopolis", "Megalopolis\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MNISTTest", "MNISTTest\MNISTTest.csproj", "{6D135FE2-CCDD-4C72-B6AE-3CCE024289BA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XORTest", "XORTest\XORTest.csproj", "{FCAFF0FE-94B4-4676-9DD0-23D83B575F0D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XORTest", "XORTest\XORTest.csproj", "{FCAFF0FE-94B4-4676-9DD0-23D83B575F0D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

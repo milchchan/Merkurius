@@ -31,16 +31,16 @@ namespace XORTest
             
             var random = RandomProvider.GetRandom();
             var patternList = new List<Tuple<double[], double[]>>();
-            var logDictionary = new Dictionary<string, IEnumerable<double>>();
+            var accuracyList = new List<double>();
+            var lossList = new List<double>();
 
             patternList.Add(Tuple.Create<double[], double[]>(new double[] { 0, 0 }, new double[] { 0 }));
             patternList.Add(Tuple.Create<double[], double[]>(new double[] { 0, 1 }, new double[] { 1 }));
             patternList.Add(Tuple.Create<double[], double[]>(new double[] { 1, 0 }, new double[] { 1 }));
             patternList.Add(Tuple.Create<double[], double[]>(new double[] { 1, 1 }, new double[] { 0 }));
 
-            var accuracyList = new List<double>();
-            var lossList = new List<double>();
-            var network = new Network(new FullyConnectedLayer(2, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(), new FullyConnectedLayer(2, 1, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())), new Momentum(0.5, 0.1), new MeanSquaredError());
+            var inputLayer = new FullyConnectedLayer(2, 2, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble());
+            var network = new Network(inputLayer, new FullyConnectedLayer(inputLayer, 1, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble()), new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
             int epochs = 10000;
             int iterations = 1;
 
@@ -98,8 +98,6 @@ namespace XORTest
                     return x;
                 })));
             }
-
-            Console.WriteLine("Accuracy: {0}, Loss: {1}", accuracyList.Last(), lossList.Last());
         }
 
         static private int ArgMax(double[] vector)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Megalopolis.ActivationFunctions;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Megalopolis
 {
@@ -8,126 +9,146 @@ namespace Megalopolis
     {
         public class SoftmaxLayer : Layer
         {
-            public SoftmaxLayer(int inputs, int outputs, Func<int, int, int, double> func) : base(inputs, outputs)
+            public SoftmaxLayer(Layer layer, int nodes, Func<int, int, int, double> func) : base(layer, nodes)
             {
-                var length = inputs * outputs;
+                var length = layer.Outputs * nodes;
 
                 this.weights = new double[length];
-                this.biases = new double[outputs];
+                this.biases = new double[nodes];
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, inputs, outputs);
+                    this.weights[i] = func(i, layer.Outputs, nodes);
                 }
 
-                for (int i = 0; i < outputs; i++)
+                for (int i = 0; i < nodes; i++)
                 {
                     this.biases[i] = 0;
                 }
             }
 
-            public SoftmaxLayer(SoftmaxLayer layer) : base(layer)
+            public override Batch<double[]> PropagateForward(Batch<double[]> inputs, bool isTraining)
             {
-                this.weights = new double[layer.weights.Length];
-                this.biases = new double[layer.biases.Length];
+                var parallelOptions = new ParallelOptions();
+                var data = new double[inputs.Size][];
 
-                for (int i = 0; i < layer.weights.Length; i++)
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
+
+                Parallel.ForEach<double[], List<Tuple<long, double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                 {
-                    this.weights[i] = layer.weights[i];
-                }
+                    double[] summations = new double[this.outputs];
+                    double[] activations = new double[this.outputs];
 
-                for (int i = 0; i < layer.biases.Length; i++)
-                {
-                    this.biases[i] = layer.biases[i];
-                }
-            }
-
-            public SoftmaxLayer(SoftmaxLayer sourceLayer, Layer targetLayer) : base(sourceLayer, targetLayer)
-            {
-                this.weights = new double[sourceLayer.weights.Length];
-                this.biases = new double[sourceLayer.biases.Length];
-
-                for (int i = 0; i < sourceLayer.weights.Length; i++)
-                {
-                    this.weights[i] = sourceLayer.weights[i];
-                }
-
-                for (int i = 0; i < sourceLayer.biases.Length; i++)
-                {
-                    this.biases[i] = sourceLayer.biases[i];
-                }
-            }
-
-            public override void PropagateForward(bool isTraining)
-            {
-                double[] summations = new double[this.outputActivations.Length];
-
-                for (int i = 0; i < this.outputActivations.Length; i++)
-                {
-                    double sum = 0;
-
-                    for (int j = 0; j < this.inputActivations.Length; j++)
+                    for (int i = 0; i < this.outputs; i++)
                     {
-                        sum += this.inputActivations[j] * this.weights[this.outputActivations.Length * j + i];
+                        double sum = 0;
+
+                        for (int j = 0; j < this.inputs; j++)
+                        {
+                            sum += vector[j] * this.weights[this.outputs * j + i];
+                        }
+
+                        summations[i] = sum + this.biases[i];
                     }
 
-                    sum += this.biases[i];
-
-                    summations[i] = sum;
-                }
-
-                for (int i = 0; i < this.outputActivations.Length; i++)
-                {
-                    this.outputActivations[i] = Softmax(summations, i);
-                }
-            }
-
-            public override IEnumerable<double[]> PropagateBackward(ref double[] deltas, out double[] gradients)
-            {
-                var d = new double[this.inputActivations.Length];
-
-                gradients = new double[this.inputActivations.Length * this.outputActivations.Length];
-
-                for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
-                {
-                    double error = 0;
-
-                    for (int k = 0; k < this.outputActivations.Length; k++)
+                    for (int i = 0; i < this.outputs; i++)
                     {
-                        error += deltas[k] * this.weights[j];
-                        gradients[j] = deltas[k] * this.inputActivations[i];
-                        j++;
+                        activations[i] = Softmax(summations, i);
                     }
 
-                    d[i] = error;
-                }
+                    local.Add(Tuple.Create<long, double[]>(index, activations));
 
-                return new double[][] { deltas, d };
+                    return local;
+                }, (local) =>
+                {
+                    lock (data)
+                    {
+                        local.ForEach(x =>
+                        {
+                            data[x.Item1] = x.Item2;
+                        });
+                    }
+                });
+
+                return new Batch<double[]>(data);
             }
 
-            public override void Update(double[] gradients, double[] deltas, Func<double, double, double> func)
+            public override Tuple<Batch<double[]>, Batch<double[]>> PropagateBackward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
             {
-                var length = this.inputActivations.Length * this.outputActivations.Length;
+                var parallelOptions = new ParallelOptions();
+                var tuple = Tuple.Create<double[][], double[][]>(new double[deltas.Size][], new double[deltas.Size][]);
+                List<double[]> vectorList = new List<double[]>();
+
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
+
+                Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(deltas, parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
+                {
+                    var gradients = new double[this.inputs * this.outputs];
+                    var vector2 = new double[this.inputs];
+
+                    for (int i = 0, j = 0; i < this.inputs; i++)
+                    {
+                        double error = 0;
+
+                        for (int k = 0; k < this.outputs; k++)
+                        {
+                            error += vector1[k] * this.weights[j];
+                            gradients[j] = vector1[k] * inputs[index][i];
+                            j++;
+                        }
+
+                        vector2[i] = error;
+                    }
+
+                    local.Add(Tuple.Create<long, double[], double[]>(index, vector2, gradients));
+
+                    return local;
+                }, (local) =>
+                {
+                    lock (tuple)
+                    {
+                        local.ForEach(x =>
+                        {
+                            tuple.Item1[x.Item1] = x.Item2;
+                            tuple.Item2[x.Item1] = x.Item3;
+                        });
+                    }
+                });
+
+                for (int i = 0; i < deltas.Size; i++)
+                {
+                    vectorList.Add(tuple.Item2[i].Concat<double>(deltas[i]).ToArray<double>());
+                }
+
+                return Tuple.Create<Batch<double[]>, Batch<double[]>>(new Batch<double[]>(tuple.Item1), new Batch<double[]>(vectorList));
+            }
+
+            public override void Update(Batch<double[]> gradients, Func<double, double, double> func)
+            {
+                var length = this.inputs * this.outputs;
+
+                for (int i = 1; i < gradients.Size; i++)
+                {
+                    for (int j = 0; j < length; j++)
+                    {
+                        gradients[0][j] += gradients[i][j];
+                    }
+
+                    for (int j = 0, k = length; j < this.outputs; j++, k++)
+                    {
+                        gradients[0][k] += gradients[i][k];
+                    }
+                }
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(this.weights[i], gradients[i]);
+                    this.weights[i] = func(this.weights[i], gradients[0][i] / gradients.Size);
                 }
 
-                for (int i = 0; i < this.outputActivations.Length; i++)
+                for (int i = 0, j = length; i < this.outputs; i++, j++)
                 {
-                    this.biases[i] = func(this.biases[i], deltas[i]);
+                    this.biases[i] = func(this.biases[i], gradients[0][j] / gradients.Size);
                 }
-            }
-
-            public override Layer Copy()
-            {
-                return new SoftmaxLayer(this);
-            }
-
-            public override Layer Copy(Layer layer)
-            {
-                return new SoftmaxLayer(this, layer);
             }
 
             private double Softmax(double[] x, int i)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Megalopolis
 {
@@ -7,9 +8,8 @@ namespace Megalopolis
     {
         public class Dropout : IFilter
         {
-            private Random random = null;
             private double rate = 0.5;
-            private Dictionary<int, double> maskDictionary = null;
+            private double[][] masks = null;
 
             public double Rate
             {
@@ -19,68 +19,91 @@ namespace Megalopolis
                 }
             }
 
-            public Dropout()
-            {
-                this.random = RandomProvider.GetRandom();
-                this.maskDictionary = new Dictionary<int, double>();
-            }
+            public Dropout() { }
 
             public Dropout(double rate)
             {
-                this.random = RandomProvider.GetRandom();
                 this.rate = rate;
-                this.maskDictionary = new Dictionary<int, double>();
             }
 
-            public Dropout(Dropout dropout)
-            {
-                this.random = RandomProvider.GetRandom();
-                this.rate = dropout.rate;
-                this.maskDictionary = new Dictionary<int, double>();
-
-                foreach (var keyValuePair in dropout.maskDictionary)
-                {
-                    this.maskDictionary.Add(keyValuePair.Key, keyValuePair.Value);
-                }
-            }
-
-            public double[] PropagateForward(bool isTraining, double[] activations)
+            public Batch<double[]> PropagateForward(Batch<double[]> batch, bool isTraining)
             {
                 if (isTraining)
                 {
-                    for (int i = 0; i < activations.Length; i++)
+                    var parallelOptions = new ParallelOptions();
+                    var tuple = Tuple.Create<double[][], double[][]>(new double[batch.Size][], new double[batch.Size][]);
+
+                    parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
+
+                    Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(batch, parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
                     {
-                        double probability = this.random.Binomial(1, this.rate);
+                        Random random = random = RandomProvider.GetRandom(); ;
+                        double[] masks = new double[vector1.Length];
+                        double[] vector2 = new double[vector1.Length];
 
-                        activations[i] *= probability;
+                        for (int i = 0; i < vector1.Length; i++)
+                        {
+                            double probability = random.Binomial(1, this.rate);
 
-                        if (this.maskDictionary.TryGetValue(i, out probability))
-                        {
-                            this.maskDictionary[i] = probability;
+                            masks[i] = probability;
+                            vector2[i] = vector1[i] * probability;
                         }
-                        else
+
+                        local.Add(Tuple.Create<long, double[], double[]>(index, masks, vector2));
+
+                        return local;
+                    }, (local) =>
+                    {
+                        lock (tuple)
                         {
-                            this.maskDictionary.Add(i, probability);
+                            local.ForEach(x =>
+                            {
+                                tuple.Item1[x.Item1] = x.Item2;
+                                tuple.Item2[x.Item1] = x.Item3;
+                            });
                         }
-                    }
+                    });
+
+                    this.masks = tuple.Item1;
+
+                    return new Batch<double[]>(tuple.Item2);
                 }
 
-                return activations;
+                return batch;
             }
 
-            public double[] PropagateBackward(double[] gradients)
+            public Batch<double[]> PropagateBackward(Batch<double[]> batch)
             {
-                for (int i = 0; i < gradients.Length; i++)
+                var parallelOptions = new ParallelOptions();
+                var data = new double[batch.Size][];
+                List<double[]> vectorList = new List<double[]>();
+
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
+
+                Parallel.ForEach<double[], List<Tuple<long, double[]>>>(batch, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector1, state, index, local) =>
                 {
-                    gradients[i] *= this.maskDictionary[i];
-                }
+                    double[] vector2 = new double[vector1.Length];
 
-                return gradients;
-            }
+                    for (int i = 0; i < vector1.Length; i++)
+                    {
+                        vector2[i] = vector1[i] * this.masks[index][i];
+                    }
 
-            public IFilter Copy()
-            {
-                return new Dropout(this);
+                    local.Add(Tuple.Create<long, double[]>(index, vector2));
+
+                    return local;
+                }, (local) =>
+                {
+                    lock (data)
+                    {
+                        local.ForEach(x =>
+                        {
+                            data[x.Item1] = x.Item2;
+                        });
+                    }
+                });
+
+                return new Batch<double[]>(data);
             }
         }
     }

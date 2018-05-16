@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Megalopolis.ActivationFunctions;
 
 namespace Megalopolis
@@ -16,8 +18,7 @@ namespace Megalopolis
             private int filterHeight = 0;
             private int poolWidth = 0;
             private int poolHeight = 0;
-            private double[,,] convolvedInputs = null;
-            private double[,,] activationMaps = null;
+            private ValueTuple<double[,,], double[,,]>[] internalDataTuple = null;
             private IActivationFunction activationFunction = null;
 
             public IActivationFunction ActivationFunction
@@ -28,7 +29,7 @@ namespace Megalopolis
                 }
             }
 
-            public ConvolutionalPoolingLayer(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, int, int, double> func, Layer layer) : base(channels * imageWidth * imageHeight, layer)
+            public ConvolutionalPoolingLayer(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(channels * imageWidth * imageHeight, filters * (imageWidth - filterWidth + 1) / poolWidth * ((imageHeight - filterHeight + 1) / poolHeight))
             {
                 var activationMapWidth = imageWidth - filterWidth + 1;
                 var activationMapHeight = imageHeight - filterHeight + 1;
@@ -47,8 +48,6 @@ namespace Megalopolis
                 this.filterHeight = filterHeight;
                 this.poolWidth = poolWidth;
                 this.poolHeight = poolHeight;
-                this.convolvedInputs = new double[this.filters, activationMapHeight, activationMapWidth];
-                this.activationMaps = new double[this.filters, activationMapHeight, activationMapWidth];
                 this.activationFunction = activationFunction;
 
                 for (int i = 0; i < length1; i++)
@@ -62,311 +61,385 @@ namespace Megalopolis
                 }
             }
 
-            public ConvolutionalPoolingLayer(ConvolutionalPoolingLayer layer) : base(layer)
+            public ConvolutionalPoolingLayer(Layer layer, int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(layer, filters * (imageWidth - filterWidth + 1) / poolWidth * ((imageHeight - filterHeight + 1) / poolHeight))
             {
-                var activationMapWidth = layer.imageWidth - layer.filterWidth + 1;
-                var activationMapHeight = layer.imageHeight - layer.filterHeight + 1;
-                var length = layer.filters * layer.channels * layer.filterWidth * layer.filterHeight;
+                var activationMapWidth = imageWidth - filterWidth + 1;
+                var activationMapHeight = imageHeight - filterHeight + 1;
+                var length1 = filters * channels * filterWidth * filterHeight;
+                var length2 = filters * activationMapWidth * activationMapHeight;
+                var fanIn = channels * filterWidth * filterHeight;
+                var fanOut = filters * filterWidth * filterHeight / (poolWidth * poolHeight);
 
-                this.weights = new double[length];
-                this.biases = new double[layer.filters * activationMapWidth * activationMapHeight];
-                this.imageWidth = layer.imageWidth;
-                this.imageHeight = layer.imageHeight;
-                this.channels = layer.channels;
-                this.filters = layer.filters;
-                this.filterWidth = layer.filterWidth;
-                this.filterHeight = layer.filterHeight;
-                this.poolWidth = layer.poolWidth;
-                this.poolHeight = layer.poolHeight;
-                this.convolvedInputs = new double[layer.filters, activationMapHeight, activationMapWidth];
-                this.activationMaps = new double[layer.filters, activationMapHeight, activationMapWidth];
-                this.activationFunction = layer.activationFunction;
+                this.weights = new double[length1];
+                this.biases = new double[length2];
+                this.channels = channels;
+                this.imageWidth = imageWidth;
+                this.imageHeight = imageHeight;
+                this.filters = filters;
+                this.filterWidth = filterWidth;
+                this.filterHeight = filterHeight;
+                this.poolWidth = poolWidth;
+                this.poolHeight = poolHeight;
+                this.activationFunction = activationFunction;
 
-                for (int i = 0; i < length; i++)
+                for (int i = 0; i < length1; i++)
                 {
-                    this.weights[i] = layer.weights[i];
+                    this.weights[i] = func(i, fanIn, fanOut);
                 }
 
-                for (int i = 0, j = 0; i < this.filters; i++)
+                for (int i = 0; i < length2; i++)
                 {
-                    for (int k = 0; k < activationMapHeight; k++)
-                    {
-                        for (int l = 0; l < activationMapWidth; l++)
-                        {
-                            this.biases[j] = layer.biases[j];
-                            this.convolvedInputs[i, k, l] = layer.convolvedInputs[i, k, l];
-                            this.activationMaps[i, k, l] = layer.activationMaps[i, k, l];
-                            j++;
-                        }
-                    }
+                    this.biases[i] = 0;
                 }
             }
 
-            public ConvolutionalPoolingLayer(ConvolutionalPoolingLayer sourceLayer, Layer targetLayer) : base(sourceLayer, targetLayer)
-            {
-                var activationMapWidth = sourceLayer.imageWidth - sourceLayer.filterWidth + 1;
-                var activationMapHeight = sourceLayer.imageHeight - sourceLayer.filterHeight + 1;
-                var length = sourceLayer.filters * sourceLayer.channels * sourceLayer.filterWidth * sourceLayer.filterHeight;
-
-                this.weights = new double[length];
-                this.biases = new double[sourceLayer.filters * activationMapWidth * activationMapHeight];
-                this.imageWidth = sourceLayer.imageWidth;
-                this.imageHeight = sourceLayer.imageHeight;
-                this.channels = sourceLayer.channels;
-                this.filters = sourceLayer.filters;
-                this.filterWidth = sourceLayer.filterWidth;
-                this.filterHeight = sourceLayer.filterHeight;
-                this.poolWidth = sourceLayer.poolWidth;
-                this.poolHeight = sourceLayer.poolHeight;
-                this.convolvedInputs = new double[sourceLayer.filters, activationMapHeight, activationMapWidth];
-                this.activationMaps = new double[sourceLayer.filters, activationMapHeight, activationMapWidth];
-                this.activationFunction = sourceLayer.activationFunction;
-
-                for (int i = 0; i < length; i++)
-                {
-                    this.weights[i] = sourceLayer.weights[i];
-                }
-
-                for (int i = 0, j = 0; i < sourceLayer.filters; i++)
-                {
-                    for (int k = 0; k < activationMapHeight; k++)
-                    {
-                        for (int l = 0; l < activationMapWidth; l++)
-                        {
-                            this.biases[j] = sourceLayer.biases[j];
-                            this.convolvedInputs[i, k, l] = sourceLayer.convolvedInputs[i, k, l];
-                            this.activationMaps[i, k, l] = sourceLayer.activationMaps[i, k, l];
-                            j++;
-                        }
-                    }
-                }
-            }
-
-            public override void PropagateForward(bool isTraining)
+            public override Batch<double[]> PropagateForward(Batch<double[]> inputs, bool isTraining)
             {
                 var activationMapWidth = GetActivationMapWidth();
                 var activationMapHeight = GetActivationMapHeight();
 
-                MaxPooling(Convolve(activationMapWidth, activationMapHeight), GetOutputWidth(activationMapWidth), GetOutputHeight(activationMapHeight));
+                return MaxPooling(Convolve(inputs, activationMapWidth, activationMapHeight), GetOutputWidth(activationMapWidth), GetOutputHeight(activationMapHeight));
             }
 
-            public override IEnumerable<double[]> PropagateBackward(ref double[] deltas, out double[] gradients)
+            public override Tuple<Batch<double[]>, Batch<double[]>> PropagateBackward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas1)
             {
+                var parallelOptions = new ParallelOptions();
                 var activationMapWidth = GetActivationMapWidth();
                 var activationMapHeight = GetActivationMapHeight();
                 var outputWidth = GetOutputWidth(activationMapWidth);
                 var outputHeight = GetOutputHeight(activationMapHeight);
                 var length = this.filters * this.channels * this.filterWidth * this.filterHeight;
-                var d = DerivativeOfMaxPooling(deltas, activationMapWidth, activationMapHeight, outputWidth, outputHeight);
-                
-                gradients = new double[length];
-                deltas = new double[this.filters * activationMapWidth * activationMapHeight];
+                var d = DerivativeOfMaxPooling(outputs, deltas1, activationMapWidth, activationMapHeight, outputWidth, outputHeight);
+                var data = new double[deltas1.Size][];
 
-                for (int i = 0; i < length; i++)
-                {
-                    gradients[i] = 0;
-                }
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
-                for (int i = 0, j = 0; i < this.filters; i++)
+                Parallel.ForEach<double[,,], List<Tuple<long, double[]>>>(d, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                 {
-                    for (int k = 0; k < activationMapHeight; k++)
+                    var gradients = new double[length];
+                    var deltas = new double[this.filters * activationMapWidth * activationMapHeight];
+
+                    for (int i = 0; i < length; i++)
                     {
-                        for (int l = 0; l < activationMapWidth; l++)
-                        {
-                            deltas[j] = this.activationFunction.Derivative(this.convolvedInputs[i, k, l] + this.biases[j]) * d[i, k, l];
+                        gradients[i] = 0;
+                    }
 
-                            for (int m = 0, n = 0, o = this.channels * this.filterWidth * this.filterHeight * i; m < this.channels; m++, n += this.imageWidth * this.imageHeight)
+                    for (int i = 0, j = 0; i < this.filters; i++)
+                    {
+                        for (int k = 0; k < activationMapHeight; k++)
+                        {
+                            for (int l = 0; l < activationMapWidth; l++)
                             {
-                                for (int p = 0; p < this.filterHeight; p++)
+                                deltas[j] = this.activationFunction.Derivative(this.internalDataTuple[index].Item1[i, k, l] + this.biases[j]) * vector[i, k, l];
+
+                                for (int m = 0, n = 0, o = this.channels * this.filterWidth * this.filterHeight * i; m < this.channels; m++, n += this.imageWidth * this.imageHeight)
                                 {
-                                    for (int q = 0; q < this.filterWidth; q++)
+                                    for (int p = 0; p < this.filterHeight; p++)
                                     {
-                                        gradients[o] += deltas[j] * this.inputActivations[n + this.imageWidth * (k + p) + l + q];
-                                        o++;
+                                        for (int q = 0; q < this.filterWidth; q++)
+                                        {
+                                            gradients[o] += deltas[j] * inputs[index][n + this.imageWidth * (k + p) + l + q];
+                                            o++;
+                                        }
                                     }
                                 }
+
+                                j++;
                             }
-                            
-                            j++;
                         }
                     }
-                }
 
-                return new double[][] { DerivativeOfConvolve(d, activationMapWidth, activationMapHeight) };
+                    local.Add(Tuple.Create<long, double[]>(index, gradients.Concat<double>(deltas).ToArray<double>()));
+
+                    return local;
+                }, (local) =>
+                {
+                    lock (data)
+                    {
+                        local.ForEach(x =>
+                        {
+                            data[x.Item1] = x.Item2;
+                        });
+                    }
+                });
+
+                return Tuple.Create<Batch<double[]>, Batch<double[]>>(DerivativeOfConvolve(d, activationMapWidth, activationMapHeight), new Batch<double[]>(data));
             }
 
-            public override void Update(double[] gradients, double[] deltas, Func<double, double, double> func)
+            public override void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
                 var length1 = this.filters * this.channels * this.filterWidth * this.filterHeight;
                 var length2 = this.filters * GetActivationMapWidth() * GetActivationMapHeight();
 
+                for (int i = 1; i < gradients.Size; i++)
+                {
+                    for (int j = 0; j < length1; j++)
+                    {
+                        gradients[0][j] += gradients[i][j];
+                    }
+
+                    for (int j = 0, k = length1; j < length2; j++, k++)
+                    {
+                        gradients[0][k] += gradients[i][k];
+                    }
+                }
+
                 for (int i = 0; i < length1; i++)
                 {
-                    this.weights[i] = func(this.weights[i], gradients[i]);
+                    this.weights[i] = func(this.weights[i], gradients[0][i] / gradients.Size);
                 }
 
-                for (int i = 0; i < length2; i++)
+                for (int i = 0, j = length1; i < length2; i++, j++)
                 {
-                    this.biases[i] = func(this.biases[i], deltas[i]);
+                    this.biases[i] = func(this.biases[i], gradients[0][j] / gradients.Size);
                 }
             }
 
-            public override Layer Copy()
+            private Batch<double[,,]> Convolve(Batch<double[]> inputs, int activationMapWidth, int activationMapHeight)
             {
-                return new ConvolutionalPoolingLayer(this);
-            }
+                var parallelOptions = new ParallelOptions();
 
-            public override Layer Copy(Layer layer)
-            {
-                return new ConvolutionalPoolingLayer(this, layer);
-            }
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
-            private double[,,] Convolve(int activationMapWidth, int activationMapHeight)
-            {
-                for (int i = 0; i < this.filters; i++)
+                this.internalDataTuple = new ValueTuple<double[,,], double[,,]>[inputs.Size];
+
+                Parallel.ForEach<double[], List<Tuple<long, double[,,], double[,,]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[,,], double[,,]>>(), (vector, state, index, local) =>
                 {
-                    for (int j = 0; j < activationMapHeight; j++)
+                    var convolvedInputs = new double[this.filters, activationMapHeight, activationMapWidth];
+                    var activationMaps = new double[this.filters, activationMapHeight, activationMapWidth];
+
+                    for (int i = 0; i < this.filters; i++)
                     {
-                        for (int k = 0; k < activationMapWidth; k++)
+                        for (int j = 0; j < activationMapHeight; j++)
                         {
-                            this.convolvedInputs[i, j, k] = 0;
-                        }
-                    }
-                }
-
-                for (int i = 0, j = 0; i < this.filters; i++)
-                {
-                    for (int k = 0; k < activationMapHeight; k++)
-                    {
-                        for (int l = 0; l < activationMapWidth; l++)
-                        {
-                            for (int m = 0, n = 0, o = this.channels * this.filterWidth * this.filterHeight * i; m < this.channels; m++, n += this.imageWidth * this.imageHeight)
+                            for (int k = 0; k < activationMapWidth; k++)
                             {
-                                for (int p = 0; p < this.filterHeight; p++)
-                                {
-                                    for (int q = 0; q < this.filterWidth; q++)
-                                    {
-                                        this.convolvedInputs[i, k, l] += this.inputActivations[n + this.imageWidth * (k + p) + l + q] * this.weights[o];
-                                        o++;
-                                    }
-                                }
+                                convolvedInputs[i, j, k] = 0;
                             }
-
-                            this.activationMaps[i, k, l] = this.activationFunction.Function(this.convolvedInputs[i, k, l] + this.biases[j]);
-                            j++;
                         }
                     }
-                }
 
-                return this.activationMaps;
-            }
-
-            private double[] DerivativeOfConvolve(double[,,] deltas, int activationMapWidth, int activationMapHeight)
-            {
-                var length = this.channels * this.imageHeight * this.imageWidth;
-                var d = new double[length];
-
-                for (int i = 0; i < length; i++)
-                {
-                    d[i] = 0;
-                }
-
-                for (int i = 0, j = 0, k = 0; i < this.channels; i++, j += this.filterWidth * this.filterHeight)
-                {
-                    for (int l = 0; l < this.imageHeight; l++)
+                    for (int i = 0, j = 0; i < this.filters; i++)
                     {
-                        for (int m = 0; m < this.imageWidth; m++)
+                        for (int k = 0; k < activationMapHeight; k++)
                         {
-                            for (int n = 0, o = 0; n < this.filters; n++, o += this.channels * this.filterWidth * this.filterHeight)
+                            for (int l = 0; l < activationMapWidth; l++)
                             {
-                                for (int p = 0, q = 0; p < this.filterHeight; p++, q += this.filterWidth)
+                                for (int m = 0, n = 0, o = this.channels * this.filterWidth * this.filterHeight * i; m < this.channels; m++, n += this.imageWidth * this.imageHeight)
                                 {
-                                    for (int r = 0; r < this.filterWidth; r++)
+                                    for (int p = 0; p < this.filterHeight; p++)
                                     {
-                                        var x = m - (this.filterWidth - 1) - r;
-                                        var y = l - (this.filterHeight - 1) - p;
-
-                                        if (y >= 0 && x >= 0)
+                                        for (int q = 0; q < this.filterWidth; q++)
                                         {
-                                            d[k] += deltas[n, y, x] * this.activationFunction.Derivative(this.convolvedInputs[n, y, x] + this.biases[activationMapWidth * activationMapHeight * n + activationMapWidth * y + x]) * this.weights[o + j + q + r];
+                                            convolvedInputs[i, k, l] += vector[n + this.imageWidth * (k + p) + l + q] * this.weights[o];
+                                            o++;
                                         }
                                     }
                                 }
-                            }
 
-                            k++;
+                                activationMaps[i, k, l] = this.activationFunction.Function(convolvedInputs[i, k, l] + this.biases[j]);
+                                j++;
+                            }
                         }
                     }
-                }
 
-                return d;
+                    local.Add(Tuple.Create<long, double[,,], double[,,]>(index, convolvedInputs, activationMaps));
+
+                    return local;
+                }, (local) =>
+                {
+                    lock (this.internalDataTuple)
+                    {
+                        local.ForEach(x =>
+                        {
+                            this.internalDataTuple[x.Item1].Item1 = x.Item2;
+                            this.internalDataTuple[x.Item1].Item2 = x.Item3;
+                        });
+                    }
+                });
+
+                return new Batch<double[,,]>(this.internalDataTuple.Aggregate<ValueTuple<double[,,], double[,,]>, List<double[,,]>>(new List<double[,,]>(), (list, tuple) =>
+                {
+                    list.Add(tuple.Item2);
+
+                    return list;
+                }));
             }
 
-            private void MaxPooling(double[,,] inputs, int outputWidth, int outputHeight)
+            private Batch<double[]> DerivativeOfConvolve(Batch<double[,,]> deltas, int activationMapWidth, int activationMapHeight)
             {
-                for (int i = 0, j = 0; i < this.filters; i++)
+                var parallelOptions = new ParallelOptions();
+                var length = this.channels * this.imageHeight * this.imageWidth;
+                var data = new double[deltas.Size][];
+
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
+
+                Parallel.ForEach<double[,,], List<Tuple<long, double[]>>>(deltas, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                 {
-                    for (int k = 0; k < outputHeight; k++)
+                    var d = new double[length];
+
+                    for (int i = 0; i < length; i++)
                     {
-                        for (int l = 0; l < outputWidth; l++)
+                        d[i] = 0;
+                    }
+
+                    for (int i = 0, j = 0, k = 0; i < this.channels; i++, j += this.filterWidth * this.filterHeight)
+                    {
+                        for (int l = 0; l < this.imageHeight; l++)
                         {
-                            var max = Double.MinValue;
-
-                            for (int m = 0; m < this.poolHeight; m++)
+                            for (int m = 0; m < this.imageWidth; m++)
                             {
-                                for (int n = 0; n < this.poolWidth; n++)
+                                for (int n = 0, o = 0; n < this.filters; n++, o += this.channels * this.filterWidth * this.filterHeight)
                                 {
-                                    var x = this.poolWidth * l + n;
-                                    var y = this.poolHeight * k + m;
-
-                                    if (max < inputs[i, y, x])
+                                    for (int p = 0, q = 0; p < this.filterHeight; p++, q += this.filterWidth)
                                     {
-                                        max = inputs[i, y, x];
+                                        for (int r = 0; r < this.filterWidth; r++)
+                                        {
+                                            var x = m - (this.filterWidth - 1) - r;
+                                            var y = l - (this.filterHeight - 1) - p;
+
+                                            if (y >= 0 && x >= 0)
+                                            {
+                                                d[k] += vector[n, y, x] * this.activationFunction.Derivative(this.internalDataTuple[index].Item1[n, y, x] + this.biases[activationMapWidth * activationMapHeight * n + activationMapWidth * y + x]) * this.weights[o + j + q + r];
+                                            }
+                                        }
                                     }
                                 }
-                            }
 
-                            this.outputActivations[j] = max;
-                            j++;
+                                k++;
+                            }
                         }
                     }
-                }
+
+                    local.Add(Tuple.Create<long, double[]>(index, d));
+
+                    return local;
+                }, (local) =>
+                {
+                    lock (data)
+                    {
+                        local.ForEach(x =>
+                        {
+                            data[x.Item1] = x.Item2;
+                        });
+                    }
+                });
+
+                return new Batch<double[]>(data);
             }
 
-            private double[,,] DerivativeOfMaxPooling(double[] deltas, int activationMapWidth, int activationMapHeight, int outputWidth, int outputHeight)
+            private Batch<double[]> MaxPooling(Batch<double[,,]> inputs, int outputWidth, int outputHeight)
             {
-                var d = new double[this.filters, activationMapHeight, activationMapWidth];
+                var parallelOptions = new ParallelOptions();
+                var length = this.filters * outputWidth * outputHeight;
+                var data = new double[inputs.Size][];
 
-                for (int i = 0, j = 0; i < this.filters; i++)
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
+
+                Parallel.ForEach<double[,,], List<Tuple<long, double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                 {
-                    for (int k = 0; k < outputHeight; k++)
-                    {
-                        for (int l = 0; l < outputWidth; l++)
-                        {
-                            for (int m = 0; m < this.poolHeight; m++)
-                            {
-                                for (int n = 0; n < this.poolWidth; n++)
-                                {
-                                    var x = this.poolWidth * l + n;
-                                    var y = this.poolHeight * k + m;
+                    var activations = new double[length];
 
-                                    if (this.outputActivations[j] == this.activationMaps[i, y, x])
+                    for (int i = 0, j = 0; i < this.filters; i++)
+                    {
+                        for (int k = 0; k < outputHeight; k++)
+                        {
+                            for (int l = 0; l < outputWidth; l++)
+                            {
+                                var max = Double.MinValue;
+
+                                for (int m = 0; m < this.poolHeight; m++)
+                                {
+                                    for (int n = 0; n < this.poolWidth; n++)
                                     {
-                                        d[i, y, x] = deltas[j];
-                                    }
-                                    else
-                                    {
-                                        d[i, y, x] = 0;
+                                        var x = this.poolWidth * l + n;
+                                        var y = this.poolHeight * k + m;
+
+                                        if (max < vector[i, y, x])
+                                        {
+                                            max = vector[i, y, x];
+                                        }
                                     }
                                 }
-                            }
 
-                            j++;
+                                activations[j] = max;
+                                j++;
+                            }
                         }
                     }
-                }
 
-                return d;
+                    local.Add(Tuple.Create<long, double[]>(index, activations));
+
+                    return local;
+                }, (local) =>
+                {
+                    lock (data)
+                    {
+                        local.ForEach(x =>
+                        {
+                            data[x.Item1] = x.Item2;
+                        });
+                    }
+                });
+
+                return new Batch<double[]>(data);
+            }
+
+            private Batch<double[,,]> DerivativeOfMaxPooling(Batch<double[]> outputs, Batch<double[]> deltas, int activationMapWidth, int activationMapHeight, int outputWidth, int outputHeight)
+            {
+                var parallelOptions = new ParallelOptions();
+                var data = new double[deltas.Size][,,];
+
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
+
+                Parallel.ForEach<double[], List<Tuple<long, double[,,]>>>(deltas, parallelOptions, () => new List<Tuple<long, double[,,]>>(), (vector, state, index, local) =>
+                {
+                    var d = new double[this.filters, activationMapHeight, activationMapWidth];
+
+                    for (int i = 0, j = 0; i < this.filters; i++)
+                    {
+                        for (int k = 0; k < outputHeight; k++)
+                        {
+                            for (int l = 0; l < outputWidth; l++)
+                            {
+                                for (int m = 0; m < this.poolHeight; m++)
+                                {
+                                    for (int n = 0; n < this.poolWidth; n++)
+                                    {
+                                        var x = this.poolWidth * l + n;
+                                        var y = this.poolHeight * k + m;
+
+                                        if (outputs[index][j] == this.internalDataTuple[index].Item2[i, y, x])
+                                        {
+                                            d[i, y, x] = vector[j];
+                                        }
+                                        else
+                                        {
+                                            d[i, y, x] = 0;
+                                        }
+                                    }
+                                }
+
+                                j++;
+                            }
+                        }
+                    }
+
+                    local.Add(Tuple.Create<long, double[,,]>(index, d));
+
+                    return local;
+                }, (local) =>
+                {
+                    lock (data)
+                    {
+                        local.ForEach(x =>
+                        {
+                            data[x.Item1] = x.Item2;
+                        });
+                    }
+                });
+
+                return new Batch<double[,,]>(data);
             }
 
             private int GetActivationMapWidth()

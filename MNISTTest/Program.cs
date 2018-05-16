@@ -37,6 +37,8 @@ namespace MNISTTest
             var random = RandomProvider.GetRandom();
             var trainingList = new List<Tuple<double[], double[]>>();
             var testList = new List<Tuple<double[], double[]>>();
+            var accuracyList = new List<double>();
+            var lossList = new List<double>();
             var logDictionary = new Dictionary<string, IEnumerable<double>>();
             var logPath = "Log.csv";
             var channels = 1;
@@ -96,13 +98,10 @@ namespace MNISTTest
                 }
             }
 
-            var accuracyList = new List<double>();
-            var lossList = new List<double>();
-            var network = new Network(
-                new ConvolutionalPoolingLayer(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, poolWidth, poolHeight, new ReLU(), (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
-                new FullyConnectedLayer(filters * ConvolutionalPoolingLayer.GetOutputLength(imageWidth, filterWidth, poolWidth) * ConvolutionalPoolingLayer.GetOutputLength(imageHeight, filterHeight, poolHeight), new ReLU(), (index, fanIn, fanOut) => Initializers.GlorotUniform(fanIn, fanOut),
-                new SoftmaxLayer(100, 10, (index, fanIn, fanOut) => Initializers.GlorotUniform(fanIn, fanOut)))),
-                new Adam(), new SoftmaxCrossEntropy());
+            var inputLayer = new ConvolutionalPoolingLayer(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, poolWidth, poolHeight, new ReLU(), (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
+            var hiddenLayer = new FullyConnectedLayer(inputLayer, 100, new ReLU(), (index, fanIn, fanOut) => Initializers.GlorotUniform(fanIn, fanOut));
+            var outputLayer = new SoftmaxLayer(hiddenLayer, 10, (index, fanIn, fanOut) => Initializers.GlorotUniform(fanIn, fanOut));
+            var network = new Network(inputLayer, outputLayer, new Adam(), new SoftmaxCrossEntropy());
             int epochs = 50;
             int iterations = 1;
 

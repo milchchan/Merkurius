@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 using Megalopolis.ActivationFunctions;
 
 namespace Megalopolis
@@ -40,21 +42,21 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
+            public FullyConnectedLayer(Layer layer, int nodes, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(layer, nodes)
             {
-                var length = nodes * layer.InputActivations.Length;
+                var length = layer.Outputs * nodes;
 
                 this.weights = new double[length];
-                this.biases = new double[layer.InputActivations.Length];
+                this.biases = new double[nodes];
                 this.activationFunction = activationFunction;
                 this.filterCollection = new Collection<IFilter>();
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, nodes, layer.InputActivations.Length);
+                    this.weights[i] = func(i, layer.Outputs, nodes);
                 }
 
-                for (int i = 0; i < layer.InputActivations.Length; i++)
+                for (int i = 0; i < nodes; i++)
                 {
                     this.biases[i] = 0;
                 }
@@ -85,21 +87,21 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
+            public FullyConnectedLayer(Layer layer, int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, int, int, double> func) : base(layer, nodes)
             {
-                var length = nodes * layer.InputActivations.Length;
+                var length = layer.Outputs * nodes;
 
                 this.weights = new double[length];
-                this.biases = new double[layer.InputActivations.Length];
+                this.biases = new double[nodes];
                 this.activationFunction = activationFunction;
                 this.filterCollection = new Collection<IFilter>();
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, nodes, layer.InputActivations.Length);
+                    this.weights[i] = func(i, layer.Outputs, nodes);
                 }
 
-                for (int i = 0; i < layer.InputActivations.Length; i++)
+                for (int i = 0; i < nodes; i++)
                 {
                     this.biases[i] = 0;
                 }
@@ -110,175 +112,172 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(FullyConnectedLayer layer) : base(layer)
+            public override Batch<double[]> PropagateForward(Batch<double[]> inputs, bool isTraining)
             {
-                this.weights = new double[layer.weights.Length];
-                this.biases = new double[layer.biases.Length];
-                this.activationFunction = layer.activationFunction;
-                this.filterCollection = new Collection<IFilter>();
+                var parallelOptions = new ParallelOptions();
+                var data = new double[inputs.Size][];
 
-                for (int i = 0; i < layer.weights.Length; i++)
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
+
+                Parallel.ForEach<double[], List<Tuple<long, double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                 {
-                    this.weights[i] = layer.weights[i];
-                }
+                    double[] activations = new double[this.outputs];
 
-                for (int i = 0; i < layer.biases.Length; i++)
-                {
-                    this.biases[i] = layer.biases[i];
-                }
-
-                foreach (var filter in layer.filterCollection)
-                {
-                    this.filterCollection.Add(filter.Copy());
-                }
-            }
-
-            public FullyConnectedLayer(FullyConnectedLayer sourceLayer, Layer targetLayer) : base(sourceLayer, targetLayer)
-            {
-                this.weights = new double[sourceLayer.weights.Length];
-                this.biases = new double[sourceLayer.biases.Length];
-                this.activationFunction = sourceLayer.activationFunction;
-                this.filterCollection = new Collection<IFilter>();
-
-                for (int i = 0; i < sourceLayer.weights.Length; i++)
-                {
-                    this.weights[i] = sourceLayer.weights[i];
-                }
-
-                for (int i = 0; i < sourceLayer.biases.Length; i++)
-                {
-                    this.biases[i] = sourceLayer.biases[i];
-                }
-
-                foreach (var filter in sourceLayer.filterCollection)
-                {
-                    this.filterCollection.Add(filter.Copy());
-                }
-            }
-
-            public override void PropagateForward(bool isTraining)
-            {
-                double[] summations = new double[this.outputActivations.Length];
-                double[] tempActivations = new double[this.outputActivations.Length];
-
-                for (int i = 0; i < this.outputActivations.Length; i++)
-                {
-                    double sum = 0;
-
-                    for (int j = 0; j < this.inputActivations.Length; j++)
+                    for (int i = 0; i < this.outputs; i++)
                     {
-                        sum += this.inputActivations[j] * this.weights[this.outputActivations.Length * j + i];
+                        double sum = 0;
+
+                        for (int j = 0; j < this.inputs; j++)
+                        {
+                            sum += vector[j] * this.weights[this.outputs * j + i];
+                        }
+
+                        sum += this.biases[i];
+
+                        activations[i] = this.activationFunction.Function(sum);
                     }
 
-                    sum += this.biases[i];
+                    local.Add(Tuple.Create<long, double[]>(index, activations));
 
-                    summations[i] = sum;
-                }
-
-                for (int i = 0; i < this.outputActivations.Length; i++)
+                    return local;
+                }, (local) =>
                 {
-                    tempActivations[i] = this.activationFunction.Function(summations[i]);
-                }
+                    lock (data)
+                    {
+                        local.ForEach(x =>
+                        {
+                            data[x.Item1] = x.Item2;
+                        });
+                    }
+                });
+
+                inputs = new Batch<double[]>(data);
 
                 foreach (var filter in this.filterCollection)
                 {
-                    tempActivations = filter.PropagateForward(isTraining, tempActivations);
+                    inputs = filter.PropagateForward(inputs, isTraining);
                 }
 
-                for (int i = 0; i < this.outputActivations.Length; i++)
-                {
-                    this.outputActivations[i] = tempActivations[i];
-                }
+                return inputs;
             }
 
-            public override IEnumerable<double[]> PropagateBackward(ref double[] deltas, out double[] gradients)
+            public override Tuple<Batch<double[]>, Batch<double[]>> PropagateBackward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
             {
-                gradients = new double[this.inputActivations.Length * this.outputActivations.Length];
+                var parallelOptions = new ParallelOptions();
+                var data = new double[deltas.Size][];
+                var tuple = Tuple.Create<double[][], double[][]>(new double[deltas.Size][], new double[deltas.Size][]);
+                List<double[]> vectorList = new List<double[]>();
 
-                if (this.nextLayer == null)
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
+
+                Parallel.ForEach<double[], List<Tuple<long, double[]>>>(deltas, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector1, state, index, local) =>
                 {
-                    var d1 = new double[this.outputActivations.Length];
-                    var d2 = new double[this.inputActivations.Length];
+                    var vector2 = new double[this.outputs];
 
-                    for (int i = 0; i < this.outputActivations.Length; i++)
+                    for (int i = 0; i < this.outputs; i++)
                     {
-                        d1[i] = this.activationFunction.Derivative(this.outputActivations[i]) * deltas[i];
+                        vector2[i] = this.activationFunction.Derivative(outputs[index][i]) * vector1[i];
                     }
 
-                    foreach (var filter in this.filterCollection)
-                    {
-                        d1 = filter.PropagateBackward(d1);
-                    }
+                    local.Add(Tuple.Create<long, double[]>(index, vector2));
 
-                    for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
+                    return local;
+                }, (local) =>
+                {
+                    lock (data)
+                    {
+                        local.ForEach(x =>
+                        {
+                            data[x.Item1] = x.Item2;
+                        });
+                    }
+                });
+
+                var batch = new Batch<double[]>(data);
+
+                foreach (var filter in this.filterCollection)
+                {
+                    batch = filter.PropagateBackward(batch);
+                }
+
+                Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(batch, parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
+                {
+                    var gradients = new double[this.inputs * this.outputs];
+                    var vector2 = new double[this.inputs];
+
+                    for (int i = 0, j = 0; i < this.inputs; i++)
                     {
                         double error = 0;
 
-                        for (int k = 0; k < this.outputActivations.Length; k++)
+                        for (int k = 0; k < this.outputs; k++)
                         {
-                            error += d1[k] * this.weights[j];
-                            gradients[j] = d1[k] * this.inputActivations[i];
+                            error += vector1[k] * this.weights[j];
+                            gradients[j] = vector1[k] * inputs[index][i];
                             j++;
                         }
 
-                        d2[i] = error;
+                        vector2[i] = error;
                     }
 
-                    return new double[][] { d1, d2 };
-                }
+                    local.Add(Tuple.Create<long, double[], double[]>(index, vector2, gradients));
 
-                var d = new double[this.inputActivations.Length];
-
-                for (int i = 0; i < this.outputActivations.Length; i++)
+                    return local;
+                }, (local) =>
                 {
-                    deltas[i] = this.activationFunction.Derivative(this.outputActivations[i]) * deltas[i];
-                }
-
-                foreach (var filter in this.filterCollection)
-                {
-                    deltas = filter.PropagateBackward(deltas);
-                }
-
-                for (int i = 0, j = 0; i < this.inputActivations.Length; i++)
-                {
-                    double error = 0;
-
-                    for (int k = 0; k < this.outputActivations.Length; k++)
+                    lock (tuple)
                     {
-                        error += deltas[k] * this.weights[j];
-                        gradients[j] = deltas[k] * this.inputActivations[i];
-                        j++;
+                        local.ForEach(x =>
+                        {
+                            tuple.Item1[x.Item1] = x.Item2;
+                            tuple.Item2[x.Item1] = x.Item3;
+                        });
                     }
+                });
 
-                    d[i] = error;
+                if (this.nextLayer == null)
+                {
+                    for (int i = 0; i < deltas.Size; i++)
+                    {
+                        vectorList.Add(tuple.Item2[i].Concat<double>(deltas[i]).ToArray<double>());
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < deltas.Size; i++)
+                    {
+                        vectorList.Add(tuple.Item2[i].Concat<double>(batch[i]).ToArray<double>());
+                    }
                 }
 
-                return new double[][] { d };
+                return Tuple.Create<Batch<double[]>, Batch<double[]>>(new Batch<double[]>(tuple.Item1), new Batch<double[]>(vectorList));
             }
 
-            public override void Update(double[] gradients, double[] deltas, Func<double, double, double> func)
+            public override void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
-                var length = this.inputActivations.Length * this.outputActivations.Length;
+                var length = this.inputs * this.outputs;
+
+                for (int i = 1; i < gradients.Size; i++)
+                {
+                    for (int j = 0; j < length; j++)
+                    {
+                        gradients[0][j] += gradients[i][j];
+                    }
+
+                    for (int j = 0, k = length; j < this.outputs; j++, k++)
+                    {
+                        gradients[0][k] += gradients[i][k];
+                    }
+                }
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(this.weights[i], gradients[i]);
+                    this.weights[i] = func(this.weights[i], gradients[0][i] / gradients.Size);
                 }
 
-                for (int i = 0; i < this.outputActivations.Length; i++)
+                for (int i = 0, j = length; i < this.outputs; i++, j++)
                 {
-                    this.biases[i] = func(this.biases[i], deltas[i]);
+                    this.biases[i] = func(this.biases[i], gradients[0][j] / gradients.Size);
                 }
-            }
-
-            public override Layer Copy()
-            {
-                return new FullyConnectedLayer(this);
-            }
-
-            public override Layer Copy(Layer layer)
-            {
-                return new FullyConnectedLayer(this, layer);
             }
         }
     }
