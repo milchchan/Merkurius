@@ -20,6 +20,7 @@ This repository contains the portable deep learning (deep neural networks) libra
 * Softsign
 
 ### Layers
+* Batch normalization
 * Convolutional
 * Dropout
 * Fully connected
