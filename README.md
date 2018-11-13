@@ -12,6 +12,8 @@ PM> Install-Package Megalopolis
 
 ## Build
 
+To build Megalopolis, run .NET Core CLI command.
+
 ```sh
 $ dotnet build Megalopolis.csproj
 ```
