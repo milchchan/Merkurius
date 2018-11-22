@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Masaaki Kawata</Authors>
+    <Company />
   </PropertyGroup>
 
 </Project>
