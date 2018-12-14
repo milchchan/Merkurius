@@ -99,8 +99,8 @@ namespace MNISTTest
             }
 
             var inputLayer = new ConvolutionalPoolingLayer(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, poolWidth, poolHeight, new ReLU(), (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
-            var hiddenLayer = new FullyConnectedLayer(inputLayer, 100, new ReLU(), (index, fanIn, fanOut) => Initializers.GlorotUniform(fanIn, fanOut));
-            var outputLayer = new SoftmaxLayer(hiddenLayer, 10, (index, fanIn, fanOut) => Initializers.GlorotUniform(fanIn, fanOut));
+            var hiddenLayer = new FullyConnectedLayer(inputLayer, 100, new ReLU(), (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
+            var outputLayer = new SoftmaxLayer(hiddenLayer, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut));
             var network = new Network(inputLayer, outputLayer, new Adam(), new SoftmaxCrossEntropy());
             int epochs = 50;
             int iterations = 1;
