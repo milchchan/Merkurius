@@ -2,10 +2,20 @@
 
 This repository contains the portable deep learning (deep neural networks) library implementation for .NET platform. This library is written by C#.
 
-## Build
+## Installation
+
+Megalopolis can install from the NuGet package manager.
 
 ```sh
-$ dotnet build Megalopolis.csproj
+PM> Install-Package Megalopolis
+```
+
+## Build
+
+To build Megalopolis, run .NET Core CLI command.
+
+```sh
+> dotnet build Megalopolis.csproj
 ```
 
 ## Features
