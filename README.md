@@ -10,8 +10,6 @@ Megalopolis can install from the NuGet package manager.
 PM> Install-Package Megalopolis
 ```
 
-Please see https://www.nuget.org/packages/Megalopolis/ for more information.
-
 ## Build
 
 To build Megalopolis, run .NET Core CLI command.
