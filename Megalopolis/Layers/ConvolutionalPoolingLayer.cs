@@ -93,7 +93,7 @@ namespace Megalopolis
                 }
             }
 
-            public override Batch<double[]> PropagateForward(Batch<double[]> inputs, bool isTraining)
+            public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
                 var activationMapWidth = GetActivationMapWidth();
                 var activationMapHeight = GetActivationMapHeight();
@@ -101,7 +101,7 @@ namespace Megalopolis
                 return MaxPooling(Convolve(inputs, activationMapWidth, activationMapHeight), GetOutputWidth(activationMapWidth), GetOutputHeight(activationMapHeight));
             }
 
-            public override Tuple<Batch<double[]>, Batch<double[]>> PropagateBackward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas1)
+            public override Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas1)
             {
                 var parallelOptions = new ParallelOptions();
                 var activationMapWidth = GetActivationMapWidth();

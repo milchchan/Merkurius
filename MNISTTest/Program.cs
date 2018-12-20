@@ -136,7 +136,7 @@ namespace MNISTTest
 
             var stopwatch = Stopwatch.StartNew();
 
-            network.Train(trainingList, epochs, 100);
+            network.Fit(trainingList, epochs, 100);
 
             stopwatch.Stop();
 
@@ -189,7 +189,7 @@ namespace MNISTTest
             using (var s = new StreamWriter(fs, System.Text.Encoding.UTF8))
             {
                 s.Write(String.Join(",", dictionary.Keys));
-                s.Write("\r\n");
+                s.Write(Environment.NewLine);
 
                 var values = dictionary.Values.ToArray();
                 var table = new List<List<string>>();
@@ -231,7 +231,7 @@ namespace MNISTTest
                     }
 
                     s.Write(String.Join(",", dataList));
-                    s.Write("\r\n");
+                    s.Write(Environment.NewLine);
                 }
 
                 fs.Flush();

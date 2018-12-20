@@ -78,7 +78,7 @@ namespace XORTest
 
             var stopwatch = Stopwatch.StartNew();
 
-            network.Train(patternList, epochs);
+            network.Fit(patternList, epochs);
 
             stopwatch.Stop();
 

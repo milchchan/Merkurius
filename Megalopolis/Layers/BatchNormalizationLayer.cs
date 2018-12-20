@@ -49,7 +49,7 @@ namespace Megalopolis
                 }
             }
 
-            public override Batch<double[]> PropagateForward(Batch<double[]> inputs, bool isTraining)
+            public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
                 var outputs = new Batch<double[]>(new double[inputs.Size][]);
 
@@ -132,7 +132,7 @@ namespace Megalopolis
                 return outputs;
             }
 
-            public override Tuple<Batch<double[]>, Batch<double[]>> PropagateBackward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
+            public override Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
             {
                 var dbetaVector = new double[deltas[0].Length];
                 var dgammaVector = new double[deltas[0].Length];

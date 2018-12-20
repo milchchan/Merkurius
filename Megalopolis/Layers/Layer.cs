@@ -85,8 +85,8 @@ namespace Megalopolis
                 this.previousLayer = layer;
             }
 
-            public abstract Batch<double[]> PropagateForward(Batch<double[]> inputs, bool isTraining);
-            public abstract Tuple<Batch<double[]>, Batch<double[]>> PropagateBackward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas);
+            public abstract Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining);
+            public abstract Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas);
             public abstract void Update(Batch<double[]> gradients, Func<double, double, double> func);
         }
     }

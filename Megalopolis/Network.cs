@@ -70,7 +70,7 @@ namespace Megalopolis
             } while (layer != null);
         }
 
-        public void Train(IEnumerable<Tuple<double[], double[]>> collection, int epochs, int batchSize = 32)
+        public void Fit(IEnumerable<Tuple<double[], double[]>> collection, int epochs, int batchSize = 32)
         {
             // Backpropagation
             int dataSize = collection.Count();
@@ -94,7 +94,7 @@ namespace Megalopolis
                     int index = 0;
                     int identifier = 0;
 
-                    foreach (var gradients in BackwardPropagate(ForwardPropagate(new Batch<double[]>(dataTuple.Item1), true), new Batch<double[]>(dataTuple.Item2)))
+                    foreach (var gradients in Backward(Forward(new Batch<double[]>(dataTuple.Item1), true), new Batch<double[]>(dataTuple.Item2)))
                     {
                         this.layerCollection[index].Update(gradients, (weight, gradient) => optimizer.Optimize(identifier++, weight, gradient));
                         index++;
@@ -122,7 +122,7 @@ namespace Megalopolis
 
             do
             {
-                inputs = layer.PropagateForward(inputs, false);
+                inputs = layer.Forward(inputs, false);
 
                 outputLayer = layer;
                 layer = layer.Next;
@@ -138,7 +138,7 @@ namespace Megalopolis
 
             foreach (var tuple in collection)
             {
-                var activations = ForwardPropagate(new Batch<double[]>(new double[][] { tuple.Item1 }), false);
+                var activations = Forward(new Batch<double[]>(new double[][] { tuple.Item1 }), false);
                 var outputActivations = activations.Last().Item2;
 
                 for (int i = 0; i < this.outputLayer.Outputs; i++)
@@ -150,14 +150,14 @@ namespace Megalopolis
             return sum / size;
         }
 
-        private IEnumerable<Tuple<Batch<double[]>, Batch<double[]>>> ForwardPropagate(Batch<double[]> inputs, bool isTraining)
+        private IEnumerable<Tuple<Batch<double[]>, Batch<double[]>>> Forward(Batch<double[]> inputs, bool isTraining)
         {
             var layer = this.inputLayer;
             var tupleList = new List<Tuple<Batch<double[]>, Batch<double[]>>>();
 
             do
             {
-                var outputs = layer.PropagateForward(inputs, isTraining);
+                var outputs = layer.Forward(inputs, isTraining);
                 
                 tupleList.Add(Tuple.Create<Batch<double[]>, Batch<double[]>>(inputs, outputs));
                 inputs = outputs;
@@ -168,7 +168,7 @@ namespace Megalopolis
             return tupleList;
         }
 
-        private IEnumerable<Batch<double[]>> BackwardPropagate(IEnumerable<Tuple<Batch<double[]>, Batch<double[]>>> activations, Batch<double[]> outputs)
+        private IEnumerable<Batch<double[]>> Backward(IEnumerable<Tuple<Batch<double[]>, Batch<double[]>>> activations, Batch<double[]> outputs)
         {
             var layer = this.outputLayer.Previous;
             var activationsLinkedList = new LinkedList<Tuple<Batch<double[]>, Batch<double[]>>>(activations);
@@ -185,14 +185,14 @@ namespace Megalopolis
                 }
             }
 
-            var tuple = this.outputLayer.PropagateBackward(activationsLinkedList.Last.Value.Item1, activationsLinkedList.Last.Value.Item2, deltas);
+            var tuple = this.outputLayer.Backward(activationsLinkedList.Last.Value.Item1, activationsLinkedList.Last.Value.Item2, deltas);
 
             gradientsList.AddFirst(tuple.Item2);
             activationsLinkedList.RemoveLast();
 
             while (layer != null)
             {
-                tuple = layer.PropagateBackward(activationsLinkedList.Last.Value.Item1, activationsLinkedList.Last.Value.Item2, tuple.Item1);
+                tuple = layer.Backward(activationsLinkedList.Last.Value.Item1, activationsLinkedList.Last.Value.Item2, tuple.Item1);
 
                 gradientsList.AddFirst(tuple.Item2);
                 activationsLinkedList.RemoveLast();

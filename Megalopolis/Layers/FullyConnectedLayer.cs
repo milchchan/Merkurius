@@ -112,7 +112,7 @@ namespace Megalopolis
                 }
             }
 
-            public override Batch<double[]> PropagateForward(Batch<double[]> inputs, bool isTraining)
+            public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
                 var parallelOptions = new ParallelOptions();
                 var data = new double[inputs.Size][];
@@ -155,13 +155,13 @@ namespace Megalopolis
 
                 foreach (var filter in this.filterCollection)
                 {
-                    inputs = filter.PropagateForward(inputs, isTraining);
+                    inputs = filter.Forward(inputs, isTraining);
                 }
 
                 return inputs;
             }
 
-            public override Tuple<Batch<double[]>, Batch<double[]>> PropagateBackward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
+            public override Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
             {
                 var parallelOptions = new ParallelOptions();
                 var data = new double[deltas.Size][];
@@ -197,7 +197,7 @@ namespace Megalopolis
 
                 foreach (var filter in this.filterCollection)
                 {
-                    batch = filter.PropagateBackward(batch);
+                    batch = filter.Backward(batch);
                 }
 
                 Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(batch, parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>

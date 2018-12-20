@@ -26,7 +26,7 @@ namespace Megalopolis
                 this.rate = rate;
             }
 
-            public Batch<double[]> PropagateForward(Batch<double[]> batch, bool isTraining)
+            public Batch<double[]> Forward(Batch<double[]> batch, bool isTraining)
             {
                 if (isTraining)
                 {
@@ -72,7 +72,7 @@ namespace Megalopolis
                 return batch;
             }
 
-            public Batch<double[]> PropagateBackward(Batch<double[]> batch)
+            public Batch<double[]> Backward(Batch<double[]> batch)
             {
                 var parallelOptions = new ParallelOptions();
                 var data = new double[batch.Size][];
