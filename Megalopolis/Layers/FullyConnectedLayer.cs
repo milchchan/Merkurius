@@ -234,19 +234,9 @@ namespace Megalopolis
                     }
                 });
 
-                if (this.nextLayer == null)
+                for (int i = 0; i < deltas.Size; i++)
                 {
-                    for (int i = 0; i < deltas.Size; i++)
-                    {
-                        vectorList.Add(tuple.Item2[i].Concat<double>(deltas[i]).ToArray<double>());
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < deltas.Size; i++)
-                    {
-                        vectorList.Add(tuple.Item2[i].Concat<double>(batch[i]).ToArray<double>());
-                    }
+                    vectorList.Add(tuple.Item2[i].Concat<double>(batch[i]).ToArray<double>());
                 }
 
                 return Tuple.Create<Batch<double[]>, Batch<double[]>>(new Batch<double[]>(tuple.Item1), new Batch<double[]>(vectorList));
