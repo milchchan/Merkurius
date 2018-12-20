@@ -166,7 +166,7 @@ namespace Megalopolis
                 var parallelOptions = new ParallelOptions();
                 var data = new double[deltas.Size][];
                 var tuple = Tuple.Create<double[][], double[][]>(new double[deltas.Size][], new double[deltas.Size][]);
-                List<double[]> vectorList = new List<double[]>();
+                var vectorList = new List<double[]>();
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 

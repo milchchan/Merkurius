@@ -76,7 +76,6 @@ namespace Megalopolis
             {
                 var parallelOptions = new ParallelOptions();
                 var data = new double[batch.Size][];
-                List<double[]> vectorList = new List<double[]>();
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
