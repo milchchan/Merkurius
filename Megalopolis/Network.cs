@@ -8,7 +8,7 @@ using Megalopolis.LossFunctions;
 
 namespace Megalopolis
 {
-    public class Network
+    public class Model
     {
         public event EventHandler<EventArgs> Stepped = null;
         private Random random = null;
@@ -51,7 +51,7 @@ namespace Megalopolis
             }
         }
 
-        public Network(Layer outputLayer, IOptimizer optimizer, ILossFunction lossFunction)
+        public Model(Layer outputLayer, IOptimizer optimizer, ILossFunction lossFunction)
         {
             var layer = outputLayer;
 

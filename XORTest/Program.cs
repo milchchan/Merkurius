@@ -41,7 +41,7 @@ namespace XORTest
 
             var inputLayer = new FullyConnected(2, 2, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble());
             var outputLayer = new FullyConnected(inputLayer, 1, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble());
-            var network = new Network(outputLayer, new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
+            var network = new Model(outputLayer, new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
             int epochs = 10000;
             int iterations = 1;
 
