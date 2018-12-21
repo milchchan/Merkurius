@@ -39,8 +39,10 @@ To build Megalopolis, run .NET Core CLI command.
 * Batch normalization
 * Convolutional
 * Dropout
+* Embedding
 * Fully connected
 * Max pooling
+* Recurrent
 
 ### Loss Functions
 * Cross-entropy
