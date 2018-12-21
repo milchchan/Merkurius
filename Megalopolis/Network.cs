@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading.Tasks;
 using Megalopolis.Optimizers;
 using Megalopolis.Layers;
 using Megalopolis.LossFunctions;
@@ -16,7 +15,7 @@ namespace Megalopolis
         private Layer inputLayer = null;
         private Layer outputLayer = null;
         private Collection<Layer> layerCollection = null;
-        private double loss = 0;
+        private double loss = 0.0;
         private IOptimizer optimizer = null;
         private ILossFunction lossFunction = null;
 
@@ -52,12 +51,11 @@ namespace Megalopolis
             }
         }
 
-        public Network(Layer inputLayer, Layer outputLayer, IOptimizer optimizer, ILossFunction lossFunction)
+        public Network(Layer outputLayer, IOptimizer optimizer, ILossFunction lossFunction)
         {
-            var layer = inputLayer;
+            var layer = outputLayer;
 
             this.random = RandomProvider.GetRandom();
-            this.inputLayer = inputLayer;
             this.outputLayer = outputLayer;
             this.layerCollection = new Collection<Layer>();
             this.optimizer = optimizer;
@@ -65,8 +63,9 @@ namespace Megalopolis
 
             do
             {
-                this.layerCollection.Add(layer);
-                layer = layer.Next;
+                this.inputLayer = layer;
+                this.layerCollection.Insert(0, layer);
+                layer = layer.Previous;
             } while (layer != null);
         }
 
@@ -94,9 +93,9 @@ namespace Megalopolis
                     int index = 0;
                     int identifier = 0;
 
-                    foreach (var gradients in Backward(Forward(new Batch<double[]>(dataTuple.Item1), true), new Batch<double[]>(dataTuple.Item2)))
+                    foreach (var tuple in Backward(Forward(new Batch<double[]>(dataTuple.Item1), true), new Batch<double[]>(dataTuple.Item2)))
                     {
-                        this.layerCollection[index].Update(gradients, (weight, gradient) => optimizer.Optimize(identifier++, weight, gradient));
+                        tuple.Item1.Update(tuple.Item2, (weight, gradient) => optimizer.Optimize(identifier++, weight, gradient));
                         index++;
                     }
 
@@ -168,12 +167,12 @@ namespace Megalopolis
             return tupleList;
         }
 
-        private IEnumerable<Batch<double[]>> Backward(IEnumerable<Tuple<Batch<double[]>, Batch<double[]>>> activations, Batch<double[]> outputs)
+        private IEnumerable<Tuple<Layer, Batch<double[]>>> Backward(IEnumerable<Tuple<Batch<double[]>, Batch<double[]>>> activations, Batch<double[]> outputs)
         {
-            var layer = this.outputLayer.Previous;
+            var layer = this.outputLayer;
             var activationsLinkedList = new LinkedList<Tuple<Batch<double[]>, Batch<double[]>>>(activations);
             var deltas = new Batch<double[]>(new double[outputs.Size][]);
-            var gradientsList = new LinkedList<Batch<double[]>>();
+            var gradientsList = new LinkedList<Tuple<Layer, Batch<double[]>>>();
 
             for (int i = 0; i < outputs.Size; i++)
             {
@@ -185,20 +184,16 @@ namespace Megalopolis
                 }
             }
 
-            var tuple = this.outputLayer.Backward(activationsLinkedList.Last.Value.Item1, activationsLinkedList.Last.Value.Item2, deltas);
-
-            gradientsList.AddFirst(tuple.Item2);
-            activationsLinkedList.RemoveLast();
-
-            while (layer != null)
+            do
             {
-                tuple = layer.Backward(activationsLinkedList.Last.Value.Item1, activationsLinkedList.Last.Value.Item2, tuple.Item1);
+                var tuple = layer.Backward(activationsLinkedList.Last.Value.Item1, activationsLinkedList.Last.Value.Item2, deltas);
 
-                gradientsList.AddFirst(tuple.Item2);
+                deltas = tuple.Item1;
+                gradientsList.AddFirst(Tuple.Create<Layer, Batch<double[]>>(layer, tuple.Item2));
                 activationsLinkedList.RemoveLast();
 
                 layer = layer.Previous;
-            }
+            } while (layer != null);
 
             return gradientsList;
         }

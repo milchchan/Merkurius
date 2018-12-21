@@ -23,7 +23,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < nodes; i++)
                 {
-                    this.biases[i] = 0;
+                    this.biases[i] = 0.0;
                 }
             }
 
@@ -41,7 +41,7 @@ namespace Megalopolis
 
                     for (int i = 0; i < this.outputs; i++)
                     {
-                        double sum = 0;
+                        double sum = 0.0;
 
                         for (int j = 0; j < this.inputs; j++)
                         {
@@ -88,7 +88,7 @@ namespace Megalopolis
 
                     for (int i = 0, j = 0; i < this.inputs; i++)
                     {
-                        double error = 0;
+                        double error = 0.0;
 
                         for (int k = 0; k < this.outputs; k++)
                         {
@@ -153,8 +153,8 @@ namespace Megalopolis
 
             private double Softmax(double[] x, int i)
             {
-                double max = 0;
-                double sum = 0;
+                double max = 0.0;
+                double sum = 0.0;
 
                 for (int j = 0; j < x.Length; j++)
                 {

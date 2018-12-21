@@ -25,10 +25,10 @@ namespace Megalopolis
 
                 for (int i = 0; i < layer.Outputs; i++)
                 {
-                    this.gamma[i] = 1;
-                    this.beta[i] = 0;
-                    this.means[i] = 0;
-                    this.variances[i] = 0;
+                    this.gamma[i] = 1.0;
+                    this.beta[i] = 0.0;
+                    this.means[i] = 0.0;
+                    this.variances[i] = 0.0;
                 }
             }
 
@@ -42,10 +42,10 @@ namespace Megalopolis
 
                 for (int i = 0; i < layer.Outputs; i++)
                 {
-                    this.gamma[i] = 1;
-                    this.beta[i] = 0;
-                    this.means[i] = 0;
-                    this.variances[i] = 0;
+                    this.gamma[i] = 1.0;
+                    this.beta[i] = 0.0;
+                    this.means[i] = 0.0;
+                    this.variances[i] = 0.0;
                 }
             }
 
@@ -65,8 +65,8 @@ namespace Megalopolis
 
                     for (int i = 0; i < meanVector.Length; i++)
                     {
-                        meanVector[i] = 0;
-                        varianceVector[i] = 0;
+                        meanVector[i] = 0.0;
+                        varianceVector[i] = 0.0;
                     }
 
                     for (int i = 0; i < meanVector.Length; i++)
@@ -144,15 +144,15 @@ namespace Megalopolis
 
                 for (int i = 0; i < deltas[0].Length; i++)
                 {
-                    dbetaVector[i] = 0;
-                    dgammaVector[i] = 0;
-                    dstd[i] = 0;
-                    dvar[i] = 0;
+                    dbetaVector[i] = 0.0;
+                    dgammaVector[i] = 0.0;
+                    dstd[i] = 0.0;
+                    dvar[i] = 0.0;
                 }
 
                 for (int i = 0; i < deltas[0].Length; i++)
                 {
-                    double sum = 0;
+                    double sum = 0.0;
 
                     for (int j = 0; j < deltas.Size; j++)
                     {

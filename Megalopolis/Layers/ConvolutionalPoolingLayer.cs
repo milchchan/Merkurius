@@ -57,7 +57,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length2; i++)
                 {
-                    this.biases[i] = 0;
+                    this.biases[i] = 0.0;
                 }
             }
 
@@ -89,7 +89,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length2; i++)
                 {
-                    this.biases[i] = 0;
+                    this.biases[i] = 0.0;
                 }
             }
 
@@ -121,7 +121,7 @@ namespace Megalopolis
 
                     for (int i = 0; i < length; i++)
                     {
-                        gradients[i] = 0;
+                        gradients[i] = 0.0;
                     }
 
                     for (int i = 0, j = 0; i < this.filters; i++)
@@ -214,7 +214,7 @@ namespace Megalopolis
                         {
                             for (int k = 0; k < activationMapWidth; k++)
                             {
-                                convolvedInputs[i, j, k] = 0;
+                                convolvedInputs[i, j, k] = 0.0;
                             }
                         }
                     }
@@ -280,7 +280,7 @@ namespace Megalopolis
 
                     for (int i = 0; i < length; i++)
                     {
-                        d[i] = 0;
+                        d[i] = 0.0;
                     }
 
                     for (int i = 0, j = 0, k = 0; i < this.channels; i++, j += this.filterWidth * this.filterHeight)
@@ -415,7 +415,7 @@ namespace Megalopolis
                                         }
                                         else
                                         {
-                                            d[i, y, x] = 0;
+                                            d[i, y, x] = 0.0;
                                         }
                                     }
                                 }

@@ -40,13 +40,14 @@ namespace XORTest
             patternList.Add(Tuple.Create<double[], double[]>(new double[] { 1, 1 }, new double[] { 0 }));
 
             var inputLayer = new FullyConnectedLayer(2, 2, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble());
-            var network = new Network(inputLayer, new FullyConnectedLayer(inputLayer, 1, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble()), new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
+            var outputLayer = new FullyConnectedLayer(inputLayer, 1, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble());
+            var network = new Network(outputLayer, new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
             int epochs = 10000;
             int iterations = 1;
 
             network.Stepped += (sender, e) =>
             {
-                double tptn = 0;
+                double tptn = 0.0;
 
                 patternList.ForEach(tuple =>
                 {
