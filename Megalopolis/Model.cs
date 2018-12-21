@@ -18,6 +18,7 @@ namespace Megalopolis
         private double loss = 0.0;
         private IOptimizer optimizer = null;
         private ILossFunction lossFunction = null;
+        private double? maxGradient = null;
 
         public IEnumerable<Layer> Layers
         {
@@ -48,6 +49,18 @@ namespace Megalopolis
             get
             {
                 return this.lossFunction;
+            }
+        }
+
+        public double? MaxGradient
+        {
+            get
+            {
+                return this.maxGradient;
+            }
+            set
+            {
+                this.maxGradient = value;
             }
         }
 
@@ -92,8 +105,34 @@ namespace Megalopolis
                     });
                     int index = 0;
                     int identifier = 0;
+                    var tuples = Backward(Forward(new Batch<double[]>(dataTuple.Item1), true), new Batch<double[]>(dataTuple.Item2));
 
-                    foreach (var tuple in Backward(Forward(new Batch<double[]>(dataTuple.Item1), true), new Batch<double[]>(dataTuple.Item2)))
+                    if (this.maxGradient.HasValue)
+                    {
+                        // Gradients clipping
+                        var vectors = from tuple in tuples let batch = tuple.Item2 from vector in batch select vector;
+                        double sum = 0.0;
+
+                        foreach (var gradient in from vector in vectors from gradient in vector select gradient)
+                        {
+                            sum += gradient * gradient;
+                        }
+
+                        double rate = this.maxGradient.Value / (Math.Sqrt(sum) + Math.Pow(10, -6));
+
+                        if (rate < 1)
+                        {
+                            foreach (var vector in vectors)
+                            {
+                                for (int i = 0; i < vector.Length; i++)
+                                {
+                                    vector[i] *= rate;
+                                }
+                            }
+                        }
+                    }
+
+                    foreach (var tuple in tuples)
                     {
                         tuple.Item1.Update(tuple.Item2, (weight, gradient) => optimizer.Optimize(identifier++, weight, gradient));
                         index++;
