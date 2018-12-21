@@ -9,7 +9,7 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class FullyConnectedLayer : Layer
+        public class FullyConnected : Layer
         {
             private IActivationFunction activationFunction = null;
             private Collection<IFilter> filterCollection = null;
@@ -22,7 +22,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(inputs, outputs)
+            public FullyConnected(int inputs, int outputs, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(inputs, outputs)
             {
                 var length = inputs * outputs;
 
@@ -42,7 +42,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(Layer layer, int nodes, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(layer, nodes)
+            public FullyConnected(Layer layer, int nodes, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(layer, nodes)
             {
                 var length = layer.Outputs * nodes;
 
@@ -62,7 +62,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(int inputs, int outputs, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, int, int, double> func) : base(inputs, outputs)
+            public FullyConnected(int inputs, int outputs, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, int, int, double> func) : base(inputs, outputs)
             {
                 var length = inputs * outputs;
 
@@ -87,7 +87,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnectedLayer(Layer layer, int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, int, int, double> func) : base(layer, nodes)
+            public FullyConnected(Layer layer, int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, int, int, double> func) : base(layer, nodes)
             {
                 var length = layer.Outputs * nodes;
 

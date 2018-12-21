@@ -172,7 +172,7 @@ namespace Megalopolis
             var layer = this.outputLayer;
             var activationsLinkedList = new LinkedList<Tuple<Batch<double[]>, Batch<double[]>>>(activations);
             var deltas = new Batch<double[]>(new double[outputs.Size][]);
-            var gradientsList = new LinkedList<Tuple<Layer, Batch<double[]>>>();
+            var tupleList = new LinkedList<Tuple<Layer, Batch<double[]>>>();
 
             for (int i = 0; i < outputs.Size; i++)
             {
@@ -189,13 +189,13 @@ namespace Megalopolis
                 var tuple = layer.Backward(activationsLinkedList.Last.Value.Item1, activationsLinkedList.Last.Value.Item2, deltas);
 
                 deltas = tuple.Item1;
-                gradientsList.AddFirst(Tuple.Create<Layer, Batch<double[]>>(layer, tuple.Item2));
+                tupleList.AddFirst(Tuple.Create<Layer, Batch<double[]>>(layer, tuple.Item2));
                 activationsLinkedList.RemoveLast();
 
                 layer = layer.Previous;
             } while (layer != null);
 
-            return gradientsList;
+            return tupleList;
         }
     }
 }

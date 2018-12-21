@@ -5,7 +5,7 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class BatchNormalizationLayer : Layer
+        public class BatchNormalization : Layer
         {
             private double[] gamma = null;
             private double[] beta = null;
@@ -16,7 +16,7 @@ namespace Megalopolis
             private double[,] xc = null;
             private double[,] xn = null;
 
-            public BatchNormalizationLayer(Layer layer, Func<int, int, int, double> func) : base(layer, layer.Outputs)
+            public BatchNormalization(Layer layer, Func<int, int, int, double> func) : base(layer, layer.Outputs)
             {
                 this.gamma = new double[layer.Outputs];
                 this.beta = new double[layer.Outputs];
@@ -32,7 +32,7 @@ namespace Megalopolis
                 }
             }
 
-            public BatchNormalizationLayer(Layer layer, Func<int, int, int, double> func, double momentum) : base(layer, layer.Outputs)
+            public BatchNormalization(Layer layer, Func<int, int, int, double> func, double momentum) : base(layer, layer.Outputs)
             {
                 this.gamma = new double[layer.Outputs];
                 this.beta = new double[layer.Outputs];

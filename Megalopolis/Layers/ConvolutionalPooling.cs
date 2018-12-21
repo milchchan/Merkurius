@@ -8,7 +8,7 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class ConvolutionalPoolingLayer : Layer
+        public class ConvolutionalPooling : Layer
         {
             private int channels = 0;
             private int imageWidth = 0;
@@ -29,7 +29,7 @@ namespace Megalopolis
                 }
             }
 
-            public ConvolutionalPoolingLayer(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(channels * imageWidth * imageHeight, filters * (imageWidth - filterWidth + 1) / poolWidth * ((imageHeight - filterHeight + 1) / poolHeight))
+            public ConvolutionalPooling(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(channels * imageWidth * imageHeight, filters * (imageWidth - filterWidth + 1) / poolWidth * ((imageHeight - filterHeight + 1) / poolHeight))
             {
                 var activationMapWidth = imageWidth - filterWidth + 1;
                 var activationMapHeight = imageHeight - filterHeight + 1;
@@ -61,7 +61,7 @@ namespace Megalopolis
                 }
             }
 
-            public ConvolutionalPoolingLayer(Layer layer, int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(layer, filters * (imageWidth - filterWidth + 1) / poolWidth * ((imageHeight - filterHeight + 1) / poolHeight))
+            public ConvolutionalPooling(Layer layer, int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(layer, filters * (imageWidth - filterWidth + 1) / poolWidth * ((imageHeight - filterHeight + 1) / poolHeight))
             {
                 var activationMapWidth = imageWidth - filterWidth + 1;
                 var activationMapHeight = imageHeight - filterHeight + 1;

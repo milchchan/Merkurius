@@ -7,9 +7,9 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class SoftmaxLayer : Layer
+        public class Softmax : Layer
         {
-            public SoftmaxLayer(Layer layer, int nodes, Func<int, int, int, double> func) : base(layer, nodes)
+            public Softmax(Layer layer, int nodes, Func<int, int, int, double> func) : base(layer, nodes)
             {
                 var length = layer.Outputs * nodes;
 
@@ -53,7 +53,7 @@ namespace Megalopolis
 
                     for (int i = 0; i < this.outputs; i++)
                     {
-                        activations[i] = Softmax(summations, i);
+                        activations[i] = SoftmaxFunction(summations, i);
                     }
 
                     local.Add(Tuple.Create<long, double[]>(index, activations));
@@ -151,7 +151,7 @@ namespace Megalopolis
                 }
             }
 
-            private double Softmax(double[] x, int i)
+            private double SoftmaxFunction(double[] x, int i)
             {
                 double max = 0.0;
                 double sum = 0.0;
