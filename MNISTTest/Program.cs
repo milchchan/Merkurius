@@ -101,17 +101,17 @@ namespace MNISTTest
             var inputLayer = new ConvolutionalPooling(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, poolWidth, poolHeight, new ReLU(), (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
             var hiddenLayer = new FullyConnected(inputLayer, 100, new ReLU(), (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
             var outputLayer = new Softmax(hiddenLayer, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut));
-            var network = new Model(outputLayer, new Adam(), new SoftmaxCrossEntropy());
+            var model = new Model(outputLayer, new Adam(), new SoftmaxCrossEntropy());
             int epochs = 50;
             int iterations = 1;
 
-            network.Stepped += (sender, e) =>
+            model.Stepped += (sender, e) =>
             {
                 double tptn = 0.0;
 
                 trainingList.ForEach(x =>
                 {
-                    var vector = network.Predicate(x.Item1);
+                    var vector = model.Predicate(x.Item1);
                     var i = ArgMax(vector);
                     var j = ArgMax(x.Item2);
 
@@ -124,10 +124,10 @@ namespace MNISTTest
                 var accuracy = tptn / trainingList.Count;
 
                 accuracyList.Add(accuracy);
-                lossList.Add(network.Loss);
+                lossList.Add(model.Loss);
 
                 Console.WriteLine("Epoch {0}/{1}", iterations, epochs);
-                Console.WriteLine("Accuracy: {0}, Loss: {1}", accuracy, network.Loss);
+                Console.WriteLine("Accuracy: {0}, Loss: {1}", accuracy, model.Loss);
 
                 iterations++;
             };
@@ -136,7 +136,7 @@ namespace MNISTTest
 
             var stopwatch = Stopwatch.StartNew();
 
-            network.Fit(trainingList, epochs, 100);
+            model.Fit(trainingList, epochs, 100);
 
             stopwatch.Stop();
 
@@ -146,7 +146,7 @@ namespace MNISTTest
 
             testList.ForEach(x =>
             {
-                var vector = network.Predicate(x.Item1);
+                var vector = model.Predicate(x.Item1);
                 var i = ArgMax(vector);
                 var j = ArgMax(x.Item2);
 

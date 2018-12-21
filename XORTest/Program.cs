@@ -41,17 +41,17 @@ namespace XORTest
 
             var inputLayer = new FullyConnected(2, 2, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble());
             var outputLayer = new FullyConnected(inputLayer, 1, new Sigmoid(), (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble());
-            var network = new Model(outputLayer, new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
+            var model = new Model(outputLayer, new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
             int epochs = 10000;
             int iterations = 1;
 
-            network.Stepped += (sender, e) =>
+            model.Stepped += (sender, e) =>
             {
                 double tptn = 0.0;
 
                 patternList.ForEach(tuple =>
                 {
-                    var vector = network.Predicate(tuple.Item1);
+                    var vector = model.Predicate(tuple.Item1);
                     var i = ArgMax(vector);
                     var j = ArgMax(tuple.Item2);
 
@@ -64,12 +64,12 @@ namespace XORTest
                 var accuracy = tptn / patternList.Count;
 
                 accuracyList.Add(accuracy);
-                lossList.Add(network.Loss);
+                lossList.Add(model.Loss);
 
                 if (iterations % 2500 == 0)
                 {
                     Console.WriteLine("Epoch {0}/{1}", iterations, epochs);
-                    Console.WriteLine("Accuracy: {0}, Loss: {1}", accuracy, network.Loss);
+                    Console.WriteLine("Accuracy: {0}, Loss: {1}", accuracy, model.Loss);
                 }
 
                 iterations++;
@@ -79,7 +79,7 @@ namespace XORTest
 
             var stopwatch = Stopwatch.StartNew();
 
-            network.Fit(patternList, epochs);
+            model.Fit(patternList, epochs);
 
             stopwatch.Stop();
 
@@ -92,7 +92,7 @@ namespace XORTest
                     x.Add(y.ToString());
 
                     return x;
-                })), String.Join(",", network.Predicate(tuple.Item1).Aggregate<double, List<string>>(new List<string>(), (x, y) =>
+                })), String.Join(",", model.Predicate(tuple.Item1).Aggregate<double, List<string>>(new List<string>(), (x, y) =>
                 {
                     x.Add(y.ToString());
 
