@@ -15,7 +15,7 @@ namespace Megalopolis
             private Batch<double[]> h = null;
             private Batch<double[]> dh = null;
             private List<InternalRecurrent> layerList = null;
-            private IActivationFunction activationFunction = null;
+            private IActivationFunction tanhActivationFunction = null;
 
             public Batch<double[]> State
             {
@@ -29,14 +29,6 @@ namespace Megalopolis
                 }
             }
 
-            public IActivationFunction ActivationFunction
-            {
-                get
-                {
-                    return this.activationFunction;
-                }
-            }
-
             public Recurrent(int inputs, int outputs, int timesteps, bool stateful, Func<int, int, int, double> func) : base(inputs, outputs)
             {
                 var length = inputs * outputs;
@@ -45,7 +37,7 @@ namespace Megalopolis
                 this.biases = new double[outputs];
                 this.timesteps = timesteps;
                 this.stateful = stateful;
-                this.activationFunction = new HyperbolicTangent();
+                this.tanhActivationFunction = new HyperbolicTangent();
 
                 for (int i = 0; i < length; i++)
                 {
@@ -66,49 +58,7 @@ namespace Megalopolis
                 this.biases = new double[nodes];
                 this.timesteps = timesteps;
                 this.stateful = stateful;
-                this.activationFunction = new HyperbolicTangent();
-
-                for (int i = 0; i < length; i++)
-                {
-                    this.weights[i] = func(i, layer.Outputs, nodes);
-                }
-
-                for (int i = 0; i < nodes; i++)
-                {
-                    this.biases[i] = 0.0;
-                }
-            }
-
-            public Recurrent(int inputs, int outputs, int timesteps, bool stateful, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(inputs, outputs)
-            {
-                var length = inputs * outputs;
-
-                this.weights = new double[length];
-                this.biases = new double[outputs];
-                this.timesteps = timesteps;
-                this.stateful = stateful;
-                this.activationFunction = activationFunction;
-
-                for (int i = 0; i < length; i++)
-                {
-                    this.weights[i] = func(i, inputs, outputs);
-                }
-
-                for (int i = 0; i < outputs; i++)
-                {
-                    this.biases[i] = 0.0;
-                }
-            }
-
-            public Recurrent(Layer layer, int nodes, int timesteps, bool stateful, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(layer, nodes)
-            {
-                var length = layer.Outputs * nodes;
-
-                this.weights = new double[length];
-                this.biases = new double[nodes];
-                this.timesteps = timesteps;
-                this.stateful = stateful;
-                this.activationFunction = activationFunction;
+                this.tanhActivationFunction = new HyperbolicTangent();
 
                 for (int i = 0; i < length; i++)
                 {
@@ -164,7 +114,7 @@ namespace Megalopolis
 
                 for (int t = 0; t < this.timesteps; t++)
                 {
-                    var layer = new InternalRecurrent(this.inputs, this.outputs, xWeights, hWeights, this.biases, this.activationFunction);
+                    var layer = new InternalRecurrent(this.inputs, this.outputs, xWeights, hWeights, this.biases, this.tanhActivationFunction);
                     var x = new Batch<double[]>(new double[inputs.Size][]);
 
                     for (int i = 0; i < inputs.Size; i++)
@@ -301,7 +251,7 @@ namespace Megalopolis
                 private double[] hWeights = null;
                 private double[] biases = null;
                 private IActivationFunction activationFunction = null;
-                private Tuple<Batch<double[]>, Batch<double[]>, Batch<double[]>> cache = null;
+                private Tuple<Batch<double[]>, Batch<double[]>, double[][]> cache = null;
 
                 public InternalRecurrent(int inputs, int hiddens, double[] xWeights, double[] hWeights, double[] biases, IActivationFunction activationFunction)
                 {
@@ -324,7 +274,7 @@ namespace Megalopolis
 
                     Parallel.ForEach<double[], List<Tuple<long, double[]>>>(hPrevious, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                     {
-                        double[] activations = new double[this.hiddens];
+                        var v = new double[this.hiddens];
 
                         for (int i = 0; i < this.hiddens; i++)
                         {
@@ -335,10 +285,10 @@ namespace Megalopolis
                                 sum += vector[j] * this.hWeights[this.hiddens * j + i];
                             }
 
-                            activations[i] = sum;
+                            v[i] = sum;
                         }
 
-                        local.Add(Tuple.Create<long, double[]>(index, activations));
+                        local.Add(Tuple.Create<long, double[]>(index, v));
 
                         return local;
                     }, (local) =>
@@ -354,7 +304,7 @@ namespace Megalopolis
 
                     Parallel.ForEach<double[], List<Tuple<long, double[]>>>(x, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                     {
-                        double[] activations = new double[this.hiddens];
+                        var hNext = new double[this.hiddens];
 
                         for (int i = 0; i < this.hiddens; i++)
                         {
@@ -365,10 +315,10 @@ namespace Megalopolis
                                 sum += vector[j] * this.xWeights[this.hiddens * j + i];
                             }
 
-                            activations[i] = this.activationFunction.Function(data1[index][i] + sum + this.biases[i]);
+                            hNext[i] = this.activationFunction.Function(sum + data1[index][i] + this.biases[i]);
                         }
 
-                        local.Add(Tuple.Create<long, double[]>(index, activations));
+                        local.Add(Tuple.Create<long, double[]>(index, hNext));
 
                         return local;
                     }, (local) =>
@@ -382,11 +332,9 @@ namespace Megalopolis
                         }
                     });
 
-                    var hNext = new Batch<double[]>(data2);
+                    this.cache = Tuple.Create<Batch<double[]>, Batch<double[]>, double[][]>(x, hPrevious, data2);
 
-                    this.cache = Tuple.Create<Batch<double[]>, Batch<double[]>, Batch<double[]>>(x, hPrevious, hNext);
-
-                    return hNext;
+                    return new Batch<double[]>(data2);
                 }
 
                 public Tuple<Batch<double[]>, Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> dhNext)
@@ -397,7 +345,7 @@ namespace Megalopolis
                     var hNext = this.cache.Item3;
                     var dt = new double[dhNext.Size][];
                     var data = Tuple.Create<double[][], double[][], double[][], double[][]>(new double[dhNext.Size][], new double[dhNext.Size][], new double[dhNext.Size][], new double[dhNext.Size][]);
-                    List<double[]> vectorList = new List<double[]>();
+                    var vectorList = new List<double[]>();
 
                     parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 

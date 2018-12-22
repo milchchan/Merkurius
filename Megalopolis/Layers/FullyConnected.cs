@@ -121,7 +121,7 @@ namespace Megalopolis
 
                 Parallel.ForEach<double[], List<Tuple<long, double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                 {
-                    double[] activations = new double[this.outputs];
+                    var activations = new double[this.outputs];
 
                     for (int i = 0; i < this.outputs; i++)
                     {
