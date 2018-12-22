@@ -8,15 +8,14 @@ namespace Megalopolis
         {
             public double Function(double x)
             {
-                // (Math.Pow(Math.E, x) - Math.Pow(Math.E, -x)) / (Math.Pow(Math.E, x) + Math.Pow(Math.E, -x))
+                // (e^x - e^-x) / (e^x + e^-x)
                 return Math.Tanh(x);
             }
 
             public double Derivative(double x)
             {
-                var y = Math.Tanh(x);
-
-                return 1.0 - y * y;
+                // 1 - f(x)^2
+                return 1.0 - x * x;
             }
         }
     }

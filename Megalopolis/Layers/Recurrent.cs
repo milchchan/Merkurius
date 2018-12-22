@@ -407,7 +407,7 @@ namespace Megalopolis
 
                         for (int i = 0; i < this.hiddens; i++)
                         {
-                            vector2[i] = this.activationFunction.Derivative(vector1[i]) * vector1[i];
+                            vector2[i] = this.activationFunction.Derivative(hNext[index][i]) * vector1[i];
                         }
 
                         local.Add(Tuple.Create<long, double[]>(index, vector2));
