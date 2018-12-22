@@ -13,6 +13,7 @@ namespace Megalopolis
 
             public double Derivative(double x)
             {
+                // f(x) * (1 - f(x))
                 return x * (1.0 - x);
             }
         }
