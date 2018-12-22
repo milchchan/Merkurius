@@ -4,7 +4,13 @@ This repository contains the portable deep learning (deep neural networks) libra
 
 ## Installation
 
-Megalopolis can install from the NuGet package manager.
+Megalopolis can install the ML.NET NuGet package from the .NET Core CLI command.
+
+```sh
+> dotnet add package Megalopolis
+```
+
+or from the NuGet package manager.
 
 ```sh
 PM> Install-Package Megalopolis
