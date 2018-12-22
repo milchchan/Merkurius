@@ -343,41 +343,23 @@ namespace Megalopolis
                     var x = this.cache.Item1;
                     var hPrevious = this.cache.Item2;
                     var hNext = this.cache.Item3;
-                    var dt = new double[dhNext.Size][];
-                    var data = Tuple.Create<double[][], double[][], double[][], double[][]>(new double[dhNext.Size][], new double[dhNext.Size][], new double[dhNext.Size][], new double[dhNext.Size][]);
+                    var data = Tuple.Create<double[][], double[][], double[][], double[][], double[][]>(new double[dhNext.Size][], new double[dhNext.Size][], new double[dhNext.Size][], new double[dhNext.Size][], new double[dhNext.Size][]);
                     var vectorList = new List<double[]>();
 
                     parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
-                    Parallel.ForEach<double[], List<Tuple<long, double[]>>>(dhNext, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector1, state, index, local) =>
+                    Parallel.ForEach<double[], List<Tuple<long, double[], double[], double[], double[], double[]>>>(dhNext, parallelOptions, () => new List<Tuple<long, double[], double[], double[], double[], double[]>>(), (vector, state, index, local) =>
                     {
-                        var vector2 = new double[this.hiddens];
-
-                        for (int i = 0; i < this.hiddens; i++)
-                        {
-                            vector2[i] = this.activationFunction.Derivative(hNext[index][i]) * vector1[i];
-                        }
-
-                        local.Add(Tuple.Create<long, double[]>(index, vector2));
-
-                        return local;
-                    }, (local) =>
-                    {
-                        lock (dt)
-                        {
-                            local.ForEach(tuple =>
-                            {
-                                dt[tuple.Item1] = tuple.Item2;
-                            });
-                        }
-                    });
-
-                    Parallel.ForEach<double[], List<Tuple<long, double[], double[], double[], double[]>>>(dt, parallelOptions, () => new List<Tuple<long, double[], double[], double[], double[]>>(), (vector1, state, index, local) =>
-                    {
+                        var dt = new double[this.hiddens];
                         var dWh = new double[this.hiddens * this.hiddens];
                         var dWx = new double[this.inputs * this.hiddens];
                         var dhPrev = new double[this.hiddens];
                         var dx = new double[this.inputs];
+                        
+                        for (int i = 0; i < this.hiddens; i++)
+                        {
+                            dt[i] = this.activationFunction.Derivative(hNext[index][i]) * vector[i];
+                        }
 
                         for (int i = 0, j = 0; i < this.hiddens; i++)
                         {
@@ -385,8 +367,8 @@ namespace Megalopolis
 
                             for (int k = 0; k < this.hiddens; k++)
                             {
-                                error += vector1[k] * this.hWeights[j];
-                                dWh[j] = vector1[k] * hPrevious[index][i];
+                                error += dt[k] * this.hWeights[j];
+                                dWh[j] = dt[k] * hPrevious[index][i];
                                 j++;
                             }
 
@@ -399,15 +381,15 @@ namespace Megalopolis
 
                             for (int k = 0; k < this.hiddens; k++)
                             {
-                                error += vector1[k] * this.xWeights[j];
-                                dWx[j] = vector1[k] * x[index][i];
+                                error += dt[k] * this.xWeights[j];
+                                dWx[j] = dt[k] * x[index][i];
                                 j++;
                             }
 
                             dx[i] = error;
                         }
 
-                        local.Add(Tuple.Create<long, double[], double[], double[], double[]>(index, dhPrev, dWh, dx, dWx));
+                        local.Add(Tuple.Create<long, double[], double[], double[], double[], double[]>(index, dt, dhPrev, dWh, dx, dWx));
 
                         return local;
                     }, (local) =>
@@ -420,16 +402,17 @@ namespace Megalopolis
                                 data.Item2[tuple.Item1] = tuple.Item3;
                                 data.Item3[tuple.Item1] = tuple.Item4;
                                 data.Item4[tuple.Item1] = tuple.Item5;
+                                data.Item5[tuple.Item1] = tuple.Item6;
                             });
                         }
                     });
 
                     for (int i = 0; i < dhNext.Size; i++)
                     {
-                        vectorList.Add(data.Item4[i].Concat<double>(data.Item2[i]).Concat<double>(dt[i]).ToArray<double>());
+                        vectorList.Add(data.Item5[i].Concat<double>(data.Item3[i]).Concat<double>(data.Item1[i]).ToArray<double>());
                     }
 
-                    return Tuple.Create<Batch<double[]>, Batch<double[]>, Batch<double[]>>(new Batch<double[]>(data.Item3), new Batch<double[]>(data.Item1), new Batch<double[]>(vectorList));
+                    return Tuple.Create<Batch<double[]>, Batch<double[]>, Batch<double[]>>(new Batch<double[]>(data.Item4), new Batch<double[]>(data.Item2), new Batch<double[]>(vectorList));
                 }
             }
         }

@@ -172,7 +172,26 @@ namespace Megalopolis
                 return Math.Exp(x[i] - max) / sum;
             }
 
-            private double[] DerivativeOfSoftmax(double[] x, int i)
+            private double[] DerivativeOfSoftmaxFunction(double[] outputs, double[] deltas)
+            {
+                double[] dx = new double[deltas.Length];
+                double sum = 0.0;
+
+                for (int i = 0; i < deltas.Length; i++)
+                {
+                    dx[i] = outputs[i] * deltas[i];
+                    sum += dx[i];
+                }
+
+                for (int i = 0; i < deltas.Length; i++)
+                {
+                    dx[i] -= outputs[i] * sum;
+                }
+
+                return dx;
+            }
+
+            private double[] DerivativeOfSoftmaxFunction(double[] x, int i)
             {
                 // yi(1 - yi) if i = j
                 // -yiyj otherwise
