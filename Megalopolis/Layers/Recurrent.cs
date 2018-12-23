@@ -323,7 +323,7 @@ namespace Megalopolis
                                 sum += x[index][j] * this.xWeights[this.hiddens * j + i];
                             }
 
-                            hNext[i] = this.activationFunction.Function(v[i] + sum + this.biases[i]);
+                            hNext[i] = this.activationFunction.Function(sum + v[i] + this.biases[i]);
                         }
 
                         local.Add(Tuple.Create<long, double[]>(index, hNext));
