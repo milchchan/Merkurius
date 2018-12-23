@@ -267,14 +267,14 @@ namespace Megalopolis
                 {
                     // h(t) = tanh(h(t-1) Wh + x(t) Wx + b)
                     var parallelOptions = new ParallelOptions();
-                    var data1 = new double[hPrevious.Size][];
-                    var data2 = new double[x.Size][];
+                    var data = new double[hPrevious.Size][];
 
                     parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
                     Parallel.ForEach<double[], List<Tuple<long, double[]>>>(hPrevious, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                     {
                         var v = new double[this.hiddens];
+                        var hNext = new double[this.hiddens];
 
                         for (int i = 0; i < this.hiddens; i++)
                         {
@@ -288,34 +288,16 @@ namespace Megalopolis
                             v[i] = sum;
                         }
 
-                        local.Add(Tuple.Create<long, double[]>(index, v));
-
-                        return local;
-                    }, (local) =>
-                    {
-                        lock (data1)
-                        {
-                            local.ForEach(tuple =>
-                            {
-                                data1[tuple.Item1] = tuple.Item2;
-                            });
-                        }
-                    });
-
-                    Parallel.ForEach<double[], List<Tuple<long, double[]>>>(x, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
-                    {
-                        var hNext = new double[this.hiddens];
-
                         for (int i = 0; i < this.hiddens; i++)
                         {
                             double sum = 0.0;
 
                             for (int j = 0; j < this.inputs; j++)
                             {
-                                sum += vector[j] * this.xWeights[this.hiddens * j + i];
+                                sum += x[index][j] * this.xWeights[this.hiddens * j + i];
                             }
 
-                            hNext[i] = this.activationFunction.Function(sum + data1[index][i] + this.biases[i]);
+                            hNext[i] = this.activationFunction.Function(v[i] + sum + this.biases[i]);
                         }
 
                         local.Add(Tuple.Create<long, double[]>(index, hNext));
@@ -323,18 +305,18 @@ namespace Megalopolis
                         return local;
                     }, (local) =>
                     {
-                        lock (data2)
+                        lock (data)
                         {
                             local.ForEach(tuple =>
                             {
-                                data2[tuple.Item1] = tuple.Item2;
+                                data[tuple.Item1] = tuple.Item2;
                             });
                         }
                     });
 
-                    this.cache = Tuple.Create<Batch<double[]>, Batch<double[]>, double[][]>(x, hPrevious, data2);
+                    this.cache = Tuple.Create<Batch<double[]>, Batch<double[]>, double[][]>(x, hPrevious, data);
 
-                    return new Batch<double[]>(data2);
+                    return new Batch<double[]>(data);
                 }
 
                 public Tuple<Batch<double[]>, Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> dhNext)
