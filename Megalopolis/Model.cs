@@ -206,12 +206,12 @@ namespace Megalopolis
             return tupleList;
         }
 
-        private IEnumerable<Tuple<Layer, Batch<double[]>>> Backward(IEnumerable<Tuple<Batch<double[]>, Batch<double[]>>> activations, Batch<double[]> outputs)
+        private IEnumerable<Tuple<IUpdatable, Batch<double[]>>> Backward(IEnumerable<Tuple<Batch<double[]>, Batch<double[]>>> activations, Batch<double[]> outputs)
         {
             var layer = this.outputLayer;
             var activationsLinkedList = new LinkedList<Tuple<Batch<double[]>, Batch<double[]>>>(activations);
             var deltas = new Batch<double[]>(new double[outputs.Size][]);
-            var tupleList = new LinkedList<Tuple<Layer, Batch<double[]>>>();
+            var tupleList = new LinkedList<Tuple<IUpdatable, Batch<double[]>>>();
 
             for (int i = 0; i < outputs.Size; i++)
             {
@@ -226,9 +226,15 @@ namespace Megalopolis
             do
             {
                 var tuple = layer.Backward(activationsLinkedList.Last.Value.Item1, activationsLinkedList.Last.Value.Item2, deltas);
+                var updatable = layer as IUpdatable;
 
                 deltas = tuple.Item1;
-                tupleList.AddFirst(Tuple.Create<Layer, Batch<double[]>>(layer, tuple.Item2));
+
+                if (updatable != null)
+                {
+                    tupleList.AddFirst(Tuple.Create<IUpdatable, Batch<double[]>>(updatable, tuple.Item2));
+                }
+
                 activationsLinkedList.RemoveLast();
 
                 layer = layer.Previous;

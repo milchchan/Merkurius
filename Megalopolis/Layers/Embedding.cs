@@ -6,8 +6,22 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class Embedding : Layer
+        public class Embedding : Layer, IUpdatable
         {
+            private double[] weights = null;
+
+            public double[] Weights
+            {
+                get
+                {
+                    return this.weights;
+                }
+                set
+                {
+                    this.weights = value;
+                }
+            }
+
             public Embedding(int size, int inputs, int outputs, Func<int, int, int, double> func) : base(inputs, outputs)
             {
                 this.weights = new double[size];
@@ -99,7 +113,7 @@ namespace Megalopolis
                 return new Tuple<Batch<double[]>, Batch<double[]>>(dw, dw);
             }
 
-            public override void Update(Batch<double[]> gradients, Func<double, double, double> func)
+            public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
                 for (int i = 1; i < gradients.Size; i++)
                 {

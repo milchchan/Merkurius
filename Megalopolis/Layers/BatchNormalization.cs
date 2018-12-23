@@ -5,10 +5,9 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class BatchNormalization : Layer
+        public class BatchNormalization : Layer, IUpdatable
         {
-            private double[] gamma = null;
-            private double[] beta = null;
+            private double[] weights = null;
             private double momentum = 0.9;
             private double[] means = null;
             private double[] variances = null;
@@ -16,17 +15,28 @@ namespace Megalopolis
             private double[,] xc = null;
             private double[,] xn = null;
 
+            public double[] Weights
+            {
+                get
+                {
+                    return this.weights;
+                }
+                set
+                {
+                    this.weights = value;
+                }
+            }
+
             public BatchNormalization(Layer layer, Func<int, int, int, double> func) : base(layer, layer.Outputs)
             {
-                this.gamma = new double[layer.Outputs];
-                this.beta = new double[layer.Outputs];
+                this.weights = new double[layer.Outputs * 2];
                 this.means = new double[layer.Outputs];
                 this.variances = new double[layer.Outputs];
 
-                for (int i = 0; i < layer.Outputs; i++)
+                for (int i = 0, j = layer.Outputs; i < layer.Outputs; i++, j++)
                 {
-                    this.gamma[i] = 1.0;
-                    this.beta[i] = 0.0;
+                    this.weights[i] = 1.0;
+                    this.weights[j] = 0.0;
                     this.means[i] = 0.0;
                     this.variances[i] = 0.0;
                 }
@@ -34,16 +44,15 @@ namespace Megalopolis
 
             public BatchNormalization(Layer layer, Func<int, int, int, double> func, double momentum) : base(layer, layer.Outputs)
             {
-                this.gamma = new double[layer.Outputs];
-                this.beta = new double[layer.Outputs];
+                this.weights = new double[layer.Outputs * 2];
                 this.means = new double[layer.Outputs];
                 this.variances = new double[layer.Outputs];
                 this.momentum = momentum;
 
-                for (int i = 0; i < layer.Outputs; i++)
+                for (int i = 0, j = layer.Outputs; i < layer.Outputs; i++, j++)
                 {
-                    this.gamma[i] = 1.0;
-                    this.beta[i] = 0.0;
+                    this.weights[i] = 1.0;
+                    this.weights[j] = 0.0;
                     this.means[i] = 0.0;
                     this.variances[i] = 0.0;
                 }
@@ -51,10 +60,18 @@ namespace Megalopolis
 
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
+                var gamma = new double[this.outputs];
+                var beta = new double[this.outputs];
                 var outputs = new Batch<double[]>(new double[inputs.Size][]);
 
                 this.xc = new double[inputs.Size, inputs[0].Length];
                 this.xn = new double[inputs.Size, inputs[0].Length];
+
+                for (int i = 0, j = this.outputs; i < this.outputs; i++, j++)
+                {
+                    gamma[i] = this.weights[i];
+                    beta[j] = this.weights[j];
+                }
 
                 if (isTraining)
                 {
@@ -125,7 +142,7 @@ namespace Megalopolis
 
                     for (int j = 0; j < this.outputs; j++)
                     {
-                        outputs[i][j] = this.gamma[j] * this.xc[i, j] + this.beta[j];
+                        outputs[i][j] = gamma[j] * this.xc[i, j] + beta[j];
                     }
                 }
 
@@ -134,6 +151,7 @@ namespace Megalopolis
 
             public override Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
             {
+                var gamma = new double[this.outputs];
                 var dbetaVector = new double[deltas[0].Length];
                 var dgammaVector = new double[deltas[0].Length];
                 var dxn = new double[deltas.Size, deltas[0].Length];
@@ -144,6 +162,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < deltas[0].Length; i++)
                 {
+                    gamma[i] = this.weights[i];
                     dbetaVector[i] = 0.0;
                     dgammaVector[i] = 0.0;
                     dstd[i] = 0.0;
@@ -158,7 +177,7 @@ namespace Megalopolis
                     {
                         dbetaVector[i] += deltas[j][i];
                         dgammaVector[i] += this.xn[j, i] * deltas[j][i];
-                        dxn[j, i] = this.gamma[i] * deltas[j][i];
+                        dxn[j, i] = gamma[i] * deltas[j][i];
                         dxc[j, i] = dxn[j, i] / this.standardDeviations[i];
                         dstd[i] -= dxn[j, i] * this.xc[j, i] / (this.standardDeviations[i] * this.standardDeviations[i]);
                     }
@@ -180,20 +199,18 @@ namespace Megalopolis
                 return Tuple.Create<Batch<double[]>, Batch<double[]>>(dx, new Batch<double[]>(new double[1][] { dgammaVector.Concat<double>(dbetaVector).ToArray<double>() }));
             }
 
-            public override void Update(Batch<double[]> gradients, Func<double, double, double> func)
+            public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
-                var length = this.inputs * this.outputs;
-
                 for (int i = 0; i < gradients.Size; i++)
                 {
                     for (int j = 0; j < this.outputs; j++)
                     {
-                        this.gamma[j] = func(this.gamma[j], gradients[i][j]);
+                        this.weights[j] = func(this.weights[j], gradients[i][j]);
                     }
 
                     for (int j = 0, k = this.outputs; j < this.outputs; j++, k++)
                     {
-                        this.beta[j] = func(this.beta[j], gradients[i][k]);
+                        this.weights[k] = func(this.weights[k], gradients[i][k]);
                     }
                 }
             }

@@ -8,8 +8,10 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class ConvolutionalPooling : Layer
+        public class ConvolutionalPooling : Layer, IUpdatable
         {
+            private double[] weights = null;
+            private double[] biases = null;
             private int channels = 0;
             private int imageWidth = 0;
             private int imageHeight = 0;
@@ -20,6 +22,30 @@ namespace Megalopolis
             private int poolHeight = 0;
             private ValueTuple<double[,,], double[,,]>[] internalDataTuple = null;
             private IActivationFunction activationFunction = null;
+
+            public double[] Weights
+            {
+                get
+                {
+                    return this.weights;
+                }
+                set
+                {
+                    this.weights = value;
+                }
+            }
+
+            public double[] Biases
+            {
+                get
+                {
+                    return this.biases;
+                }
+                set
+                {
+                    this.biases = value;
+                }
+            }
 
             public IActivationFunction ActivationFunction
             {
@@ -166,7 +192,7 @@ namespace Megalopolis
                 return Tuple.Create<Batch<double[]>, Batch<double[]>>(DerivativeOfConvolve(d, activationMapWidth, activationMapHeight), new Batch<double[]>(data));
             }
 
-            public override void Update(Batch<double[]> gradients, Func<double, double, double> func)
+            public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
                 var length1 = this.filters * this.channels * this.filterWidth * this.filterHeight;
                 var length2 = this.filters * GetActivationMapWidth() * GetActivationMapHeight();

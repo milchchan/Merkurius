@@ -7,8 +7,35 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class Softmax : Layer
+        public class Softmax : Layer, IUpdatable
         {
+            private double[] weights = null;
+            private double[] biases = null;
+
+            public double[] Weights
+            {
+                get
+                {
+                    return this.weights;
+                }
+                set
+                {
+                    this.weights = value;
+                }
+            }
+
+            public double[] Biases
+            {
+                get
+                {
+                    return this.biases;
+                }
+                set
+                {
+                    this.biases = value;
+                }
+            }
+
             public Softmax(Layer layer, int nodes, Func<int, int, int, double> func) : base(layer, nodes)
             {
                 var length = layer.Outputs * nodes;
@@ -123,7 +150,7 @@ namespace Megalopolis
                 return Tuple.Create<Batch<double[]>, Batch<double[]>>(new Batch<double[]>(tuple.Item1), new Batch<double[]>(vectorList));
             }
 
-            public override void Update(Batch<double[]> gradients, Func<double, double, double> func)
+            public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
                 var length = this.inputs * this.outputs;
 

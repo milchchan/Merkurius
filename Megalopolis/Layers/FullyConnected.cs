@@ -9,10 +9,36 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class FullyConnected : Layer
+        public class FullyConnected : Layer, IUpdatable
         {
+            private double[] weights = null;
+            private double[] biases = null;
             private IActivationFunction activationFunction = null;
             private Collection<IFilter> filterCollection = null;
+
+            public double[] Weights
+            {
+                get
+                {
+                    return this.weights;
+                }
+                set
+                {
+                    this.weights = value;
+                }
+            }
+
+            public double[] Biases
+            {
+                get
+                {
+                    return this.biases;
+                }
+                set
+                {
+                    this.biases = value;
+                }
+            }
 
             public IActivationFunction ActivationFunction
             {
@@ -242,7 +268,7 @@ namespace Megalopolis
                 return Tuple.Create<Batch<double[]>, Batch<double[]>>(new Batch<double[]>(tuple.Item1), new Batch<double[]>(vectorList));
             }
 
-            public override void Update(Batch<double[]> gradients, Func<double, double, double> func)
+            public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
                 var length = this.inputs * this.outputs;
 

@@ -8,14 +8,40 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class Recurrent : Layer
+        public class Recurrent : Layer, IUpdatable
         {
+            private double[] weights = null;
+            private double[] biases = null;
             private int timesteps = 0;
             private bool stateful = false;
             private Batch<double[]> h = null;
             private Batch<double[]> dh = null;
             private List<InternalRecurrent> layerList = null;
             private IActivationFunction tanhActivationFunction = null;
+
+            public double[] Weights
+            {
+                get
+                {
+                    return this.weights;
+                }
+                set
+                {
+                    this.weights = value;
+                }
+            }
+
+            public double[] Biases
+            {
+                get
+                {
+                    return this.biases;
+                }
+                set
+                {
+                    this.biases = value;
+                }
+            }
 
             public Batch<double[]> State
             {
@@ -203,7 +229,7 @@ namespace Megalopolis
                 return Tuple.Create<Batch<double[]>, Batch<double[]>>(new Batch<double[]>(d), new Batch<double[]>(gradients));
             }
 
-            public override void Update(Batch<double[]> gradients, Func<double, double, double> func)
+            public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
                 var length1 = this.inputs * this.outputs;
                 var length2 = this.outputs * this.outputs;

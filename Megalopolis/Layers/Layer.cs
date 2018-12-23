@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Megalopolis
 {
@@ -9,8 +8,6 @@ namespace Megalopolis
         {
             protected int inputs = 0;
             protected int outputs = 0;
-            protected double[] weights = null;
-            protected double[] biases = null;
             protected Layer previousLayer = null;
             protected Layer nextLayer = null;
 
@@ -27,30 +24,6 @@ namespace Megalopolis
                 get
                 {
                     return this.outputs;
-                }
-            }
-
-            public double[] Weights
-            {
-                get
-                {
-                    return this.weights;
-                }
-                set
-                {
-                    this.weights = value;
-                }
-            }
-
-            public double[] Biases
-            {
-                get
-                {
-                    return this.biases;
-                }
-                set
-                {
-                    this.biases = value;
                 }
             }
 
@@ -87,7 +60,6 @@ namespace Megalopolis
 
             public abstract Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining);
             public abstract Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas);
-            public abstract void Update(Batch<double[]> gradients, Func<double, double, double> func);
         }
     }
 }
