@@ -31,7 +31,7 @@ namespace Megalopolis
 
             public Recurrent(int inputs, int outputs, int timesteps, bool stateful, Func<int, int, int, double> func) : base(inputs, outputs)
             {
-                var length = inputs * outputs;
+                var length = inputs * outputs + outputs * outputs;
 
                 this.weights = new double[length];
                 this.biases = new double[outputs];
@@ -52,7 +52,7 @@ namespace Megalopolis
 
             public Recurrent(Layer layer, int nodes, int timesteps, bool stateful, Func<int, int, int, double> func) : base(layer, nodes)
             {
-                var length = layer.Outputs * nodes;
+                var length = layer.Outputs * nodes + nodes * nodes;
 
                 this.weights = new double[length];
                 this.biases = new double[nodes];
