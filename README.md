@@ -46,7 +46,9 @@ To build Megalopolis, run .NET Core CLI command.
 * Convolutional
 * Dropout
 * Embedding
+* GLU (Gated recurrent unit)
 * Fully connected
+* LSTM (Long short-term memory)
 * Max pooling
 * Recurrent
 
