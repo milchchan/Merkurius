@@ -11,6 +11,8 @@ namespace Megalopolis
         {
             private double[] weights = null;
             private double[] biases = null;
+            private Batch<double[]> internalInputs = null;
+            private List<double[]> gradientList = null;
 
             public double[] Weights
             {
@@ -59,6 +61,8 @@ namespace Megalopolis
                 var parallelOptions = new ParallelOptions();
                 var data = new double[inputs.Size][];
 
+                this.internalInputs = inputs;
+
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
                 Parallel.ForEach<double[], List<Tuple<long, double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
@@ -100,11 +104,12 @@ namespace Megalopolis
                 return new Batch<double[]>(data);
             }
 
-            public override Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
+            public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
                 var parallelOptions = new ParallelOptions();
                 var tuple = Tuple.Create<double[][], double[][]>(new double[deltas.Size][], new double[deltas.Size][]);
-                List<double[]> vectorList = new List<double[]>();
+
+                this.gradientList = new List<double[]>();
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
@@ -120,7 +125,7 @@ namespace Megalopolis
                         for (int k = 0; k < this.outputs; k++)
                         {
                             error += vector1[k] * this.weights[j];
-                            gradients[j] = vector1[k] * inputs[index][i];
+                            gradients[j] = vector1[k] * this.internalInputs[index][i];
                             j++;
                         }
 
@@ -144,10 +149,15 @@ namespace Megalopolis
 
                 for (int i = 0; i < deltas.Size; i++)
                 {
-                    vectorList.Add(tuple.Item2[i].Concat<double>(deltas[i]).ToArray<double>());
+                    this.gradientList.Add(tuple.Item2[i].Concat<double>(deltas[i]).ToArray<double>());
                 }
 
-                return Tuple.Create<Batch<double[]>, Batch<double[]>>(new Batch<double[]>(tuple.Item1), new Batch<double[]>(vectorList));
+                return new Batch<double[]>(tuple.Item1);
+            }
+
+            public Batch<double[]> GetGradients()
+            {
+                return new Batch<double[]>(this.gradientList);
             }
 
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)

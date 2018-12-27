@@ -110,7 +110,7 @@ namespace Megalopolis
                     if (this.maxGradient.HasValue)
                     {
                         // Gradients clipping
-                        var vectors = from tuple in tuples let batch = tuple.Item2 from vector in batch select vector;
+                        var vectors = from tuple in tuples let batch = tuple.GetGradients() from vector in batch select vector;
                         double sum = 0.0;
 
                         foreach (var gradient in from vector in vectors from gradient in vector select gradient)
@@ -134,7 +134,7 @@ namespace Megalopolis
 
                     foreach (var tuple in tuples)
                     {
-                        tuple.Item1.Update(tuple.Item2, (weight, gradient) => optimizer.Optimize(identifier++, weight, gradient));
+                        tuple.Update(tuple.GetGradients(), (weight, gradient) => optimizer.Optimize(identifier++, weight, gradient));
                         index++;
                     }
 
@@ -176,8 +176,7 @@ namespace Megalopolis
 
             foreach (var tuple in collection)
             {
-                var activations = Forward(new Batch<double[]>(new double[][] { tuple.Item1 }), false);
-                var outputActivations = activations.Last().Item2;
+                var outputActivations = Forward(new Batch<double[]>(new double[][] { tuple.Item1 }), false);
 
                 for (int i = 0; i < this.outputLayer.Outputs; i++)
                 {
@@ -188,59 +187,51 @@ namespace Megalopolis
             return sum / size;
         }
 
-        private IEnumerable<Tuple<Batch<double[]>, Batch<double[]>>> Forward(Batch<double[]> inputs, bool isTraining)
+        private Batch<double[]> Forward(Batch<double[]> x, bool isTraining)
         {
             var layer = this.inputLayer;
-            var tupleList = new List<Tuple<Batch<double[]>, Batch<double[]>>>();
 
             do
             {
-                var outputs = layer.Forward(inputs, isTraining);
-                
-                tupleList.Add(Tuple.Create<Batch<double[]>, Batch<double[]>>(inputs, outputs));
-                inputs = outputs;
+                x = layer.Forward(x, isTraining);
 
                 layer = layer.Next;
             } while (layer != null);
 
-            return tupleList;
+            return x;
         }
 
-        private IEnumerable<Tuple<IUpdatable, Batch<double[]>>> Backward(IEnumerable<Tuple<Batch<double[]>, Batch<double[]>>> activations, Batch<double[]> outputs)
+        private IEnumerable<IUpdatable> Backward(Batch<double[]> y, Batch<double[]> t)
         {
             var layer = this.outputLayer;
-            var activationsLinkedList = new LinkedList<Tuple<Batch<double[]>, Batch<double[]>>>(activations);
-            var deltas = new Batch<double[]>(new double[outputs.Size][]);
-            var tupleList = new LinkedList<Tuple<IUpdatable, Batch<double[]>>>();
+            var deltas = new Batch<double[]>(new double[t.Size][]);
+            var updatableList = new LinkedList<IUpdatable>();
 
-            for (int i = 0; i < outputs.Size; i++)
+            for (int i = 0; i < t.Size; i++)
             {
                 deltas[i] = new double[this.outputLayer.Outputs];
 
                 for (int j = 0; j < this.outputLayer.Outputs; j++)
                 {
-                    deltas[i][j] = this.lossFunction.Derivative(activationsLinkedList.Last.Value.Item2[i][j], outputs[i][j]);
+                    deltas[i][j] = this.lossFunction.Derivative(y[i][j], t[i][j]);
                 }
             }
 
             do
             {
-                var tuple = layer.Backward(activationsLinkedList.Last.Value.Item1, activationsLinkedList.Last.Value.Item2, deltas);
                 var updatable = layer as IUpdatable;
 
-                deltas = tuple.Item1;
+                deltas = layer.Backward(deltas);
 
                 if (updatable != null)
                 {
-                    tupleList.AddFirst(Tuple.Create<IUpdatable, Batch<double[]>>(updatable, tuple.Item2));
+                    updatableList.AddFirst(updatable);
                 }
-
-                activationsLinkedList.RemoveLast();
 
                 layer = layer.Previous;
             } while (layer != null);
 
-            return tupleList;
+            return updatableList;
         }
     }
 }

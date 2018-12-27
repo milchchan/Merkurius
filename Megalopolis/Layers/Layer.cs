@@ -59,7 +59,7 @@ namespace Megalopolis
             }
 
             public abstract Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining);
-            public abstract Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas);
+            public abstract Batch<double[]> Backward(Batch<double[]> deltas);
         }
     }
 }

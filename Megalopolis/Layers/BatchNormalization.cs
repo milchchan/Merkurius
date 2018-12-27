@@ -14,6 +14,8 @@ namespace Megalopolis
             private double[] standardDeviations = null;
             private double[,] xc = null;
             private double[,] xn = null;
+            private double[] dbetaVector = null;
+            private double[] dgammaVector = null;
 
             public double[] Weights
             {
@@ -149,22 +151,23 @@ namespace Megalopolis
                 return outputs;
             }
 
-            public override Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
+            public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
                 var gamma = new double[this.outputs];
-                var dbetaVector = new double[deltas[0].Length];
-                var dgammaVector = new double[deltas[0].Length];
                 var dxn = new double[deltas.Size, deltas[0].Length];
                 var dxc = new double[deltas.Size, deltas[0].Length];
                 var dstd = new double[deltas[0].Length];
                 var dvar = new double[deltas[0].Length];
                 var dx = new Batch<double[]>(new double[deltas.Size][]);
 
+                this.dbetaVector = new double[deltas[0].Length];
+                this.dgammaVector = new double[deltas[0].Length];
+
                 for (int i = 0; i < deltas[0].Length; i++)
                 {
                     gamma[i] = this.weights[i];
-                    dbetaVector[i] = 0.0;
-                    dgammaVector[i] = 0.0;
+                    this.dbetaVector[i] = 0.0;
+                    this.dgammaVector[i] = 0.0;
                     dstd[i] = 0.0;
                     dvar[i] = 0.0;
                 }
@@ -175,8 +178,8 @@ namespace Megalopolis
 
                     for (int j = 0; j < deltas.Size; j++)
                     {
-                        dbetaVector[i] += deltas[j][i];
-                        dgammaVector[i] += this.xn[j, i] * deltas[j][i];
+                        this.dbetaVector[i] += deltas[j][i];
+                        this.dgammaVector[i] += this.xn[j, i] * deltas[j][i];
                         dxn[j, i] = gamma[i] * deltas[j][i];
                         dxc[j, i] = dxn[j, i] / this.standardDeviations[i];
                         dstd[i] -= dxn[j, i] * this.xc[j, i] / (this.standardDeviations[i] * this.standardDeviations[i]);
@@ -196,21 +199,22 @@ namespace Megalopolis
                     }
                 }
 
-                return Tuple.Create<Batch<double[]>, Batch<double[]>>(dx, new Batch<double[]>(new double[1][] { dgammaVector.Concat<double>(dbetaVector).ToArray<double>() }));
+                return dx;
+            }
+
+            public Batch<double[]> GetGradients()
+            {
+                return new Batch<double[]>(new double[1][] { this.dgammaVector.Concat<double>(this.dbetaVector).ToArray<double>() });
             }
 
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
-                for (int i = 0; i < gradients.Size; i++)
+                foreach (var vector in gradients)
                 {
-                    for (int j = 0; j < this.outputs; j++)
+                    for (int i = 0, j = this.outputs; i < vector.Length; i++, j++)
                     {
-                        this.weights[j] = func(this.weights[j], gradients[i][j]);
-                    }
-
-                    for (int j = 0, k = this.outputs; j < this.outputs; j++, k++)
-                    {
-                        this.weights[k] = func(this.weights[k], gradients[i][k]);
+                        this.weights[i] = func(this.weights[i], vector[i]);
+                        this.weights[j] = func(this.weights[j], vector[j]);
                     }
                 }
             }

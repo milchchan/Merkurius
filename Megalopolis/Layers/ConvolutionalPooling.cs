@@ -20,7 +20,10 @@ namespace Megalopolis
             private int filterHeight = 0;
             private int poolWidth = 0;
             private int poolHeight = 0;
+            private Batch<double[]> internalInputs = null;
+            private Batch<double[]> internalOutputs = null;
             private ValueTuple<double[,,], double[,,]>[] internalDataTuple = null;
+            private double[][] gradients = null;
             private IActivationFunction activationFunction = null;
 
             public double[] Weights
@@ -124,10 +127,13 @@ namespace Megalopolis
                 var activationMapWidth = GetActivationMapWidth();
                 var activationMapHeight = GetActivationMapHeight();
 
-                return MaxPooling(Convolve(inputs, activationMapWidth, activationMapHeight), GetOutputWidth(activationMapWidth), GetOutputHeight(activationMapHeight));
+                this.internalInputs = inputs;
+                this.internalOutputs = MaxPooling(Convolve(inputs, activationMapWidth, activationMapHeight), GetOutputWidth(activationMapWidth), GetOutputHeight(activationMapHeight));
+
+                return this.internalOutputs;
             }
 
-            public override Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas1)
+            public override Batch<double[]> Backward(Batch<double[]> deltas1)
             {
                 var parallelOptions = new ParallelOptions();
                 var activationMapWidth = GetActivationMapWidth();
@@ -135,8 +141,9 @@ namespace Megalopolis
                 var outputWidth = GetOutputWidth(activationMapWidth);
                 var outputHeight = GetOutputHeight(activationMapHeight);
                 var length = this.filters * this.channels * this.filterWidth * this.filterHeight;
-                var d = DerivativeOfMaxPooling(outputs, deltas1, activationMapWidth, activationMapHeight, outputWidth, outputHeight);
-                var data = new double[deltas1.Size][];
+                var d = DerivativeOfMaxPooling(this.internalOutputs, deltas1, activationMapWidth, activationMapHeight, outputWidth, outputHeight);
+
+                this.gradients = new double[deltas1.Size][];
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
@@ -164,7 +171,7 @@ namespace Megalopolis
                                     {
                                         for (int q = 0; q < this.filterWidth; q++)
                                         {
-                                            gradients[o] += deltas[j] * inputs[index][n + this.imageWidth * (k + p) + l + q];
+                                            gradients[o] += deltas[j] * this.internalInputs[index][n + this.imageWidth * (k + p) + l + q];
                                             o++;
                                         }
                                     }
@@ -180,16 +187,21 @@ namespace Megalopolis
                     return local;
                 }, (local) =>
                 {
-                    lock (data)
+                    lock (this.gradients)
                     {
                         local.ForEach(x =>
                         {
-                            data[x.Item1] = x.Item2;
+                            this.gradients[x.Item1] = x.Item2;
                         });
                     }
                 });
 
-                return Tuple.Create<Batch<double[]>, Batch<double[]>>(DerivativeOfConvolve(d, activationMapWidth, activationMapHeight), new Batch<double[]>(data));
+                return DerivativeOfConvolve(d, activationMapWidth, activationMapHeight);
+            }
+
+            public Batch<double[]> GetGradients()
+            {
+                return new Batch<double[]>(this.gradients);
             }
 
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)

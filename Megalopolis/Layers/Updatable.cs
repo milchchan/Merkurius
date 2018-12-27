@@ -11,6 +11,7 @@ namespace Megalopolis
                 get;
                 set;
             }
+            Batch<double[]> GetGradients();
             void Update(Batch<double[]> gradients, Func<double, double, double> func);
         }
     }

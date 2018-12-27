@@ -16,8 +16,9 @@ namespace Megalopolis
             private int timesteps = 0;
             private bool stateful = false;
             private ValueTuple<Batch<double[]>, Batch<double[]>> state = new ValueTuple<Batch<double[]>, Batch<double[]>>(null, null);
-            private Batch<double[]> dh = null;
             private List<InternalLSTM> layerList = null;
+            private Batch<double[]> dh = null;
+            private double[][] gradients = null;
             private IActivationFunction tanhActivationFunction = null;
             private IActivationFunction sigmoidActivationFunction = null;
 
@@ -224,7 +225,7 @@ namespace Megalopolis
                 return new Batch<double[]>(outputs);
             }
 
-            public override Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
+            public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
                 var length1 = this.outputs * 4;
                 var length2 = this.timesteps * this.inputs;
@@ -232,7 +233,8 @@ namespace Megalopolis
                 var d = new double[deltas.Size][];
                 var dh = new Batch<double[]>(new double[deltas.Size][]);
                 var dc = new Batch<double[]>(new double[deltas.Size][]);
-                var gradients = new double[deltas.Size][];
+
+                this.gradients = new double[deltas.Size][];
 
                 for (int i = 0; i < deltas.Size; i++)
                 {
@@ -248,7 +250,7 @@ namespace Megalopolis
 
                     for (int j = 0; j < length3; j++)
                     {
-                        gradients[i][j] = 0.0;
+                        this.gradients[i][j] = 0.0;
                     }
                 }
 
@@ -276,14 +278,19 @@ namespace Megalopolis
 
                         for (int j = 0; j < length3; j++)
                         {
-                            gradients[i][j] += tuple.Item4[i][j];
+                            this.gradients[i][j] += tuple.Item4[i][j];
                         }
                     }
                 }
 
                 this.dh = dh;
 
-                return Tuple.Create<Batch<double[]>, Batch<double[]>>(new Batch<double[]>(d), new Batch<double[]>(gradients));
+                return new Batch<double[]>(d);
+            }
+
+            public Batch<double[]> GetGradients()
+            {
+                return new Batch<double[]>(this.gradients);
             }
 
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)

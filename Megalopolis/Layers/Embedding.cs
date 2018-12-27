@@ -9,6 +9,8 @@ namespace Megalopolis
         public class Embedding : Layer, IUpdatable
         {
             private double[] weights = null;
+            private Batch<double[]> internalInputs = null;
+            private Batch<double[]> dW = null;
 
             public double[] Weights
             {
@@ -36,6 +38,8 @@ namespace Megalopolis
             {
                 var parallelOptions = new ParallelOptions();
                 var data = new double[inputs.Size][];
+
+                this.internalInputs = inputs;
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
@@ -69,10 +73,10 @@ namespace Megalopolis
                 return new Batch<double[]>(data);
             }
 
-            public override Tuple<Batch<double[]>, Batch<double[]>> Backward(Batch<double[]> inputs, Batch<double[]> outputs, Batch<double[]> deltas)
+            public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
                 var parallelOptions = new ParallelOptions();
-                var data = new double[inputs.Size][];
+                var data = new double[this.internalInputs.Size][];
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
@@ -87,7 +91,7 @@ namespace Megalopolis
 
                     for (int i = 0, j = 0; i < this.inputs; i++)
                     {
-                        for (int k = 0, l = this.outputs * Convert.ToInt32(inputs[index][i]); k < this.outputs; k++, l++)
+                        for (int k = 0, l = this.outputs * Convert.ToInt32(this.internalInputs[index][i]); k < this.outputs; k++, l++)
                         {
                             dW[l] += vector[j];
                             j++;
@@ -108,9 +112,14 @@ namespace Megalopolis
                     }
                 });
 
-                var dw = new Batch<double[]>(data);
+                this.dW = new Batch<double[]>(data);
 
-                return new Tuple<Batch<double[]>, Batch<double[]>>(dw, dw);
+                return this.dW;
+            }
+
+            public Batch<double[]> GetGradients()
+            {
+                return this.dW;
             }
 
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
