@@ -62,18 +62,10 @@ namespace Megalopolis
 
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
-                var gamma = new double[this.outputs];
-                var beta = new double[this.outputs];
                 var outputs = new Batch<double[]>(new double[inputs.Size][]);
 
                 this.xc = new double[inputs.Size, inputs[0].Length];
                 this.xn = new double[inputs.Size, inputs[0].Length];
-
-                for (int i = 0, j = this.outputs; i < this.outputs; i++, j++)
-                {
-                    gamma[i] = this.weights[i];
-                    beta[j] = this.weights[j];
-                }
 
                 if (isTraining)
                 {
@@ -142,9 +134,9 @@ namespace Megalopolis
                 {
                     outputs[i] = new double[this.outputs];
 
-                    for (int j = 0; j < this.outputs; j++)
+                    for (int j = 0, k = this.outputs; j < this.outputs; j++, k++)
                     {
-                        outputs[i][j] = gamma[j] * this.xc[i, j] + beta[j];
+                        outputs[i][j] = this.weights[j] * this.xc[i, j] + this.weights[k];
                     }
                 }
 
@@ -153,7 +145,6 @@ namespace Megalopolis
 
             public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
-                var gamma = new double[this.outputs];
                 var dxn = new double[deltas.Size, deltas[0].Length];
                 var dxc = new double[deltas.Size, deltas[0].Length];
                 var dstd = new double[deltas[0].Length];
@@ -165,7 +156,6 @@ namespace Megalopolis
 
                 for (int i = 0; i < deltas[0].Length; i++)
                 {
-                    gamma[i] = this.weights[i];
                     this.dbetaVector[i] = 0.0;
                     this.dgammaVector[i] = 0.0;
                     dstd[i] = 0.0;
@@ -180,7 +170,7 @@ namespace Megalopolis
                     {
                         this.dbetaVector[i] += deltas[j][i];
                         this.dgammaVector[i] += this.xn[j, i] * deltas[j][i];
-                        dxn[j, i] = gamma[i] * deltas[j][i];
+                        dxn[j, i] = this.weights[i] * deltas[j][i];
                         dxc[j, i] = dxn[j, i] / this.standardDeviations[i];
                         dstd[i] -= dxn[j, i] * this.xc[j, i] / (this.standardDeviations[i] * this.standardDeviations[i]);
                     }
