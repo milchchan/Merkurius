@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Megalopolis.ActivationFunctions;
 
 namespace Megalopolis
 {
@@ -16,8 +14,6 @@ namespace Megalopolis
             private Batch<double[]> internalInputs = null;
             private Batch<double[]> internalOutputs = null;
             private List<double[]> gradientList = null;
-            private IActivationFunction activationFunction = null;
-            private Collection<IFilter> filterCollection = null;
 
             public double[] Weights
             {
@@ -43,22 +39,12 @@ namespace Megalopolis
                 }
             }
 
-            public IActivationFunction ActivationFunction
-            {
-                get
-                {
-                    return this.activationFunction;
-                }
-            }
-
-            public FullyConnected(int inputs, int outputs, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(inputs, outputs)
+            public FullyConnected(int inputs, int outputs, Func<int, int, int, double> func) : base(inputs, outputs)
             {
                 var length = inputs * outputs;
 
                 this.weights = new double[length];
                 this.biases = new double[outputs];
-                this.activationFunction = activationFunction;
-                this.filterCollection = new Collection<IFilter>();
 
                 for (int i = 0; i < length; i++)
                 {
@@ -71,14 +57,12 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnected(Layer layer, int nodes, IActivationFunction activationFunction, Func<int, int, int, double> func) : base(layer, nodes)
+            public FullyConnected(Layer layer, int nodes, Func<int, int, int, double> func) : base(layer, nodes)
             {
                 var length = layer.Outputs * nodes;
 
                 this.weights = new double[length];
                 this.biases = new double[nodes];
-                this.activationFunction = activationFunction;
-                this.filterCollection = new Collection<IFilter>();
 
                 for (int i = 0; i < length; i++)
                 {
@@ -88,56 +72,6 @@ namespace Megalopolis
                 for (int i = 0; i < nodes; i++)
                 {
                     this.biases[i] = 0.0;
-                }
-            }
-
-            public FullyConnected(int inputs, int outputs, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, int, int, double> func) : base(inputs, outputs)
-            {
-                var length = inputs * outputs;
-
-                this.weights = new double[length];
-                this.biases = new double[outputs];
-                this.activationFunction = activationFunction;
-                this.filterCollection = new Collection<IFilter>();
-
-                for (int i = 0; i < length; i++)
-                {
-                    this.weights[i] = func(i, inputs, outputs);
-                }
-
-                for (int i = 0; i < outputs; i++)
-                {
-                    this.biases[i] = 0.0;
-                }
-
-                foreach (var filter in filters)
-                {
-                    this.filterCollection.Add(filter);
-                }
-            }
-
-            public FullyConnected(Layer layer, int nodes, IActivationFunction activationFunction, IEnumerable<IFilter> filters, Func<int, int, int, double> func) : base(layer, nodes)
-            {
-                var length = layer.Outputs * nodes;
-
-                this.weights = new double[length];
-                this.biases = new double[nodes];
-                this.activationFunction = activationFunction;
-                this.filterCollection = new Collection<IFilter>();
-
-                for (int i = 0; i < length; i++)
-                {
-                    this.weights[i] = func(i, layer.Outputs, nodes);
-                }
-
-                for (int i = 0; i < nodes; i++)
-                {
-                    this.biases[i] = 0.0;
-                }
-
-                foreach (var filter in filters)
-                {
-                    this.filterCollection.Add(filter);
                 }
             }
 
@@ -163,9 +97,7 @@ namespace Megalopolis
                             sum += vector[j] * this.weights[this.outputs * j + i];
                         }
 
-                        sum += this.biases[i];
-
-                        activations[i] = this.activationFunction.Function(sum);
+                        activations[i] = sum + this.biases[i];
                     }
 
                     local.Add(Tuple.Create<long, double[]>(index, activations));
@@ -184,55 +116,19 @@ namespace Megalopolis
 
                 this.internalOutputs = new Batch<double[]>(data);
 
-                foreach (var filter in this.filterCollection)
-                {
-                    this.internalOutputs = filter.Forward(this.internalOutputs, isTraining);
-                }
-
                 return this.internalOutputs;
             }
 
             public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
                 var parallelOptions = new ParallelOptions();
-                var data = new double[deltas.Size][];
                 var tuple = Tuple.Create<double[][], double[][]>(new double[deltas.Size][], new double[deltas.Size][]);
 
                 this.gradientList = new List<double[]>();
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
-                Parallel.ForEach<double[], List<Tuple<long, double[]>>>(deltas, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector1, state, index, local) =>
-                {
-                    var vector2 = new double[this.outputs];
-
-                    for (int i = 0; i < this.outputs; i++)
-                    {
-                        vector2[i] = this.activationFunction.Derivative(this.internalOutputs[index][i]) * vector1[i];
-                    }
-
-                    local.Add(Tuple.Create<long, double[]>(index, vector2));
-
-                    return local;
-                }, (local) =>
-                {
-                    lock (data)
-                    {
-                        local.ForEach(x =>
-                        {
-                            data[x.Item1] = x.Item2;
-                        });
-                    }
-                });
-
-                var batch = new Batch<double[]>(data);
-
-                foreach (var filter in this.filterCollection)
-                {
-                    batch = filter.Backward(batch);
-                }
-
-                Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(batch, parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
+                Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(deltas, parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
                 {
                     var gradients = new double[this.inputs * this.outputs];
                     var vector2 = new double[this.inputs];
@@ -268,7 +164,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < deltas.Size; i++)
                 {
-                    this.gradientList.Add(tuple.Item2[i].Concat<double>(batch[i]).ToArray<double>());
+                    this.gradientList.Add(tuple.Item2[i].Concat<double>(deltas[i]).ToArray<double>());
                 }
 
                 return new Batch<double[]>(tuple.Item1);

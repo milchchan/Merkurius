@@ -6,7 +6,7 @@ namespace Megalopolis
 {
     namespace Layers
     {
-        public class Dropout : IFilter
+        public class Dropout : Layer
         {
             private double rate = 0.5;
             private double[][] masks = null;
@@ -19,23 +19,23 @@ namespace Megalopolis
                 }
             }
 
-            public Dropout() { }
+            public Dropout(Layer layer) : base(layer, layer.Outputs) { }
 
-            public Dropout(double rate)
+            public Dropout(Layer layer, double rate) : base(layer, layer.Outputs)
             {
                 this.rate = rate;
             }
 
-            public Batch<double[]> Forward(Batch<double[]> batch, bool isTraining)
+            public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
                 if (isTraining)
                 {
                     var parallelOptions = new ParallelOptions();
-                    var tuple = Tuple.Create<double[][], double[][]>(new double[batch.Size][], new double[batch.Size][]);
+                    var tuple = Tuple.Create<double[][], double[][]>(new double[inputs.Size][], new double[inputs.Size][]);
 
                     parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
-                    Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(batch, parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
+                    Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
                     {
                         Random random = random = RandomProvider.GetRandom(); ;
                         double[] masks = new double[vector1.Length];
@@ -69,17 +69,17 @@ namespace Megalopolis
                     return new Batch<double[]>(tuple.Item2);
                 }
 
-                return batch;
+                return inputs;
             }
 
-            public Batch<double[]> Backward(Batch<double[]> batch)
+            public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
                 var parallelOptions = new ParallelOptions();
-                var data = new double[batch.Size][];
+                var data = new double[deltas.Size][];
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
-                Parallel.ForEach<double[], List<Tuple<long, double[]>>>(batch, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector1, state, index, local) =>
+                Parallel.ForEach<double[], List<Tuple<long, double[]>>>(deltas, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector1, state, index, local) =>
                 {
                     double[] vector2 = new double[vector1.Length];
 

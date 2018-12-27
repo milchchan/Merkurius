@@ -133,7 +133,7 @@ namespace Megalopolis
                 return this.internalOutputs;
             }
 
-            public override Batch<double[]> Backward(Batch<double[]> deltas1)
+            public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
                 var parallelOptions = new ParallelOptions();
                 var activationMapWidth = GetActivationMapWidth();
@@ -141,16 +141,16 @@ namespace Megalopolis
                 var outputWidth = GetOutputWidth(activationMapWidth);
                 var outputHeight = GetOutputHeight(activationMapHeight);
                 var length = this.filters * this.channels * this.filterWidth * this.filterHeight;
-                var d = DerivativeOfMaxPooling(this.internalOutputs, deltas1, activationMapWidth, activationMapHeight, outputWidth, outputHeight);
+                var d1 = DerivativeOfMaxPooling(this.internalOutputs, deltas, activationMapWidth, activationMapHeight, outputWidth, outputHeight);
 
-                this.gradients = new double[deltas1.Size][];
+                this.gradients = new double[deltas.Size][];
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
-                Parallel.ForEach<double[,,], List<Tuple<long, double[]>>>(d, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
+                Parallel.ForEach<double[,,], List<Tuple<long, double[]>>>(d1, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                 {
                     var gradients = new double[length];
-                    var deltas = new double[this.filters * activationMapWidth * activationMapHeight];
+                    var d2 = new double[this.filters * activationMapWidth * activationMapHeight];
 
                     for (int i = 0; i < length; i++)
                     {
@@ -163,7 +163,7 @@ namespace Megalopolis
                         {
                             for (int l = 0; l < activationMapWidth; l++)
                             {
-                                deltas[j] = this.activationFunction.Derivative(this.internalDataTuple[index].Item1[i, k, l] + this.biases[j]) * vector[i, k, l];
+                                d2[j] = this.activationFunction.Derivative(this.internalDataTuple[index].Item2[i, k, l]) * vector[i, k, l];
 
                                 for (int m = 0, n = 0, o = this.channels * this.filterWidth * this.filterHeight * i; m < this.channels; m++, n += this.imageWidth * this.imageHeight)
                                 {
@@ -171,7 +171,7 @@ namespace Megalopolis
                                     {
                                         for (int q = 0; q < this.filterWidth; q++)
                                         {
-                                            gradients[o] += deltas[j] * this.internalInputs[index][n + this.imageWidth * (k + p) + l + q];
+                                            gradients[o] += d2[j] * this.internalInputs[index][n + this.imageWidth * (k + p) + l + q];
                                             o++;
                                         }
                                     }
@@ -182,7 +182,7 @@ namespace Megalopolis
                         }
                     }
 
-                    local.Add(Tuple.Create<long, double[]>(index, gradients.Concat<double>(deltas).ToArray<double>()));
+                    local.Add(Tuple.Create<long, double[]>(index, gradients.Concat<double>(d2).ToArray<double>()));
 
                     return local;
                 }, (local) =>
@@ -196,7 +196,7 @@ namespace Megalopolis
                     }
                 });
 
-                return DerivativeOfConvolve(d, activationMapWidth, activationMapHeight);
+                return DerivativeOfConvolve(d1, activationMapWidth, activationMapHeight);
             }
 
             public Batch<double[]> GetGradients()
@@ -338,7 +338,7 @@ namespace Megalopolis
 
                                             if (y >= 0 && x >= 0)
                                             {
-                                                d[k] += vector[n, y, x] * this.activationFunction.Derivative(this.internalDataTuple[index].Item1[n, y, x] + this.biases[activationMapWidth * activationMapHeight * n + activationMapWidth * y + x]) * this.weights[o + j + q + r];
+                                                d[k] += vector[n, y, x] * this.activationFunction.Derivative(this.internalDataTuple[index].Item2[n, y, x]) * this.weights[o + j + q + r];
                                             }
                                         }
                                     }
