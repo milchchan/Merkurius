@@ -17,6 +17,8 @@ namespace Megalopolis
             private int filters = 0;
             private int filterWidth = 0;
             private int filterHeight = 0;
+            private int activationMapWidth = 0;
+            private int activationMapHeight = 0;
             private Batch<double[]> internalInputs = null;
             private double[][] gradients = null;
 
@@ -44,17 +46,34 @@ namespace Megalopolis
                 }
             }
 
-            public Convolutional(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, Func<int, int, int, double> func) : base(channels * imageWidth * imageHeight, filters * (imageWidth - filterWidth + 1) * (imageHeight - filterHeight + 1))
+            public int ActivationMapWidth
             {
-                var activationMapWidth = imageWidth - filterWidth + 1;
-                var activationMapHeight = imageHeight - filterHeight + 1;
-                var length1 = filters * channels * filterWidth * filterHeight;
-                var length2 = filters * activationMapWidth * activationMapHeight;
-                var fanIn = channels * filterWidth * filterHeight;
-                var fanOut = filters * filterWidth * filterHeight / (poolWidth * poolHeight);
+                get
+                {
+                    return this.activationMapWidth;
+                }
+            }
 
-                this.weights = new double[length1];
-                this.biases = new double[length2];
+            public int ActivationMapHeight
+            {
+                get
+                {
+                    return this.activationMapHeight;
+                }
+            }
+
+            public Convolutional(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, int, double> func) : base(channels * imageWidth * imageHeight, filters * (imageWidth - filterWidth + 1) * (imageHeight - filterHeight + 1))
+            {
+                var length = filters * channels * filterWidth * filterHeight;
+
+                this.activationMapWidth = imageWidth - filterWidth + 1;
+                this.activationMapHeight = imageHeight - filterHeight + 1;
+
+                var fanIn = channels * filterWidth * filterHeight;
+                var fanOut = filters * activationMapWidth * activationMapHeight;
+
+                this.weights = new double[length];
+                this.biases = new double[fanOut];
                 this.channels = channels;
                 this.imageWidth = imageWidth;
                 this.imageHeight = imageHeight;
@@ -62,28 +81,29 @@ namespace Megalopolis
                 this.filterWidth = filterWidth;
                 this.filterHeight = filterHeight;
 
-                for (int i = 0; i < length1; i++)
+                for (int i = 0; i < length; i++)
                 {
                     this.weights[i] = func(i, fanIn, fanOut);
                 }
 
-                for (int i = 0; i < length2; i++)
+                for (int i = 0; i < fanOut; i++)
                 {
                     this.biases[i] = 0.0;
                 }
             }
 
-            public Convolutional(Layer layer, int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight, Func<int, int, int, double> func) : base(layer, filters * (imageWidth - filterWidth + 1) * (imageHeight - filterHeight + 1))
+            public Convolutional(Layer layer, int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, int, double> func) : base(layer, filters * (imageWidth - filterWidth + 1) * (imageHeight - filterHeight + 1))
             {
-                var activationMapWidth = imageWidth - filterWidth + 1;
-                var activationMapHeight = imageHeight - filterHeight + 1;
-                var length1 = filters * channels * filterWidth * filterHeight;
-                var length2 = filters * activationMapWidth * activationMapHeight;
-                var fanIn = channels * filterWidth * filterHeight;
-                var fanOut = filters * filterWidth * filterHeight / (poolWidth * poolHeight);
+                var length = filters * channels * filterWidth * filterHeight;
 
-                this.weights = new double[length1];
-                this.biases = new double[length2];
+                this.activationMapWidth = imageWidth - filterWidth + 1;
+                this.activationMapHeight = imageHeight - filterHeight + 1;
+
+                var fanIn = channels * filterWidth * filterHeight;
+                var fanOut = filters * activationMapWidth * activationMapHeight;
+
+                this.weights = new double[length];
+                this.biases = new double[fanOut];
                 this.channels = channels;
                 this.imageWidth = imageWidth;
                 this.imageHeight = imageHeight;
@@ -91,12 +111,12 @@ namespace Megalopolis
                 this.filterWidth = filterWidth;
                 this.filterHeight = filterHeight;
 
-                for (int i = 0; i < length1; i++)
+                for (int i = 0; i < length; i++)
                 {
                     this.weights[i] = func(i, fanIn, fanOut);
                 }
 
-                for (int i = 0; i < length2; i++)
+                for (int i = 0; i < fanOut; i++)
                 {
                     this.biases[i] = 0.0;
                 }
@@ -106,14 +126,12 @@ namespace Megalopolis
             {
                 this.internalInputs = inputs;
 
-                return this.Convolve(inputs, GetActivationMapWidth(), GetActivationMapHeight());
+                return this.Convolve(inputs, this.activationMapWidth, this.activationMapHeight);
             }
 
             public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
                 var parallelOptions = new ParallelOptions();
-                var activationMapWidth = GetActivationMapWidth();
-                var activationMapHeight = GetActivationMapHeight();
                 var length = this.filters * this.channels * this.filterWidth * this.filterHeight;
 
                 this.gradients = new double[deltas.Size][];
@@ -131,9 +149,9 @@ namespace Megalopolis
 
                     for (int i = 0, j = 0; i < this.filters; i++)
                     {
-                        for (int k = 0; k < activationMapHeight; k++)
+                        for (int k = 0; k < this.activationMapHeight; k++)
                         {
-                            for (int l = 0; l < activationMapWidth; l++)
+                            for (int l = 0; l < this.activationMapWidth; l++)
                             {
                                 for (int m = 0, n = 0, o = this.channels * this.filterWidth * this.filterHeight * i; m < this.channels; m++, n += this.imageWidth * this.imageHeight)
                                 {
@@ -177,7 +195,7 @@ namespace Megalopolis
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
                 var length1 = this.filters * this.channels * this.filterWidth * this.filterHeight;
-                var length2 = this.filters * GetActivationMapWidth() * GetActivationMapHeight();
+                var length2 = this.filters * this.activationMapWidth * this.activationMapHeight;
 
                 for (int i = 1; i < gradients.Size; i++)
                 {
@@ -329,14 +347,9 @@ namespace Megalopolis
                 return new Batch<double[]>(data);
             }
 
-            private int GetActivationMapWidth()
+            public static int GetActivationMapLength(int imageLength, int filterLength)
             {
-                return this.imageWidth - this.filterWidth + 1;
-            }
-
-            private int GetActivationMapHeight()
-            {
-                return this.imageHeight - this.filterHeight + 1;
+                return imageLength - filterLength + 1;
             }
 
             public static double[] Flatten(double[,,] inputs, int channels, int imageWidth, int imageHeight)

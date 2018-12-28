@@ -8,44 +8,34 @@ namespace Megalopolis
     {
         public class MaxPooling : Layer
         {
-            private int imageWidth = 0;
-            private int imageHeight = 0;
             private int filters = 0;
-            private int filterWidth = 0;
-            private int filterHeight = 0;
+            private int activationMapWidth = 0;
+            private int activationMapHeight = 0;
             private int poolWidth = 0;
             private int poolHeight = 0;
             private Batch<double[]> activationMaps = null;
             private Batch<double[]> internalOutputs = null;
 
-            public MaxPooling(Layer layer, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, int poolWidth, int poolHeight) : base(layer, filters * (imageWidth - filterWidth + 1) / poolWidth * ((imageHeight - filterHeight + 1) / poolHeight))
+            public MaxPooling(Layer layer, int filters, int activationMapWidth, int activationMapHeight, int poolWidth, int poolHeight) : base(layer, filters * activationMapWidth / poolWidth * (activationMapHeight / poolHeight))
             {
-                this.imageWidth = imageWidth;
-                this.imageHeight = imageHeight;
                 this.filters = filters;
-                this.filterWidth = filterWidth;
-                this.filterHeight = filterHeight;
+                this.activationMapWidth = activationMapWidth;
+                this.activationMapHeight = activationMapHeight;
                 this.poolWidth = poolWidth;
                 this.poolHeight = poolHeight;
             }
 
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
-                var activationMapWidth = GetActivationMapWidth();
-                var activationMapHeight = GetActivationMapHeight();
-
                 this.activationMaps = inputs;
-                this.internalOutputs = Pooling(inputs, activationMapWidth, activationMapHeight, GetOutputWidth(activationMapWidth), GetOutputHeight(activationMapHeight));
+                this.internalOutputs = Pooling(inputs, this.activationMapWidth, this.activationMapHeight, GetOutputWidth(this.activationMapWidth), GetOutputHeight(this.activationMapHeight));
 
                 return this.internalOutputs;
             }
 
             public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
-                var activationMapWidth = GetActivationMapWidth();
-                var activationMapHeight = GetActivationMapHeight();
-
-                return DerivativeOfPooling(this.internalOutputs, deltas, activationMapWidth, activationMapHeight, GetOutputWidth(activationMapWidth), GetOutputHeight(activationMapHeight));
+                return DerivativeOfPooling(this.internalOutputs, deltas, this.activationMapWidth, this.activationMapHeight, GetOutputWidth(this.activationMapWidth), GetOutputHeight(this.activationMapHeight));
             }
 
             private Batch<double[]> Pooling(Batch<double[]> inputs, int activationMapWidth, int activationMapHeight, int outputWidth, int outputHeight)
@@ -162,16 +152,6 @@ namespace Megalopolis
                 });
 
                 return new Batch<double[]>(data);
-            }
-
-            private int GetActivationMapWidth()
-            {
-                return this.imageWidth - this.filterWidth + 1;
-            }
-
-            private int GetActivationMapHeight()
-            {
-                return this.imageHeight - this.filterHeight + 1;
             }
 
             private int GetOutputWidth(int activationMapWidth)

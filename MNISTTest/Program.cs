@@ -98,9 +98,9 @@ namespace MNISTTest
                 }
             }
 
-            var inputLayer = new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, poolWidth, poolHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
+            var inputLayer = new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
             var activation1 = new Activation(inputLayer, new ReLU());
-            var poolingLayer = new MaxPooling(activation1, imageWidth, imageHeight, filters, filterWidth, filterHeight, poolWidth, poolHeight);
+            var poolingLayer = new MaxPooling(activation1, filters, inputLayer.ActivationMapWidth, inputLayer.ActivationMapHeight, poolWidth, poolHeight);
             var hiddenLayer = new FullyConnected(poolingLayer, 100, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
             var activation2 = new Activation(hiddenLayer, new ReLU());
             var outputLayer = new Softmax(activation2, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut));
