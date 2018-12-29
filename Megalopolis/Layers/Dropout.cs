@@ -28,25 +28,32 @@ namespace Megalopolis
 
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
+                var parallelOptions = new ParallelOptions();
+
                 if (isTraining)
                 {
-                    var parallelOptions = new ParallelOptions();
                     var tuple = Tuple.Create<double[][], double[][]>(new double[inputs.Size][], new double[inputs.Size][]);
 
                     parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
                     Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
                     {
-                        Random random = random = RandomProvider.GetRandom(); ;
+                        Random random = random = RandomProvider.GetRandom();
                         double[] masks = new double[vector1.Length];
                         double[] vector2 = new double[vector1.Length];
 
                         for (int i = 0; i < vector1.Length; i++)
                         {
-                            double probability = random.Binomial(1, this.rate);
-
-                            masks[i] = probability;
-                            vector2[i] = vector1[i] * probability;
+                            if (random.NextDouble() > this.rate)
+                            {
+                                masks[i] = 1.0;
+                                vector2[i] = vector1[i];
+                            }
+                            else
+                            {
+                                masks[i] = 0.0;
+                                vector2[i] = 0.0;
+                            }
                         }
 
                         local.Add(Tuple.Create<long, double[], double[]>(index, masks, vector2));
@@ -69,7 +76,32 @@ namespace Megalopolis
                     return new Batch<double[]>(tuple.Item2);
                 }
 
-                return inputs;
+                var data = new double[inputs.Size][];
+
+                Parallel.ForEach<double[], List<Tuple<long, double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector1, state, index, local) =>
+                {
+                    double[] vector2 = new double[vector1.Length];
+
+                    for (int i = 0; i < vector1.Length; i++)
+                    {
+                        vector2[i] = vector1[i] * (1.0 - this.rate);
+                    }
+
+                    local.Add(Tuple.Create<long, double[]>(index, vector2));
+
+                    return local;
+                }, (local) =>
+                {
+                    lock (data)
+                    {
+                        local.ForEach(x =>
+                        {
+                            data[x.Item1] = x.Item2;
+                        });
+                    }
+                });
+
+                return new Batch<double[]>(data); ;
             }
 
             public override Batch<double[]> Backward(Batch<double[]> deltas)

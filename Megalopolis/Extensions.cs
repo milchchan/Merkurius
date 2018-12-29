@@ -6,21 +6,6 @@ namespace Megalopolis
 {
     public static class Extensions
     {
-        public static int Binomial(this Random random, int n, double p)
-        {
-            int count = 0;
-
-            for (int i = 0; i < n; i++)
-            {
-                if (random.NextDouble() < p)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
         public static double Uniform(this Random random, double min, double max)
         {
             return (max - min) * random.NextDouble() + min;
