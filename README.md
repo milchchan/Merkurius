@@ -29,13 +29,14 @@ To build Megalopolis, run .NET Core CLI command.
 Convolutional neural network (CNN).
 
 ```csharp
-var inputLayer = new Convolutional(1, 28, 28, 30, 5, 5, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
-var activation1 = new Activation(inputLayer, new ReLU());
-var poolingLayer = new MaxPooling(activation1, 30, inputLayer.ActivationMapWidth, inputLayer.ActivationMapHeight, 2, 2);
-var hiddenLayer = new FullyConnected(poolingLayer, 100, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
-var activation2 = new Activation(hiddenLayer, new ReLU());
-var outputLayer = new Softmax(activation2, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut));
-var model = new Model(outputLayer, new Adam(), new SoftmaxCrossEntropy());
+var model = new Model(
+  new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+  new Activation(new ReLU(),
+  new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
+  new FullyConnected(filters * outputWidth * outputHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+  new Activation(new ReLU(),
+  new Softmax(100, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
+  new Adam(), new SoftmaxCrossEntropy());
 
 model.Fit(trainingList, 50);
 ```
