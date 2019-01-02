@@ -102,14 +102,22 @@ namespace MNISTTest
                 }
             }
 
-            var model = new Model(new Layer[] {
+            /*var model = new Model(new Layer[] {
                 new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
                 new Activation(filters * activationMapWidth * activationMapHeight, new ReLU()),
                 new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight),
                 new FullyConnected(filters * outputWidth * outputHeight, 100, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
                 new Activation(100, new ReLU()),
                 new Softmax(100, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))
-            }, new Adam(), new SoftmaxCrossEntropy());
+            }, new Adam(), new SoftmaxCrossEntropy());*/
+            var model = new Model(
+                new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+                new Activation(new ReLU(),
+                new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
+                new FullyConnected(filters * outputWidth * outputHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+                new Activation(new ReLU(),
+                new Softmax(100, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
+                new Adam(), new SoftmaxCrossEntropy());
             int epochs = 50;
             int iterations = 1;
 

@@ -62,6 +62,22 @@ namespace Megalopolis
             }
         }
 
+        public Model(Layer inputLayer, IOptimizer optimizer, ILossFunction lossFunction)
+        {
+            var layer = inputLayer;
+
+            this.random = RandomProvider.GetRandom();
+            this.layerCollection = new Collection<Layer>();
+            this.optimizer = optimizer;
+            this.lossFunction = lossFunction;
+
+            do
+            {
+                this.layerCollection.Add(layer);
+                layer = layer.Next;
+            } while (layer != null);
+        }
+
         public Model(IEnumerable<Layer> collection, IOptimizer optimizer, ILossFunction lossFunction)
         {
             this.random = RandomProvider.GetRandom();
@@ -81,22 +97,6 @@ namespace Megalopolis
 
                 this.layerCollection.Add(layer);
             }
-        }
-
-        public Model(Layer inputLayer, IOptimizer optimizer, ILossFunction lossFunction)
-        {
-            var layer = inputLayer;
-
-            this.random = RandomProvider.GetRandom();
-            this.layerCollection = new Collection<Layer>();
-            this.optimizer = optimizer;
-            this.lossFunction = lossFunction;
-
-            do
-            {
-                this.layerCollection.Add(layer);
-                layer = layer.Next;
-            } while (layer != null);
         }
 
         public void Fit(IEnumerable<Tuple<double[], double[]>> collection, int epochs, int batchSize = 32)
