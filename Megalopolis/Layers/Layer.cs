@@ -33,6 +33,10 @@ namespace Megalopolis
                 {
                     return this.previousLayer;
                 }
+                set
+                {
+                    this.previousLayer = value;
+                }
             }
 
             public Layer Next
@@ -40,6 +44,10 @@ namespace Megalopolis
                 get
                 {
                     return this.nextLayer;
+                }
+                set
+                {
+                    this.nextLayer = value;
                 }
             }
 
@@ -56,6 +64,15 @@ namespace Megalopolis
 
                 layer.nextLayer = this;
                 this.previousLayer = layer;
+            }
+
+            public Layer(int nodes, Layer layer)
+            {
+                this.inputs = nodes;
+                this.outputs = layer.inputs;
+
+                layer.Previous = this;
+                this.nextLayer = layer;
             }
 
             public abstract Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining);

@@ -75,6 +75,24 @@ namespace Megalopolis
                 }
             }
 
+            public FullyConnected(int nodes, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
+            {
+                var length = nodes * layer.Inputs;
+
+                this.weights = new double[length];
+                this.biases = new double[nodes];
+
+                for (int i = 0; i < length; i++)
+                {
+                    this.weights[i] = func(i, layer.Inputs, nodes);
+                }
+
+                for (int i = 0; i < nodes; i++)
+                {
+                    this.biases[i] = 0.0;
+                }
+            }
+
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
                 var parallelOptions = new ParallelOptions();

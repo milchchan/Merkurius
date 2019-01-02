@@ -98,6 +98,27 @@ namespace Megalopolis
                 }
             }
 
+            public Recurrent(int nodes, int timesteps, bool stateful, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
+            {
+                var length = nodes * nodes + layer.Inputs * nodes;
+
+                this.weights = new double[length];
+                this.biases = new double[nodes];
+                this.timesteps = timesteps;
+                this.stateful = stateful;
+                this.tanhActivationFunction = new HyperbolicTangent();
+
+                for (int i = 0; i < length; i++)
+                {
+                    this.weights[i] = func(i, layer.Inputs, nodes);
+                }
+
+                for (int i = 0; i < nodes; i++)
+                {
+                    this.biases[i] = 0.0;
+                }
+            }
+
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
                 var length1 = this.inputs * this.outputs;

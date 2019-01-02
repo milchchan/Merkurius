@@ -39,11 +39,12 @@ namespace XORTest
             patternList.Add(Tuple.Create<double[], double[]>(new double[] { 1, 0 }, new double[] { 1 }));
             patternList.Add(Tuple.Create<double[], double[]>(new double[] { 1, 1 }, new double[] { 0 }));
 
-            var inputLayer = new FullyConnected(2, 2, (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble());
-            var activation1 = new Activation(inputLayer, new Sigmoid());
-            var outputLayer = new FullyConnected(activation1, 1, (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble());
-            var activation2 = new Activation(outputLayer, new Identity());
-            var model = new Model(activation2, new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
+            var model = new Model(new Layer[] {
+                new FullyConnected(2, 2, (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble()),
+                new Activation(2, new Sigmoid()),
+                new FullyConnected(2, 1, (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble()),
+                new Activation(1, new Identity())
+            }, new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
             int epochs = 10000;
             int iterations = 1;
 

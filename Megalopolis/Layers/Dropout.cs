@@ -19,9 +19,19 @@ namespace Megalopolis
                 }
             }
 
-            public Dropout(Layer layer) : base(layer, layer.Outputs) { }
+            public Dropout(int nodes) : base(nodes, nodes) { }
+
+            public Dropout(int nodes, double rate) : base(nodes, nodes)
+            {
+                this.rate = rate;
+            }
 
             public Dropout(Layer layer, double rate) : base(layer, layer.Outputs)
+            {
+                this.rate = rate;
+            }
+
+            public Dropout(double rate, Layer layer) : base(layer.Inputs, layer)
             {
                 this.rate = rate;
             }

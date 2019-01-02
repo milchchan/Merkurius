@@ -12,8 +12,6 @@ namespace Megalopolis
     {
         public event EventHandler<EventArgs> Stepped = null;
         private Random random = null;
-        private Layer inputLayer = null;
-        private Layer outputLayer = null;
         private Collection<Layer> layerCollection = null;
         private double loss = 0.0;
         private IOptimizer optimizer = null;
@@ -64,21 +62,40 @@ namespace Megalopolis
             }
         }
 
-        public Model(Layer outputLayer, IOptimizer optimizer, ILossFunction lossFunction)
+        public Model(IEnumerable<Layer> collection, IOptimizer optimizer, ILossFunction lossFunction)
         {
-            var layer = outputLayer;
+            this.random = RandomProvider.GetRandom();
+            this.layerCollection = new Collection<Layer>();
+            this.optimizer = optimizer;
+            this.lossFunction = lossFunction;
+
+            foreach (Layer layer in collection)
+            {
+                if (this.layerCollection.Count > 0)
+                {
+                    var previousLayer = this.layerCollection[this.layerCollection.Count - 1];
+
+                    previousLayer.Next = layer;
+                    layer.Previous = previousLayer;
+                }
+
+                this.layerCollection.Add(layer);
+            }
+        }
+
+        public Model(Layer inputLayer, IOptimizer optimizer, ILossFunction lossFunction)
+        {
+            var layer = inputLayer;
 
             this.random = RandomProvider.GetRandom();
-            this.outputLayer = outputLayer;
             this.layerCollection = new Collection<Layer>();
             this.optimizer = optimizer;
             this.lossFunction = lossFunction;
 
             do
             {
-                this.inputLayer = layer;
-                this.layerCollection.Insert(0, layer);
-                layer = layer.Previous;
+                this.layerCollection.Add(layer);
+                layer = layer.Next;
             } while (layer != null);
         }
 
@@ -155,7 +172,7 @@ namespace Megalopolis
         public double[] Predicate(double[] vector)
         {
             var inputs = new Batch<double[]>(new double[][] { vector });
-            var layer = this.inputLayer;
+            var layer = this.layerCollection[0];
             Layer outputLayer;
 
             do
@@ -173,12 +190,13 @@ namespace Megalopolis
         {
             double sum = 0.0;
             int size = collection.Count();
+            int outputs = this.layerCollection[this.layerCollection.Count - 1].Outputs;
 
             foreach (var tuple in collection)
             {
                 var outputActivations = Forward(new Batch<double[]>(new double[][] { tuple.Item1 }), false);
 
-                for (int i = 0; i < this.outputLayer.Outputs; i++)
+                for (int i = 0; i < outputs; i++)
                 {
                     sum += this.lossFunction.Function(outputActivations[0][i], tuple.Item2[i]);
                 }
@@ -189,7 +207,7 @@ namespace Megalopolis
 
         private Batch<double[]> Forward(Batch<double[]> x, bool isTraining)
         {
-            var layer = this.inputLayer;
+            var layer = this.layerCollection[0];
 
             do
             {
@@ -203,15 +221,15 @@ namespace Megalopolis
 
         private IEnumerable<IUpdatable> Backward(Batch<double[]> y, Batch<double[]> t)
         {
-            var layer = this.outputLayer;
+            var layer = this.layerCollection[this.layerCollection.Count - 1];
             var deltas = new Batch<double[]>(new double[t.Size][]);
             var updatableList = new LinkedList<IUpdatable>();
 
             for (int i = 0; i < t.Size; i++)
             {
-                deltas[i] = new double[this.outputLayer.Outputs];
+                deltas[i] = new double[layer.Outputs];
 
-                for (int j = 0; j < this.outputLayer.Outputs; j++)
+                for (int j = 0; j < layer.Outputs; j++)
                 {
                     deltas[i][j] = this.lossFunction.Derivative(y[i][j], t[i][j]);
                 }

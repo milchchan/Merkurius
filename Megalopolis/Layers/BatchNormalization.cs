@@ -29,6 +29,37 @@ namespace Megalopolis
                 }
             }
 
+            public BatchNormalization(int nodes, Func<int, int, int, double> func) : base(nodes, nodes)
+            {
+                this.weights = new double[nodes * 2];
+                this.means = new double[nodes];
+                this.variances = new double[nodes];
+
+                for (int i = 0, j = nodes; i < nodes; i++, j++)
+                {
+                    this.weights[i] = 1.0;
+                    this.weights[j] = 0.0;
+                    this.means[i] = 0.0;
+                    this.variances[i] = 0.0;
+                }
+            }
+
+            public BatchNormalization(int nodes, Func<int, int, int, double> func, double momentum) : base(nodes, nodes)
+            {
+                this.weights = new double[nodes * 2];
+                this.means = new double[nodes];
+                this.variances = new double[nodes];
+                this.momentum = momentum;
+
+                for (int i = 0, j = nodes; i < nodes; i++, j++)
+                {
+                    this.weights[i] = 1.0;
+                    this.weights[j] = 0.0;
+                    this.means[i] = 0.0;
+                    this.variances[i] = 0.0;
+                }
+            }
+
             public BatchNormalization(Layer layer, Func<int, int, int, double> func) : base(layer, layer.Outputs)
             {
                 this.weights = new double[layer.Outputs * 2];
@@ -52,6 +83,37 @@ namespace Megalopolis
                 this.momentum = momentum;
 
                 for (int i = 0, j = layer.Outputs; i < layer.Outputs; i++, j++)
+                {
+                    this.weights[i] = 1.0;
+                    this.weights[j] = 0.0;
+                    this.means[i] = 0.0;
+                    this.variances[i] = 0.0;
+                }
+            }
+
+            public BatchNormalization(Func<int, int, int, double> func, Layer layer) : base(layer.Inputs, layer)
+            {
+                this.weights = new double[layer.Inputs * 2];
+                this.means = new double[layer.Inputs];
+                this.variances = new double[layer.Inputs];
+
+                for (int i = 0, j = layer.Inputs; i < layer.Inputs; i++, j++)
+                {
+                    this.weights[i] = 1.0;
+                    this.weights[j] = 0.0;
+                    this.means[i] = 0.0;
+                    this.variances[i] = 0.0;
+                }
+            }
+
+            public BatchNormalization(Func<int, int, int, double> func, double momentum, Layer layer) : base(layer.Inputs, layer)
+            {
+                this.weights = new double[layer.Inputs * 2];
+                this.means = new double[layer.Inputs];
+                this.variances = new double[layer.Inputs];
+                this.momentum = momentum;
+
+                for (int i = 0, j = layer.Inputs; i < layer.Inputs; i++, j++)
                 {
                     this.weights[i] = 1.0;
                     this.weights[j] = 0.0;

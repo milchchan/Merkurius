@@ -16,7 +16,25 @@ namespace Megalopolis
             private Batch<double[]> activationMaps = null;
             private Batch<double[]> internalOutputs = null;
 
+            public MaxPooling(int filters, int activationMapWidth, int activationMapHeight, int poolWidth, int poolHeight) : base(filters * activationMapWidth * activationMapHeight, filters * activationMapWidth / poolWidth * (activationMapHeight / poolHeight))
+            {
+                this.filters = filters;
+                this.activationMapWidth = activationMapWidth;
+                this.activationMapHeight = activationMapHeight;
+                this.poolWidth = poolWidth;
+                this.poolHeight = poolHeight;
+            }
+
             public MaxPooling(Layer layer, int filters, int activationMapWidth, int activationMapHeight, int poolWidth, int poolHeight) : base(layer, filters * activationMapWidth / poolWidth * (activationMapHeight / poolHeight))
+            {
+                this.filters = filters;
+                this.activationMapWidth = activationMapWidth;
+                this.activationMapHeight = activationMapHeight;
+                this.poolWidth = poolWidth;
+                this.poolHeight = poolHeight;
+            }
+
+            public MaxPooling(int filters, int activationMapWidth, int activationMapHeight, int poolWidth, int poolHeight, Layer layer) : base(filters * activationMapWidth * activationMapHeight, layer)
             {
                 this.filters = filters;
                 this.activationMapWidth = activationMapWidth;
@@ -164,9 +182,9 @@ namespace Megalopolis
                 return activationMapHeight / this.poolHeight;
             }
 
-            public static int GetOutputLength(int imageLength, int filterLength, int poolLength)
+            public static int GetOutputLength(int activationMapLength, int poolLength)
             {
-                return (imageLength - filterLength + 1) / poolLength;
+                return activationMapLength / poolLength;
             }
         }
     }

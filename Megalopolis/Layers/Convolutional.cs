@@ -122,6 +122,36 @@ namespace Megalopolis
                 }
             }
 
+            public Convolutional(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, int, double> func, Layer layer) : base(channels * imageWidth * imageHeight, layer)
+            {
+                var length = filters * channels * filterWidth * filterHeight;
+
+                this.activationMapWidth = imageWidth - filterWidth + 1;
+                this.activationMapHeight = imageHeight - filterHeight + 1;
+
+                var fanIn = channels * filterWidth * filterHeight;
+                var fanOut = filters * activationMapWidth * activationMapHeight;
+
+                this.weights = new double[length];
+                this.biases = new double[fanOut];
+                this.channels = channels;
+                this.imageWidth = imageWidth;
+                this.imageHeight = imageHeight;
+                this.filters = filters;
+                this.filterWidth = filterWidth;
+                this.filterHeight = filterHeight;
+
+                for (int i = 0; i < length; i++)
+                {
+                    this.weights[i] = func(i, fanIn, fanOut);
+                }
+
+                for (int i = 0; i < fanOut; i++)
+                {
+                    this.biases[i] = 0.0;
+                }
+            }
+
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
                 this.internalInputs = inputs;

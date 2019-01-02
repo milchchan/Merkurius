@@ -20,7 +20,17 @@ namespace Megalopolis
                 }
             }
 
+            public Activation(int nodes, IActivationFunction activationFunction) : base(nodes, nodes)
+            {
+                this.activationFunction = activationFunction;
+            }
+
             public Activation(Layer layer, IActivationFunction activationFunction) : base(layer, layer.Outputs)
+            {
+                this.activationFunction = activationFunction;
+            }
+
+            public Activation(IActivationFunction activationFunction, Layer layer) : base(layer.Inputs, layer)
             {
                 this.activationFunction = activationFunction;
             }

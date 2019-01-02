@@ -96,6 +96,27 @@ namespace Megalopolis
                 }
             }
 
+            public LSTM(int nodes, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
+            {
+                var length1 = outputs * 4;
+                var length2 = nodes * length1 + layer.Inputs * length1;
+
+                this.weights = new double[length2];
+                this.biases = new double[length1];
+                this.tanhActivationFunction = new HyperbolicTangent();
+                this.sigmoidActivationFunction = new Sigmoid();
+
+                for (int i = 0; i < length2; i++)
+                {
+                    this.weights[i] = func(i, layer.Inputs, nodes);
+                }
+
+                for (int i = 0; i < length1; i++)
+                {
+                    this.biases[i] = 0.0;
+                }
+            }
+
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
                 var length1 = this.outputs * 4;

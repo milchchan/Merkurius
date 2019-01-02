@@ -34,6 +34,16 @@ namespace Megalopolis
                 }
             }
 
+            public Embedding(int size, int nodes, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
+            {
+                this.weights = new double[size];
+
+                for (int i = 0; i < size; i++)
+                {
+                    this.weights[i] = func(i, nodes, layer.Inputs);
+                }
+            }
+
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
                 var parallelOptions = new ParallelOptions();
