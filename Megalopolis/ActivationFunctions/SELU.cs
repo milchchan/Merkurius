@@ -1,12 +1,16 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace Megalopolis
 {
     namespace ActivationFunctions
     {
+        [DataContract]
         public class SELU : IActivationFunction
         {
+            [DataMember]
             private double alpha = 1.6732632423543772;
+            [DataMember]
             private double scale = 1.0507009873554805;
 
             public SELU() { }

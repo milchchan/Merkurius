@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
 namespace Megalopolis
 {
     namespace Layers
     {
+        [DataContract]
         public class Embedding : Layer, IUpdatable
         {
+            [DataMember]
             private double[] weights = null;
             private Batch<double[]> internalInputs = null;
             private Batch<double[]> dW = null;

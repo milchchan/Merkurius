@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Megalopolis.ActivationFunctions;
 
@@ -7,9 +8,11 @@ namespace Megalopolis
 {
     namespace Layers
     {
+        [DataContract]
         public class Activation : Layer
         {
             private double[][] internalOutputs = null;
+            [DataMember]
             private IActivationFunction activationFunction = null;
 
             public IActivationFunction ActivationFunction

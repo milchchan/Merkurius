@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
 namespace Megalopolis
 {
     namespace Layers
     {
+        [DataContract]
         public class Dropout : Layer
         {
+            [DataMember]
             private double rate = 0.5;
+            [DataMember]
             private double[][] masks = null;
 
             public double Rate

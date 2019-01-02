@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
 namespace Megalopolis
 {
     namespace Layers
     {
+        [DataContract]
         public class FullyConnected : Layer, IUpdatable
         {
+            [DataMember]
             private double[] weights = null;
+            [DataMember]
             private double[] biases = null;
             private Batch<double[]> internalInputs = null;
             private Batch<double[]> internalOutputs = null;

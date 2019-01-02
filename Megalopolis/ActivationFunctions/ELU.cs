@@ -1,11 +1,14 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace Megalopolis
 {
     namespace ActivationFunctions
     {
+        [DataContract]
         public class ELU : IActivationFunction
         {
+            [DataMember]
             private double alpha = 1.0;
 
             public ELU() { }

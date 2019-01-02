@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace Megalopolis
 {
     namespace ActivationFunctions
     {
+        [DataContract]
         public class SoftPlus : IActivationFunction
         {
             public double Function(double x)

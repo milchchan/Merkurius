@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace Megalopolis
 {
     namespace ActivationFunctions
     {
+        [DataContract]
         public class HyperbolicTangent : IActivationFunction
         {
             public double Function(double x)

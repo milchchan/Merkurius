@@ -1,23 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
 namespace Megalopolis
 {
     namespace Layers
     {
+        [DataContract]
         public class Convolutional : Layer, IUpdatable
         {
+            [DataMember]
             private double[] weights = null;
+            [DataMember]
             private double[] biases = null;
+            [DataMember]
             private int channels = 0;
+            [DataMember]
             private int imageWidth = 0;
+            [DataMember]
             private int imageHeight = 0;
+            [DataMember]
             private int filters = 0;
+            [DataMember]
             private int filterWidth = 0;
+            [DataMember]
             private int filterHeight = 0;
+            [DataMember]
             private int activationMapWidth = 0;
+            [DataMember]
             private int activationMapHeight = 0;
             private Batch<double[]> internalInputs = null;
             private double[][] gradients = null;

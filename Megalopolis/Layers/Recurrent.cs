@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Megalopolis.ActivationFunctions;
 
@@ -8,16 +9,22 @@ namespace Megalopolis
 {
     namespace Layers
     {
+        [DataContract]
         public class Recurrent : Layer, IUpdatable
         {
+            [DataMember]
             private double[] weights = null;
+            [DataMember]
             private double[] biases = null;
+            [DataMember]
             private int timesteps = 0;
+            [DataMember]
             private bool stateful = false;
             private List<InternalRecurrent> layerList = null;
             private Batch<double[]> h = null;
             private Batch<double[]> dh = null;
             private double[][] gradients = null;
+            [DataMember]
             private IActivationFunction tanhActivationFunction = null;
 
             public double[] Weights

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Megalopolis.ActivationFunctions;
 
@@ -9,17 +10,24 @@ namespace Megalopolis
     namespace Layers
     {
         // Long short-term memory (LSTM)
+        [DataContract]
         public class LSTM : Layer, IUpdatable
         {
+            [DataMember]
             private double[] weights = null;
+            [DataMember]
             private double[] biases = null;
+            [DataMember]
             private int timesteps = 0;
+            [DataMember]
             private bool stateful = false;
             private ValueTuple<Batch<double[]>, Batch<double[]>> state = new ValueTuple<Batch<double[]>, Batch<double[]>>(null, null);
             private List<InternalLSTM> layerList = null;
             private Batch<double[]> dh = null;
             private double[][] gradients = null;
+            [DataMember]
             private IActivationFunction tanhActivationFunction = null;
+            [DataMember]
             private IActivationFunction sigmoidActivationFunction = null;
 
             public double[] Weights

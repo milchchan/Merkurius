@@ -1,15 +1,21 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.Serialization;
 
 namespace Megalopolis
 {
     namespace Layers
     {
+        [DataContract]
         public class BatchNormalization : Layer, IUpdatable
         {
+            [DataMember]
             private double[] weights = null;
+            [DataMember]
             private double momentum = 0.9;
+            [DataMember]
             private double[] means = null;
+            [DataMember]
             private double[] variances = null;
             private double[] standardDeviations = null;
             private double[,] xc = null;

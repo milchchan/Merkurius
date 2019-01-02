@@ -1,17 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
 namespace Megalopolis
 {
     namespace Layers
     {
+        [DataContract]
         public class MaxPooling : Layer
         {
+            [DataMember]
             private int filters = 0;
+            [DataMember]
             private int activationMapWidth = 0;
+            [DataMember]
             private int activationMapHeight = 0;
+            [DataMember]
             private int poolWidth = 0;
+            [DataMember]
             private int poolHeight = 0;
             private Batch<double[]> activationMaps = null;
             private Batch<double[]> internalOutputs = null;

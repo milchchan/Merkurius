@@ -1,12 +1,16 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace Megalopolis
 {
     namespace Layers
     {
+        [DataContract]
         public abstract class Layer
         {
+            [DataMember]
             protected int inputs = 0;
+            [DataMember]
             protected int outputs = 0;
             protected Layer previousLayer = null;
             protected Layer nextLayer = null;
