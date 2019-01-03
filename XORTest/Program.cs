@@ -32,7 +32,7 @@ namespace XORTest
 
             RandomProvider.SetSeed(seed);
 
-            var filename = "Layers.xml";
+            var filename = "XOR.xml";
             var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(FullyConnected), typeof(Activation), typeof(Sigmoid) });
             var random = RandomProvider.GetRandom();
             var patternList = new List<Tuple<double[], double[]>>();

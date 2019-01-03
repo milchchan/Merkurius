@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Security.Cryptography;
+using System.Xml;
 using Megalopolis;
 using Megalopolis.ActivationFunctions;
 using Megalopolis.Layers;
@@ -34,6 +36,8 @@ namespace MNISTTest
             RandomProvider.SetSeed(seed);
 
             var assembly = Assembly.GetExecutingAssembly();
+            var filename = "CNN.xml";
+            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(Convolutional), typeof(Activation), typeof(ReLU), typeof(MaxPooling), typeof(FullyConnected), typeof(Softmax) });
             var random = RandomProvider.GetRandom();
             var trainingList = new List<Tuple<double[], double[]>>();
             var testList = new List<Tuple<double[], double[]>>();
@@ -53,6 +57,7 @@ namespace MNISTTest
             var activationMapHeight = Convolutional.GetActivationMapLength(imageHeight, filterHeight);
             var outputWidth = MaxPooling.GetOutputLength(activationMapWidth, poolWidth);
             var outputHeight = MaxPooling.GetOutputLength(activationMapHeight, poolHeight);
+            Model model;
 
             using (Stream
                 imagesStream = assembly.GetManifestResourceStream("MNISTTest.train-images.idx3-ubyte"),
@@ -102,74 +107,84 @@ namespace MNISTTest
                 }
             }
 
-            /*var model = new Model(new Layer[] {
-                new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
-                new Activation(filters * activationMapWidth * activationMapHeight, new ReLU()),
-                new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight),
-                new FullyConnected(filters * outputWidth * outputHeight, 100, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
-                new Activation(100, new ReLU()),
-                new Softmax(100, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))
-            }, new Adam(), new SoftmaxCrossEntropy());*/
-            /*var inputLayer = new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
-
-            new Softmax(
-                new Activation(
-                    new FullyConnected(
-                        new MaxPooling(
-                            new Activation(inputLayer, new ReLU()),
-                            filters, inputLayer.ActivationMapWidth, inputLayer.ActivationMapHeight, poolWidth, poolHeight),
-                        100, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
-                    new ReLU()),
-                10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut));
-            
-            var model = new Model(inputLayer, new Adam(), new SoftmaxCrossEntropy());*/
-            var model = new Model(
-                new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
-                new Activation(new ReLU(),
-                new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
-                new FullyConnected(filters * outputWidth * outputHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
-                new Activation(new ReLU(),
-                new Softmax(100, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
-                new Adam(), new SoftmaxCrossEntropy());
-            int epochs = 50;
-            int iterations = 1;
-
-            model.Stepped += (sender, e) =>
+            if (File.Exists(filename))
             {
-                double tptn = 0.0;
-
-                trainingList.ForEach(x =>
+                using (XmlReader xmlReader = XmlReader.Create(filename))
                 {
-                    var vector = model.Predicate(x.Item1);
-                    var i = ArgMax(vector);
-                    var j = ArgMax(x.Item2);
+                    model = new Model((IEnumerable<Layer>)serializer.ReadObject(xmlReader), new Adam(), new SoftmaxCrossEntropy());
+                }
+            }
+            else
+            {
+                /*model = new Model(new Layer[] {
+                    new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
+                    new Activation(filters * activationMapWidth * activationMapHeight, new ReLU()),
+                    new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight),
+                    new FullyConnected(filters * outputWidth * outputHeight, 100, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
+                    new Activation(100, new ReLU()),
+                new Softmax(100, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))
+                }, new Adam(), new SoftmaxCrossEntropy());*/
+                /*var inputLayer = new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
 
-                    if (i == j && Math.Round(vector[i]) == x.Item2[j])
+                new Softmax(
+                    new Activation(
+                        new FullyConnected(
+                            new MaxPooling(
+                                new Activation(inputLayer, new ReLU()),
+                                filters, inputLayer.ActivationMapWidth, inputLayer.ActivationMapHeight, poolWidth, poolHeight),
+                            100, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
+                        new ReLU()),
+                    10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut));
+
+                model = new Model(inputLayer, new Adam(), new SoftmaxCrossEntropy());*/
+                model = new Model(
+                    new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+                    new Activation(new ReLU(),
+                    new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
+                    new FullyConnected(filters * outputWidth * outputHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+                    new Activation(new ReLU(),
+                    new Softmax(100, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
+                    new Adam(), new SoftmaxCrossEntropy());
+                int epochs = 50;
+                int iterations = 1;
+
+                model.Stepped += (sender, e) =>
+                {
+                    double tptn = 0.0;
+
+                    trainingList.ForEach(x =>
                     {
-                        tptn += 1.0;
-                    }
-                });
+                        var vector = model.Predicate(x.Item1);
+                        var i = ArgMax(vector);
+                        var j = ArgMax(x.Item2);
 
-                var accuracy = tptn / trainingList.Count;
+                        if (i == j && Math.Round(vector[i]) == x.Item2[j])
+                        {
+                            tptn += 1.0;
+                        }
+                    });
 
-                accuracyList.Add(accuracy);
-                lossList.Add(model.Loss);
+                    var accuracy = tptn / trainingList.Count;
 
-                Console.WriteLine("Epoch {0}/{1}", iterations, epochs);
-                Console.WriteLine("Accuracy: {0}, Loss: {1}", accuracy, model.Loss);
+                    accuracyList.Add(accuracy);
+                    lossList.Add(model.Loss);
 
-                iterations++;
-            };
+                    Console.WriteLine("Epoch {0}/{1}", iterations, epochs);
+                    Console.WriteLine("Accuracy: {0}, Loss: {1}", accuracy, model.Loss);
 
-            Console.WriteLine("Training...");
+                    iterations++;
+                };
 
-            var stopwatch = Stopwatch.StartNew();
+                Console.WriteLine("Training...");
 
-            model.Fit(trainingList, epochs, 100);
+                var stopwatch = Stopwatch.StartNew();
 
-            stopwatch.Stop();
+                model.Fit(trainingList, epochs, 100);
 
-            Console.WriteLine("Done ({0}).", stopwatch.Elapsed.ToString());
+                stopwatch.Stop();
+
+                Console.WriteLine("Done ({0}).", stopwatch.Elapsed.ToString());
+            }
 
             double testTptn = 0.0;
 
@@ -192,7 +207,18 @@ namespace MNISTTest
 
             ToCsv(logPath, logDictionary);
 
-            Console.Write("Saved log to {0}...", logPath);
+            Console.WriteLine("Saved log to {0}...", logPath);
+
+            XmlWriterSettings settings = new XmlWriterSettings();
+
+            settings.Indent = true;
+            settings.Encoding = new System.Text.UTF8Encoding(false);
+
+            using (XmlWriter xmlWriter = XmlWriter.Create(filename, settings))
+            {
+                serializer.WriteObject(xmlWriter, model.Layers);
+                xmlWriter.Flush();
+            }
         }
 
         static private int ArgMax(double[] vector)
