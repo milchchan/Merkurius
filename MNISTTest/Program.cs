@@ -43,7 +43,6 @@ namespace MNISTTest
             var testList = new List<Tuple<double[], double[]>>();
             var accuracyList = new List<double>();
             var lossList = new List<double>();
-            var logDictionary = new Dictionary<string, IEnumerable<double>>();
             var logPath = "Log.csv";
             var channels = 1;
             var imageWidth = 28;
@@ -202,13 +201,18 @@ namespace MNISTTest
 
             Console.WriteLine("Accuracy: {0}", testTptn / testList.Count);
 
-            logDictionary.Add("Accuracy", accuracyList);
-            logDictionary.Add("Loss", lossList);
+            if (accuracyList.Count > 0)
+            {
+                var logDictionary = new Dictionary<string, IEnumerable<double>>();
 
-            ToCsv(logPath, logDictionary);
+                logDictionary.Add("Accuracy", accuracyList);
+                logDictionary.Add("Loss", lossList);
 
-            Console.WriteLine("Saved log to {0}...", logPath);
+                ToCsv(logPath, logDictionary);
 
+                Console.WriteLine("Saved log to {0}...", logPath);
+            }
+            
             XmlWriterSettings settings = new XmlWriterSettings();
 
             settings.Indent = true;
