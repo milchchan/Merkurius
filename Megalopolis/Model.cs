@@ -101,6 +101,11 @@ namespace Megalopolis
 
         public void Fit(IEnumerable<Tuple<double[], double[]>> collection, int epochs, int batchSize = 32)
         {
+            Fit(collection, epochs, batchSize, (x, y) => x.Sample<Tuple<double[], double[]>>(this.random, y));
+        }
+
+        public void Fit(IEnumerable<Tuple<double[], double[]>> collection, int epochs, int batchSize, Func<IEnumerable<Tuple<double[], double[]>>, int, IEnumerable<Tuple<double[], double[]>>> func)
+        {
             // Backpropagation
             int dataSize = collection.Count();
             int t = 0;
@@ -113,7 +118,7 @@ namespace Megalopolis
 
                 do
                 {
-                    var dataTuple = collection.Sample<Tuple<double[], double[]>>(this.random, Math.Min(remaining, batchSize)).Aggregate<Tuple<double[], double[]>, Tuple<List<double[]>, List<double[]>>>(Tuple.Create<List<double[]>, List<double[]>>(new List<double[]>(), new List<double[]>()), (tuple1, tuple2) =>
+                    var dataTuple = func(collection, Math.Min(remaining, batchSize)).Aggregate<Tuple<double[], double[]>, Tuple<List<double[]>, List<double[]>>>(Tuple.Create<List<double[]>, List<double[]>>(new List<double[]>(), new List<double[]>()), (tuple1, tuple2) =>
                     {
                         tuple1.Item1.Add(tuple2.Item1);
                         tuple1.Item2.Add(tuple2.Item2);
