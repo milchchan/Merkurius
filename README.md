@@ -30,7 +30,7 @@ Convolutional neural network (CNN).
 
 ```csharp
 var model = new Model(
-  new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+  new Convolution(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
   new Activation(new ReLU(),
   new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
   new FullyConnected(filters * outputWidth * outputHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
@@ -60,7 +60,7 @@ model.Fit(trainingList, 50);
 
 ### Layers
 * Batch normalization
-* Convolutional
+* Convolution
 * Dropout
 * Embedding
 * GLU (Gated recurrent unit)

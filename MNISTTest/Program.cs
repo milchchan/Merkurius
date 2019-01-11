@@ -37,7 +37,7 @@ namespace MNISTTest
 
             var assembly = Assembly.GetExecutingAssembly();
             var filename = "CNN.xml";
-            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(Convolutional), typeof(Activation), typeof(ReLU), typeof(MaxPooling), typeof(FullyConnected), typeof(Softmax) });
+            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(Convolution), typeof(Activation), typeof(ReLU), typeof(MaxPooling), typeof(FullyConnected), typeof(Softmax) });
             var random = RandomProvider.GetRandom();
             var trainingList = new List<Tuple<double[], double[]>>();
             var testList = new List<Tuple<double[], double[]>>();
@@ -52,8 +52,8 @@ namespace MNISTTest
             var filterHeight = 5;
             var poolWidth = 2;
             var poolHeight = 2;
-            var activationMapWidth = Convolutional.GetActivationMapLength(imageWidth, filterWidth);
-            var activationMapHeight = Convolutional.GetActivationMapLength(imageHeight, filterHeight);
+            var activationMapWidth = Convolution.GetActivationMapLength(imageWidth, filterWidth);
+            var activationMapHeight = Convolution.GetActivationMapLength(imageHeight, filterHeight);
             var outputWidth = MaxPooling.GetOutputLength(activationMapWidth, poolWidth);
             var outputHeight = MaxPooling.GetOutputLength(activationMapHeight, poolHeight);
             Model model;
@@ -137,7 +137,7 @@ namespace MNISTTest
 
                 model = new Model(inputLayer, new Adam(), new SoftmaxCrossEntropy());*/
                 model = new Model(
-                    new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+                    new Convolution(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
                     new Activation(new ReLU(),
                     new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
                     new FullyConnected(filters * outputWidth * outputHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
