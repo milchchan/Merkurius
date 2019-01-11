@@ -234,6 +234,25 @@ namespace Megalopolis
                 return new Batch<double[]>(this.gradients);
             }
 
+            public void SetGradients(Func<bool, double, int, double> func)
+            {
+                var length1 = this.filters * this.channels * this.filterWidth * this.filterHeight;
+                var length2 = this.filters * this.activationMapWidth * this.activationMapHeight;
+
+                foreach (double[] vector in this.gradients)
+                {
+                    for (int i = 0; i < length1; i++)
+                    {
+                        vector[i] = func(true, vector[i], i);
+                    }
+
+                    for (int i = 0, j = length1; i < length2; i++, j++)
+                    {
+                        vector[j] = func(false, vector[j], i);
+                    }
+                }
+            }
+
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
                 var length1 = this.filters * this.channels * this.filterWidth * this.filterHeight;

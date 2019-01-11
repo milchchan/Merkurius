@@ -16,6 +16,7 @@ namespace Megalopolis
         private double loss = 0.0;
         private IOptimizer optimizer = null;
         private ILossFunction lossFunction = null;
+        private double weightDecayRate = 0.0;
         private double? maxGradient = null;
 
         public IEnumerable<Layer> Layers
@@ -47,6 +48,18 @@ namespace Megalopolis
             get
             {
                 return this.lossFunction;
+            }
+        }
+
+        public double WeightDecayRate
+        {
+            get
+            {
+                return this.weightDecayRate;
+            }
+            set
+            {
+                this.weightDecayRate = value;
             }
         }
 
@@ -128,6 +141,11 @@ namespace Megalopolis
                     int index = 0;
                     int identifier = 0;
                     var tuples = Backward(Forward(new Batch<double[]>(dataTuple.Item1), true), new Batch<double[]>(dataTuple.Item2));
+
+                    foreach (var tuple in tuples)
+                    {
+                        tuple.SetGradients((x, y, z) => x ? y + this.weightDecayRate * tuple.Weights[z] : y);
+                    }
 
                     if (this.maxGradient.HasValue)
                     {
@@ -213,13 +231,36 @@ namespace Megalopolis
         private Batch<double[]> Forward(Batch<double[]> x, bool isTraining)
         {
             var layer = this.layerCollection[0];
+            var weightDecay = 0.0;
 
             do
             {
+                var updatable = layer as IUpdatable;
+
                 x = layer.Forward(x, isTraining);
+
+                if (updatable != null)
+                {
+                    var sum = 0.0;
+
+                    foreach (double weight in updatable.Weights)
+                    {
+                        sum = + weight * weight;
+                    }
+
+                    weightDecay += 0.5 * this.weightDecayRate * sum;
+                }
 
                 layer = layer.Next;
             } while (layer != null);
+
+            foreach (var vector in x)
+            {
+                for (int i = 0; i < vector.Length; i++)
+                {
+                    vector[i] += weightDecay;
+                }
+            }
 
             return x;
         }

@@ -265,6 +265,19 @@ namespace Megalopolis
                 return new Batch<double[]>(new double[1][] { this.dgammaVector.Concat<double>(this.dbetaVector).ToArray<double>() });
             }
 
+            public void SetGradients(Func<bool, double, int, double> func)
+            {
+                for (int i = 0; i < this.dgammaVector.Length; i++)
+                {
+                    this.dgammaVector[i] = func(true, this.dgammaVector[i], i);
+                }
+
+                for (int i = 0, j = this.outputs; i < this.dbetaVector.Length; i++, j++)
+                {
+                    this.dbetaVector[i] = func(true, this.dbetaVector[i], j);
+                }
+            }
+
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
                 foreach (var vector in gradients)

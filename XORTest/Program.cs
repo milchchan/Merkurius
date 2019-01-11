@@ -63,6 +63,7 @@ namespace XORTest
                 int epochs = 10000;
                 int iterations = 1;
 
+                //model.WeightDecayRate = 0.01;
                 model.Stepped += (sender, e) =>
                 {
                     double tptn = 0.0;

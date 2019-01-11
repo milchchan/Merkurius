@@ -135,6 +135,17 @@ namespace Megalopolis
                 return this.dW;
             }
 
+            public void SetGradients(Func<bool, double, int, double> func)
+            {
+                foreach (double[] vector in this.dW)
+                {
+                    for (int i = 0; i < vector.Length; i++)
+                    {
+                        vector[i] = func(true, vector[i], i);
+                    }
+                }
+            }
+
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
                 for (int i = 1; i < gradients.Size; i++)

@@ -16,7 +16,8 @@ namespace Megalopolis
             [DataMember]
             private double[] biases = null;
             private Batch<double[]> internalInputs = null;
-            private List<double[]> gradientList = null;
+            private List<double[]> weightGradientList = null;
+            private List<double[]> biasGradientList = null;
 
             public double[] Weights
             {
@@ -131,7 +132,8 @@ namespace Megalopolis
                 var parallelOptions = new ParallelOptions();
                 var tuple = Tuple.Create<double[][], double[][]>(new double[deltas.Size][], new double[deltas.Size][]);
 
-                this.gradientList = new List<double[]>();
+                this.weightGradientList = new List<double[]>();
+                this.biasGradientList = new List<double[]>();
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
@@ -171,7 +173,8 @@ namespace Megalopolis
 
                 for (int i = 0; i < deltas.Size; i++)
                 {
-                    this.gradientList.Add(tuple.Item2[i].Concat<double>(deltas[i]).ToArray<double>());
+                    this.weightGradientList.Add(tuple.Item2[i]);
+                    this.biasGradientList.Add(deltas[i]);
                 }
 
                 return new Batch<double[]>(tuple.Item1);
@@ -179,7 +182,25 @@ namespace Megalopolis
 
             public Batch<double[]> GetGradients()
             {
-                return new Batch<double[]>(this.gradientList);
+                return new Batch<double[]>(this.weightGradientList.Concat<double[]>(this.biasGradientList));
+            }
+
+            public void SetGradients(Func<bool, double, int, double> func)
+            {
+                this.weightGradientList.ForEach(x =>
+                {
+                    for (int i = 0; i < x.Length; i++)
+                    {
+                        x[i] = func(true, x[i], i);
+                    }
+                });
+                this.biasGradientList.ForEach(x =>
+                {
+                    for (int i = 0; i < x.Length; i++)
+                    {
+                        x[i] = func(false, x[i], i);
+                    }
+                });
             }
 
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
