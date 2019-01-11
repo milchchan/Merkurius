@@ -63,7 +63,7 @@ model.Fit(trainingList, 50);
 * Convolution
 * Dropout
 * Embedding
-* GLU (Gated recurrent unit)
+* GRU (Gated recurrent unit)
 * Fully connected
 * LSTM (Long short-term memory)
 * Max pooling
