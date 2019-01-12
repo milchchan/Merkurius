@@ -30,12 +30,12 @@ Convolutional neural network (CNN).
 
 ```csharp
 var model = new Model(
-  new Convolution(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+  new Convolution(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
   new Activation(new ReLU(),
   new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
-  new FullyConnected(filters * outputWidth * outputHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+  new FullyConnected(filters * outputWidth * outputHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
   new Activation(new ReLU(),
-  new Softmax(100, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
+  new Softmax(100, 10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
   new Adam(), new SoftmaxCrossEntropy());
 
 model.Fit(trainingList, 50);
