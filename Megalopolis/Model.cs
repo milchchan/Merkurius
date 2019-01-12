@@ -142,6 +142,7 @@ namespace Megalopolis
                     int identifier = 0;
                     var tuples = Backward(Forward(new Batch<double[]>(dataTuple.Item1), true), new Batch<double[]>(dataTuple.Item2));
 
+                    // Weight decay
                     foreach (var tuple in tuples)
                     {
                         tuple.SetGradients((x, y, z) => x ? y + this.weightDecayRate * tuple.Weights[z] : y);
