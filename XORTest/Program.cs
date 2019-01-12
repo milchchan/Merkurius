@@ -33,7 +33,7 @@ namespace XORTest
             RandomProvider.SetSeed(seed);
 
             var filename = "XOR.xml";
-            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(FullyConnected), typeof(Activation), typeof(Sigmoid) });
+            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(FullyConnected), typeof(BatchNormalization), typeof(Activation), typeof(Sigmoid) });
             var random = RandomProvider.GetRandom();
             var patternList = new List<Tuple<double[], double[]>>();
             var accuracyList = new List<double>();
@@ -55,9 +55,9 @@ namespace XORTest
             else
             {
                 model = new Model(
-                new FullyConnected(2, (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
+                new FullyConnected(2, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
                 new Activation(new Sigmoid(),
-                new FullyConnected(2, 1, (index, fanIn, fanOut) => RandomProvider.GetRandom().NextDouble()))),
+                new FullyConnected(2, 1, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble()))),
                 new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
 
                 int epochs = 10000;

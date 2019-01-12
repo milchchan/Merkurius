@@ -17,8 +17,7 @@ namespace Megalopolis
             private double[] biases = null;
             private Batch<double[]> internalInputs = null;
             private Batch<double[]> internalOutputs = null;
-            private List<double[]> weightGradientList = null;
-            private List<double[]> biasGradientList = null;
+            private List<Tuple<double[], double[]>> gradientList = null;
 
             public double[] Weights
             {
@@ -44,7 +43,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnected(int inputs, int outputs, Func<int, int, int, double> func) : base(inputs, outputs)
+            public FullyConnected(int inputs, int outputs, Func<int, int, double> func) : base(inputs, outputs)
             {
                 var length = inputs * outputs;
 
@@ -53,7 +52,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, inputs, outputs);
+                    this.weights[i] = func(inputs, outputs);
                 }
 
                 for (int i = 0; i < outputs; i++)
@@ -62,7 +61,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnected(Layer layer, int nodes, Func<int, int, int, double> func) : base(layer, nodes)
+            public FullyConnected(Layer layer, int nodes, Func<int, int, double> func) : base(layer, nodes)
             {
                 var length = layer.Outputs * nodes;
 
@@ -71,7 +70,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, layer.Outputs, nodes);
+                    this.weights[i] = func(layer.Outputs, nodes);
                 }
 
                 for (int i = 0; i < nodes; i++)
@@ -80,7 +79,7 @@ namespace Megalopolis
                 }
             }
 
-            public FullyConnected(int nodes, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
+            public FullyConnected(int nodes, Func<int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 var length = nodes * layer.Inputs;
 
@@ -89,7 +88,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, layer.Inputs, nodes);
+                    this.weights[i] = func(layer.Inputs, nodes);
                 }
 
                 for (int i = 0; i < nodes; i++)
@@ -147,8 +146,7 @@ namespace Megalopolis
                 var parallelOptions = new ParallelOptions();
                 var tuple = Tuple.Create<double[][], double[][]>(new double[deltas.Size][], new double[deltas.Size][]);
 
-                this.weightGradientList = new List<double[]>();
-                this.biasGradientList = new List<double[]>();
+                this.gradientList = new List<Tuple<double[], double[]>>();
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
@@ -188,8 +186,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < deltas.Size; i++)
                 {
-                    this.weightGradientList.Add(tuple.Item2[i]);
-                    this.biasGradientList.Add(deltas[i]);
+                    this.gradientList.Add(Tuple.Create<double[], double[]>(tuple.Item2[i], deltas[i]));
                 }
 
                 return new Batch<double[]>(tuple.Item1);
@@ -197,23 +194,21 @@ namespace Megalopolis
 
             public Batch<double[]> GetGradients()
             {
-                return new Batch<double[]>(this.weightGradientList.Concat<double[]>(this.biasGradientList));
+                return new Batch<double[]>(this.gradientList.ConvertAll<double[]>(x => x.Item1.Concat<double>(x.Item2).ToArray<double>()));
             }
 
             public void SetGradients(Func<bool, double, int, double> func)
             {
-                this.weightGradientList.ForEach(x =>
+                this.gradientList.ForEach(x =>
                 {
-                    for (int i = 0; i < x.Length; i++)
+                    for (int i = 0; i < x.Item1.Length; i++)
                     {
-                        x[i] = func(true, x[i], i);
+                        x.Item1[i] = func(true, x.Item1[i], i);
                     }
-                });
-                this.biasGradientList.ForEach(x =>
-                {
-                    for (int i = 0; i < x.Length; i++)
+
+                    for (int i = 0; i < x.Item2.Length; i++)
                     {
-                        x[i] = func(false, x[i], i);
+                        x.Item2[i] = func(false, x.Item2[i], i);
                     }
                 });
             }

@@ -37,7 +37,7 @@ namespace MNISTTest
 
             var assembly = Assembly.GetExecutingAssembly();
             var filename = "CNN.xml";
-            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(Convolution), typeof(Activation), typeof(ReLU), typeof(MaxPooling), typeof(FullyConnected), typeof(Softmax) });
+            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(Convolution), typeof(BatchNormalization), typeof(Activation), typeof(ReLU), typeof(MaxPooling), typeof(FullyConnected), typeof(Softmax) });
             var random = RandomProvider.GetRandom();
             var trainingList = new List<Tuple<double[], double[]>>();
             var testList = new List<Tuple<double[], double[]>>();
@@ -116,14 +116,14 @@ namespace MNISTTest
             else
             {
                 /*model = new Model(new Layer[] {
-                    new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
+                    new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn)),
                     new Activation(filters * activationMapWidth * activationMapHeight, new ReLU()),
                     new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight),
-                    new FullyConnected(filters * outputWidth * outputHeight, 100, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
+                    new FullyConnected(filters * outputWidth * outputHeight, 100, (fanIn, fanOut) => Initializers.HeNormal(fanIn)),
                     new Activation(100, new ReLU()),
-                new Softmax(100, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))
+                new Softmax(100, 10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))
                 }, new Adam(), new SoftmaxCrossEntropy());*/
-                /*var inputLayer = new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn));
+                /*var inputLayer = new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn));
 
                 new Softmax(
                     new Activation(
@@ -131,18 +131,18 @@ namespace MNISTTest
                             new MaxPooling(
                                 new Activation(inputLayer, new ReLU()),
                                 filters, inputLayer.ActivationMapWidth, inputLayer.ActivationMapHeight, poolWidth, poolHeight),
-                            100, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn)),
+                            100, (fanIn, fanOut) => Initializers.HeNormal(fanIn)),
                         new ReLU()),
-                    10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut));
+                    10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut));
 
                 model = new Model(inputLayer, new Adam(), new SoftmaxCrossEntropy());*/
                 model = new Model(
-                    new Convolution(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+                    new Convolution(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
                     new Activation(new ReLU(),
                     new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
-                    new FullyConnected(filters * outputWidth * outputHeight, (index, fanIn, fanOut) => Initializers.HeNormal(fanIn),
+                    new FullyConnected(filters * outputWidth * outputHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
                     new Activation(new ReLU(),
-                    new Softmax(100, 10, (index, fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
+                    new Softmax(100, 10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
                     new Adam(), new SoftmaxCrossEntropy());
                 int epochs = 50;
                 int iterations = 1;

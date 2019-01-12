@@ -35,7 +35,7 @@ namespace Megalopolis
                 }
             }
 
-            public BatchNormalization(int nodes, Func<int, int, int, double> func) : base(nodes, nodes)
+            public BatchNormalization(int nodes) : base(nodes, nodes)
             {
                 this.weights = new double[nodes * 2];
                 this.means = new double[nodes];
@@ -50,7 +50,7 @@ namespace Megalopolis
                 }
             }
 
-            public BatchNormalization(int nodes, Func<int, int, int, double> func, double momentum) : base(nodes, nodes)
+            public BatchNormalization(int nodes, double momentum) : base(nodes, nodes)
             {
                 this.weights = new double[nodes * 2];
                 this.means = new double[nodes];
@@ -66,22 +66,7 @@ namespace Megalopolis
                 }
             }
 
-            public BatchNormalization(Layer layer, Func<int, int, int, double> func) : base(layer, layer.Outputs)
-            {
-                this.weights = new double[layer.Outputs * 2];
-                this.means = new double[layer.Outputs];
-                this.variances = new double[layer.Outputs];
-
-                for (int i = 0, j = layer.Outputs; i < layer.Outputs; i++, j++)
-                {
-                    this.weights[i] = 1.0;
-                    this.weights[j] = 0.0;
-                    this.means[i] = 0.0;
-                    this.variances[i] = 0.0;
-                }
-            }
-
-            public BatchNormalization(Layer layer, Func<int, int, int, double> func, double momentum) : base(layer, layer.Outputs)
+            public BatchNormalization(Layer layer, double momentum) : base(layer, layer.Outputs)
             {
                 this.weights = new double[layer.Outputs * 2];
                 this.means = new double[layer.Outputs];
@@ -97,7 +82,7 @@ namespace Megalopolis
                 }
             }
 
-            public BatchNormalization(Func<int, int, int, double> func, Layer layer) : base(layer.Inputs, layer)
+            public BatchNormalization(Layer layer) : base(layer.Inputs, layer)
             {
                 this.weights = new double[layer.Inputs * 2];
                 this.means = new double[layer.Inputs];
@@ -112,7 +97,7 @@ namespace Megalopolis
                 }
             }
 
-            public BatchNormalization(Func<int, int, int, double> func, double momentum, Layer layer) : base(layer.Inputs, layer)
+            public BatchNormalization(double momentum, Layer layer) : base(layer.Inputs, layer)
             {
                 this.weights = new double[layer.Inputs * 2];
                 this.means = new double[layer.Inputs];
@@ -230,6 +215,11 @@ namespace Megalopolis
                     dvar[i] = 0.0;
                 }
 
+                for (int i = 0; i < deltas.Size; i++)
+                {
+                    dx[i] = new double[deltas[0].Length];
+                }
+
                 for (int i = 0; i < deltas[0].Length; i++)
                 {
                     double sum = 0.0;
@@ -253,6 +243,7 @@ namespace Megalopolis
 
                     for (int j = 0; j < deltas.Size; j++)
                     {
+                        dx[j] = new double[deltas.Size];
                         dx[j][i] = dxc[j, i] - sum / deltas.Size;
                     }
                 }
@@ -282,7 +273,7 @@ namespace Megalopolis
             {
                 foreach (var vector in gradients)
                 {
-                    for (int i = 0, j = this.outputs; i < vector.Length; i++, j++)
+                    for (int i = 0, j = this.outputs; i < this.outputs; i++, j++)
                     {
                         this.weights[i] = func(this.weights[i], vector[i]);
                         this.weights[j] = func(this.weights[j], vector[j]);

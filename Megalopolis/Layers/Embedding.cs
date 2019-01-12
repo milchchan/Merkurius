@@ -27,23 +27,23 @@ namespace Megalopolis
                 }
             }
 
-            public Embedding(int size, int inputs, int outputs, Func<int, int, int, double> func) : base(inputs, outputs)
+            public Embedding(int size, int inputs, int outputs, Func<int, int, double> func) : base(inputs, outputs)
             {
                 this.weights = new double[size];
 
                 for (int i = 0; i < size; i++)
                 {
-                    this.weights[i] = func(i, inputs, outputs);
+                    this.weights[i] = func(inputs, outputs);
                 }
             }
 
-            public Embedding(int size, int nodes, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
+            public Embedding(int size, int nodes, Func<int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 this.weights = new double[size];
 
                 for (int i = 0; i < size; i++)
                 {
-                    this.weights[i] = func(i, nodes, layer.Inputs);
+                    this.weights[i] = func(nodes, layer.Inputs);
                 }
             }
 

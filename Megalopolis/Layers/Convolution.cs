@@ -74,7 +74,7 @@ namespace Megalopolis
                 }
             }
 
-            public Convolution(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, int, double> func) : base(channels * imageWidth * imageHeight, filters * (imageWidth - filterWidth + 1) * (imageHeight - filterHeight + 1))
+            public Convolution(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, double> func) : base(channels * imageWidth * imageHeight, filters * (imageWidth - filterWidth + 1) * (imageHeight - filterHeight + 1))
             {
                 var length = filters * channels * filterWidth * filterHeight;
 
@@ -95,7 +95,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, fanIn, fanOut);
+                    this.weights[i] = func(fanIn, fanOut);
                 }
 
                 for (int i = 0; i < fanOut; i++)
@@ -104,7 +104,7 @@ namespace Megalopolis
                 }
             }
 
-            public Convolution(Layer layer, int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, int, double> func) : base(layer, filters * (imageWidth - filterWidth + 1) * (imageHeight - filterHeight + 1))
+            public Convolution(Layer layer, int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, double> func) : base(layer, filters * (imageWidth - filterWidth + 1) * (imageHeight - filterHeight + 1))
             {
                 var length = filters * channels * filterWidth * filterHeight;
 
@@ -125,7 +125,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, fanIn, fanOut);
+                    this.weights[i] = func(fanIn, fanOut);
                 }
 
                 for (int i = 0; i < fanOut; i++)
@@ -134,7 +134,7 @@ namespace Megalopolis
                 }
             }
 
-            public Convolution(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, int, double> func, Layer layer) : base(channels * imageWidth * imageHeight, layer)
+            public Convolution(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, double> func, Layer layer) : base(channels * imageWidth * imageHeight, layer)
             {
                 var length = filters * channels * filterWidth * filterHeight;
 
@@ -155,7 +155,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, fanIn, fanOut);
+                    this.weights[i] = func(fanIn, fanOut);
                 }
 
                 for (int i = 0; i < fanOut; i++)

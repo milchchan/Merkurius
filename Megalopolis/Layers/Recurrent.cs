@@ -63,7 +63,7 @@ namespace Megalopolis
                 }
             }
 
-            public Recurrent(int inputs, int outputs, int timesteps, bool stateful, Func<int, int, int, double> func) : base(inputs, outputs)
+            public Recurrent(int inputs, int outputs, int timesteps, bool stateful, Func<int, int, double> func) : base(inputs, outputs)
             {
                 var length = inputs * outputs + outputs * outputs;
 
@@ -75,7 +75,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, inputs, outputs);
+                    this.weights[i] = func(inputs, outputs);
                 }
 
                 for (int i = 0; i < outputs; i++)
@@ -84,7 +84,7 @@ namespace Megalopolis
                 }
             }
 
-            public Recurrent(Layer layer, int nodes, int timesteps, bool stateful, Func<int, int, int, double> func) : base(layer, nodes)
+            public Recurrent(Layer layer, int nodes, int timesteps, bool stateful, Func<int, int, double> func) : base(layer, nodes)
             {
                 var length = layer.Outputs * nodes + nodes * nodes;
 
@@ -96,7 +96,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, layer.Outputs, nodes);
+                    this.weights[i] = func(layer.Outputs, nodes);
                 }
 
                 for (int i = 0; i < nodes; i++)
@@ -105,7 +105,7 @@ namespace Megalopolis
                 }
             }
 
-            public Recurrent(int nodes, int timesteps, bool stateful, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
+            public Recurrent(int nodes, int timesteps, bool stateful, Func<int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 var length = nodes * nodes + layer.Inputs * nodes;
 
@@ -117,7 +117,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(i, layer.Inputs, nodes);
+                    this.weights[i] = func(layer.Inputs, nodes);
                 }
 
                 for (int i = 0; i < nodes; i++)

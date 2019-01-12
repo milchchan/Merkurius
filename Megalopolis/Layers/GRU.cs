@@ -66,7 +66,7 @@ namespace Megalopolis
                 }
             }
 
-            public GRU(int inputs, int outputs, Func<int, int, int, double> func) : base(inputs, outputs)
+            public GRU(int inputs, int outputs, Func<int, int, double> func) : base(inputs, outputs)
             {
                 var length1 = outputs * 3;
                 var length2 = inputs * length1 + outputs * length1;
@@ -78,7 +78,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length2; i++)
                 {
-                    this.weights[i] = func(i, inputs, outputs);
+                    this.weights[i] = func(inputs, outputs);
                 }
 
                 for (int i = 0; i < length1; i++)
@@ -87,7 +87,7 @@ namespace Megalopolis
                 }
             }
 
-            public GRU(Layer layer, int nodes, Func<int, int, int, double> func) : base(layer, nodes)
+            public GRU(Layer layer, int nodes, Func<int, int, double> func) : base(layer, nodes)
             {
                 var length1 = outputs * 3;
                 var length2 = layer.Outputs * length1 + nodes * length1;
@@ -99,7 +99,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length2; i++)
                 {
-                    this.weights[i] = func(i, layer.Outputs, nodes);
+                    this.weights[i] = func(layer.Outputs, nodes);
                 }
 
                 for (int i = 0; i < length1; i++)
@@ -108,7 +108,7 @@ namespace Megalopolis
                 }
             }
 
-            public GRU(int nodes, Func<int, int, int, double> func, Layer layer) : base(nodes, layer)
+            public GRU(int nodes, Func<int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 var length1 = outputs * 3;
                 var length2 = nodes * length1 + layer.Inputs * length1;
@@ -120,7 +120,7 @@ namespace Megalopolis
 
                 for (int i = 0; i < length2; i++)
                 {
-                    this.weights[i] = func(i, layer.Inputs, nodes);
+                    this.weights[i] = func(layer.Inputs, nodes);
                 }
 
                 for (int i = 0; i < length1; i++)
