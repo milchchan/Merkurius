@@ -197,13 +197,10 @@ namespace Megalopolis
         {
             var inputs = new Batch<double[]>(new double[][] { vector });
             var layer = this.layerCollection[0];
-            Layer outputLayer;
 
             do
             {
                 inputs = layer.Forward(inputs, false);
-
-                outputLayer = layer;
                 layer = layer.Next;
             } while (layer != null);
 

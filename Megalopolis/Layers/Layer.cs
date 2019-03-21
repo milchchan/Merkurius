@@ -79,6 +79,18 @@ namespace Megalopolis
                 this.nextLayer = layer;
             }
 
+            public Layer(Layer inputLayer, Layer outputLayer)
+            {
+                this.inputs = inputLayer.outputs;
+                this.outputs = outputLayer.inputs;
+
+                inputLayer.nextLayer = this;
+                this.previousLayer = inputLayer;
+
+                outputLayer.Previous = this;
+                this.nextLayer = outputLayer;
+            }
+
             public abstract Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining);
             public abstract Batch<double[]> Backward(Batch<double[]> deltas);
         }
