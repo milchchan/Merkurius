@@ -1,27 +1,27 @@
-# Megalopolis
+# Merkurius
 
 This repository contains the portable deep learning (deep neural networks) library implementation for .NET platform. This library is written by C#.
 
 ## Installation
 
-You can install the Megalopolis NuGet package from the .NET Core CLI command.
+You can install the Merkurius NuGet package from the .NET Core CLI command.
 
 ```sh
-> dotnet add package Megalopolis
+> dotnet add package Merkurius
 ```
 
 or from the NuGet package manager.
 
 ```sh
-PM> Install-Package Megalopolis
+PM> Install-Package Merkurius
 ```
 
 ## Build
 
-To build Megalopolis, run .NET Core CLI command.
+To build Merkurius, run .NET Core CLI command.
 
 ```sh
-> dotnet build Megalopolis.csproj
+> dotnet build Merkurius.csproj
 ```
 
 ## Example

@@ -58,9 +58,9 @@
     <EmbeddedResource Include="train-labels.idx1-ubyte" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Megalopolis\Megalopolis.csproj">
+    <ProjectReference Include="..\Merkurius\Merkurius.csproj">
       <Project>{310cf451-199d-4348-8b49-0ec3d33a7caf}</Project>
-      <Name>Megalopolis</Name>
+      <Name>Merkurius</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

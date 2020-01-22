@@ -6,11 +6,11 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Cryptography;
 using System.Xml;
-using Megalopolis;
-using Megalopolis.ActivationFunctions;
-using Megalopolis.Layers;
-using Megalopolis.LossFunctions;
-using Megalopolis.Optimizers;
+using Merkurius;
+using Merkurius.ActivationFunctions;
+using Merkurius.Layers;
+using Merkurius.LossFunctions;
+using Merkurius.Optimizers;
 
 namespace XORTest
 {
