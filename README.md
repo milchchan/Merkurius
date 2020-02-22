@@ -2,6 +2,8 @@
 
 This repository contains the portable deep learning (deep neural networks) library implementation for .NET platform. This library is written by C#.
 
+![](https://github.com/kawatan/Merkurius/workflows/.NET%20Core/badge.svg)
+
 ## Installation
 
 You can install the Merkurius NuGet package from the .NET Core CLI command.
