@@ -45,7 +45,7 @@ model.Fit(trainingList, 50);
 
 ## Features
 
-* .NET Standard 2.0 library
+* .NET Standard 2.1 library
 * Code first modeling
 * Dependency-free
 
