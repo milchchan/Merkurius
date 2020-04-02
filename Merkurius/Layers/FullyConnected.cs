@@ -67,6 +67,7 @@ namespace Merkurius
                 var length1 = additionalDimensions * inputs * outputs;
                 var length2 = additionalDimensions * outputs;
 
+                this.outputs = additionalDimensions * outputs;
                 this.weights = new double[length1];
                 this.biases = new double[length2];
                 this.additionalDimensions = additionalDimensions;
@@ -122,6 +123,7 @@ namespace Merkurius
             {
                 var parallelOptions = new ParallelOptions();
                 var data = new double[inputs.Size][];
+                var hiddens = this.outputs / this.additionalDimensions;
 
                 this.internalInputs = inputs;
 
@@ -129,24 +131,24 @@ namespace Merkurius
 
                 Parallel.ForEach<double[], List<Tuple<long, double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                 {
-                    var activations = new double[this.additionalDimensions * this.outputs];
+                    var activations = new double[this.outputs];
 
                     for (int i = 0; i < this.additionalDimensions; i++)
                     {
                         var offset1 = this.inputs * i;
-                        var offset2 = this.inputs * this.outputs * i;
-                        var offset3 = this.outputs * i;
+                        var offset2 = this.inputs * hiddens * i;
+                        var offset3 = hiddens * i;
 
-                        for (int j = 0; j < this.outputs; j++)
+                        for (int j = 0; j < hiddens; j++)
                         {
                             double sum = 0.0;
 
                             for (int k = 0; k < this.inputs; k++)
                             {
-                                sum += vector[offset1 + k] * this.weights[offset2 + this.outputs * k + j];
+                                sum += vector[offset1 + k] * this.weights[offset2 + hiddens * k + j];
                             }
 
-                            activations[offset3 + j] = sum + this.biases[j];
+                            activations[offset3 + j] = sum + this.biases[offset3 + j];
                         }
                     }   
 
@@ -173,6 +175,7 @@ namespace Merkurius
             {
                 var parallelOptions = new ParallelOptions();
                 var tuple = Tuple.Create<double[][], double[][]>(new double[deltas.Size][], new double[deltas.Size][]);
+                var hiddens = this.outputs / this.additionalDimensions;
 
                 this.gradientList = new List<Tuple<double[], double[]>>();
 
@@ -180,23 +183,23 @@ namespace Merkurius
 
                 Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(deltas, parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
                 {
-                    var gradients = new double[this.additionalDimensions * this.inputs * this.outputs];
+                    var gradients = new double[this.additionalDimensions * this.inputs * hiddens];
                     var vector2 = new double[this.additionalDimensions * this.inputs];
 
                     for (int i = 0; i < this.additionalDimensions; i++)
                     {
-                        var offset1 = this.outputs * i;
-                        var offset2 = this.inputs * this.outputs * i;
+                        var offset1 = hiddens * i;
+                        var offset2 = this.inputs * hiddens * i;
                         var offset3 = this.inputs * i;
 
                         for (int j = 0, k = 0; j < this.inputs; j++)
                         {
                             double error = 0.0;
 
-                            for (int l = 0; l < this.outputs; l++)
+                            for (int l = 0; l < hiddens; l++)
                             {
                                 error += vector1[offset1 + l] * this.weights[offset2 + k];
-                                gradients[offset2 + k] = vector1[this.outputs * i + l] * this.internalInputs[index][offset3 + j];
+                                gradients[offset2 + k] = vector1[offset1 + l] * this.internalInputs[index][offset3 + j];
                                 k++;
                             }
 
@@ -250,7 +253,8 @@ namespace Merkurius
 
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
             {
-                var length1 = this.inputs * this.outputs;
+                var hiddens = this.outputs / this.additionalDimensions;
+                var length1 = this.inputs * hiddens;
 
                 for (int i = 1; i < gradients.Size; i++)
                 {
@@ -263,7 +267,7 @@ namespace Merkurius
                             gradients[0][k] += gradients[i][offset + k];
                         }
 
-                        for (int k = 0, l = offset + length1; k < this.outputs; k++, l++)
+                        for (int k = 0, l = offset + length1; k < hiddens; k++, l++)
                         {
                             gradients[0][l] += gradients[i][l];
                         }
@@ -273,14 +277,14 @@ namespace Merkurius
                 for (int i = 0; i < this.additionalDimensions; i++)
                 {
                     var offset1 = length1 * i;
-                    var offset2 = this.outputs * i;
+                    var offset2 = hiddens * i;
 
                     for (int j = 0; j < length1; j++)
                     {
                         this.weights[offset1 + j] = func(this.weights[offset1 + j], gradients[0][offset1 + j] / gradients.Size);
                     }
 
-                    for (int j = 0, k = length1 * i + length1; j < this.outputs; j++, k++)
+                    for (int j = 0, k = length1 * i + length1; j < hiddens; j++, k++)
                     {
                         this.biases[offset2 + j] = func(this.biases[offset2 + j], gradients[0][k] / gradients.Size);
                     }
