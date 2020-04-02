@@ -107,11 +107,11 @@ namespace Merkurius
 
             public Recurrent(int inputs, int hiddens, int timesteps, bool stateful, Func<int, int, double> func, Layer layer) : base(inputs, layer)
             {
-                var length = inputs * inputs + hiddens * hiddens;
+                var length = inputs * hiddens + hiddens * hiddens;
                 
                 this.outputs = hiddens;
                 this.weights = new double[length];
-                this.biases = new double[inputs];
+                this.biases = new double[hiddens];
                 this.timesteps = timesteps;
                 this.stateful = stateful;
                 this.tanhActivationFunction = new HyperbolicTangent();
@@ -121,7 +121,7 @@ namespace Merkurius
                     this.weights[i] = func(layer.Inputs, inputs);
                 }
 
-                for (int i = 0; i < inputs; i++)
+                for (int i = 0; i < hiddens; i++)
                 {
                     this.biases[i] = 0.0;
                 }
