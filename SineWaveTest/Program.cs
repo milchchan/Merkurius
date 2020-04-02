@@ -31,15 +31,15 @@ namespace SineWaveTest
             var dataSize = 100;
             var maxLength = 200;
 
-            for (var i = 0; i < dataSize; i++)
+            for (int i = 0, j = 0; i < dataSize; i++, j += maxLength)
             {
                 var x = new double[maxLength];
                 var y = new double[maxLength];
 
-                for (var j = 0; j < maxLength; j++)
+                for (var k = 0; k < maxLength; k++)
                 {
-                    x[j] = Math.Sin((i + j) * 0.01 * Math.PI);
-                    y[j] = Math.Sin((i + j + maxLength) * 0.01 * Math.PI);
+                    x[k] = Math.Sin((j + k) * 0.01 * Math.PI);
+                    y[k] = Math.Sin((j + k + maxLength) * 0.01 * Math.PI);
                 }
 
                 trainingDataList.Add(Tuple.Create<double[], double[]>(x, y));
@@ -66,7 +66,7 @@ namespace SineWaveTest
 
             var stopwatch = Stopwatch.StartNew();
 
-            model.Fit(trainingDataList, epochs, 1);
+            model.Fit(trainingDataList, epochs, 10);
 
             stopwatch.Stop();
 
