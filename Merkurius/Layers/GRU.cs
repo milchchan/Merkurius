@@ -108,7 +108,7 @@ namespace Merkurius
                 }
             }
 
-            public GRU(int inputs, int hiddens, int timesteps, Func<int, int, double> func, Layer layer) : base(inputs, layer)
+            public GRU(int inputs, int hiddens, int timesteps, bool stateful, Func<int, int, double> func, Layer layer) : base(inputs, layer)
             {
                 var length1 = hiddens * 3;
                 var length2 = inputs * length1 + layer.Inputs * length1;
@@ -117,6 +117,7 @@ namespace Merkurius
                 this.weights = new double[length2];
                 this.biases = new double[length1];
                 this.timesteps = timesteps;
+                this.stateful = stateful;
                 this.tanhActivationFunction = new HyperbolicTangent();
                 this.sigmoidActivationFunction = new Sigmoid();
 
