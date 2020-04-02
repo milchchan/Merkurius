@@ -104,13 +104,14 @@ namespace Merkurius
                 }
             }
 
-            public LSTM(int nodes, Func<int, int, double> func, Layer layer) : base(nodes, layer)
+            public LSTM(int nodes, int timesteps, Func<int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 var length1 = outputs * 4;
                 var length2 = nodes * length1 + layer.Inputs * length1;
 
                 this.weights = new double[length2];
                 this.biases = new double[length1];
+                this.timesteps = timesteps;
                 this.tanhActivationFunction = new HyperbolicTangent();
                 this.sigmoidActivationFunction = new Sigmoid();
 

@@ -105,22 +105,23 @@ namespace Merkurius
                 }
             }
 
-            public Recurrent(int nodes, int timesteps, bool stateful, Func<int, int, double> func, Layer layer) : base(nodes, layer)
+            public Recurrent(int inputs, int hiddens, int timesteps, bool stateful, Func<int, int, double> func, Layer layer) : base(inputs, layer)
             {
-                var length = nodes * nodes + layer.Inputs * nodes;
-
+                var length = inputs * inputs + hiddens * hiddens;
+                
+                this.outputs = hiddens;
                 this.weights = new double[length];
-                this.biases = new double[nodes];
+                this.biases = new double[inputs];
                 this.timesteps = timesteps;
                 this.stateful = stateful;
                 this.tanhActivationFunction = new HyperbolicTangent();
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(layer.Inputs, nodes);
+                    this.weights[i] = func(layer.Inputs, inputs);
                 }
 
-                for (int i = 0; i < nodes; i++)
+                for (int i = 0; i < inputs; i++)
                 {
                     this.biases[i] = 0.0;
                 }
@@ -220,6 +221,8 @@ namespace Merkurius
                         dh[i][j] = 0.0;
                     }
 
+                    this.gradients[i] = new double[length2];
+
                     for (int j = 0; j < length2; j++)
                     {
                         this.gradients[i][j] = 0.0;
@@ -266,7 +269,7 @@ namespace Merkurius
 
             public void SetGradients(Func<bool, double, int, double> func)
             {
-                var length = this.inputs * this.outputs * this.outputs * this.outputs;
+                var length = this.inputs * this.outputs + this.outputs * this.outputs;
 
                 foreach (double[] vector in this.gradients)
                 {
@@ -313,7 +316,7 @@ namespace Merkurius
 
                 for (int i = 0, j = length1; i < length2; i++, j++)
                 {
-                    this.weights[j] = func(this.weights[j], gradients[length1][j] / gradients.Size);
+                    this.weights[j] = func(this.weights[j], gradients[0][j] / gradients.Size);
                 }
 
                 for (int i = 0, j = offset; i < this.outputs; i++, j++)
@@ -352,34 +355,41 @@ namespace Merkurius
 
                     Parallel.ForEach<double[], List<Tuple<long, double[]>>>(hPrevious, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                     {
-                        var v = new double[this.hiddens];
-                        var hNext = new double[this.hiddens];
-
-                        for (int i = 0; i < this.hiddens; i++)
+                        if (index < x.Size)
                         {
-                            double sum = 0.0;
+                            var v = new double[this.hiddens];
+                            var hNext = new double[this.hiddens];
 
-                            for (int j = 0; j < this.hiddens; j++)
+                            for (int i = 0; i < this.hiddens; i++)
                             {
-                                sum += vector[j] * this.hWeights[this.hiddens * j + i];
+                                double sum = 0.0;
+
+                                for (int j = 0; j < this.hiddens; j++)
+                                {
+                                    sum += vector[j] * this.hWeights[this.hiddens * j + i];
+                                }
+
+                                v[i] = sum;
                             }
 
-                            v[i] = sum;
-                        }
-
-                        for (int i = 0; i < this.hiddens; i++)
-                        {
-                            double sum = 0.0;
-
-                            for (int j = 0; j < this.inputs; j++)
+                            for (int i = 0; i < this.hiddens; i++)
                             {
-                                sum += x[index][j] * this.xWeights[this.hiddens * j + i];
+                                double sum = 0.0;
+
+                                for (int j = 0; j < this.inputs; j++)
+                                {
+                                    sum += x[index][j] * this.xWeights[this.hiddens * j + i];
+                                }
+
+                                hNext[i] = this.activationFunction.Function(sum + v[i] + this.biases[i]);
                             }
 
-                            hNext[i] = this.activationFunction.Function(sum + v[i] + this.biases[i]);
+                            local.Add(Tuple.Create<long, double[]>(index, hNext));
                         }
-
-                        local.Add(Tuple.Create<long, double[]>(index, hNext));
+                        else
+                        {
+                            local.Add(Tuple.Create<long, double[]>(index, vector));
+                        }
 
                         return local;
                     }, (local) =>
