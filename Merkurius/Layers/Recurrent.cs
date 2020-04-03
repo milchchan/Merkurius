@@ -351,45 +351,43 @@ namespace Merkurius
                     var parallelOptions = new ParallelOptions();
                     var data = new double[hPrevious.Size][];
 
+                    for (int i = 0; i < hPrevious.Size; i++)
+                    {
+                        data[i] = hPrevious[i];
+                    }
+
                     parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
-                    Parallel.ForEach<double[], List<Tuple<long, double[]>>>(hPrevious, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
+                    Parallel.ForEach<double[], List<Tuple<long, double[]>>>(x, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                     {
-                        if (index < x.Size)
+                        var v = new double[this.hiddens];
+                        var hNext = new double[this.hiddens];
+
+                        for (int i = 0; i < this.hiddens; i++)
                         {
-                            var v = new double[this.hiddens];
-                            var hNext = new double[this.hiddens];
+                            double sum = 0.0;
 
-                            for (int i = 0; i < this.hiddens; i++)
+                            for (int j = 0; j < this.hiddens; j++)
                             {
-                                double sum = 0.0;
-
-                                for (int j = 0; j < this.hiddens; j++)
-                                {
-                                    sum += vector[j] * this.hWeights[this.hiddens * j + i];
-                                }
-
-                                v[i] = sum;
+                                sum += hPrevious[index][j] * this.hWeights[this.hiddens * j + i];
                             }
 
-                            for (int i = 0; i < this.hiddens; i++)
+                            v[i] = sum;
+                        }
+
+                        for (int i = 0; i < this.hiddens; i++)
+                        {
+                            double sum = 0.0;
+
+                            for (int j = 0; j < this.inputs; j++)
                             {
-                                double sum = 0.0;
-
-                                for (int j = 0; j < this.inputs; j++)
-                                {
-                                    sum += x[index][j] * this.xWeights[this.hiddens * j + i];
-                                }
-
-                                hNext[i] = this.activationFunction.Function(sum + v[i] + this.biases[i]);
+                                sum += vector[j] * this.xWeights[this.hiddens * j + i];
                             }
 
-                            local.Add(Tuple.Create<long, double[]>(index, hNext));
+                            hNext[i] = this.activationFunction.Function(sum + v[i] + this.biases[i]);
                         }
-                        else
-                        {
-                            local.Add(Tuple.Create<long, double[]>(index, vector));
-                        }
+
+                        local.Add(Tuple.Create<long, double[]>(index, hNext));
 
                         return local;
                     }, (local) =>

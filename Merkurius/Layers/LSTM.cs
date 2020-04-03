@@ -107,7 +107,7 @@ namespace Merkurius
             public LSTM(int inputs, int hiddens, int timesteps, bool stateful, Func<int, int, double> func, Layer layer) : base(inputs, layer)
             {
                 var length1 = hiddens * 4;
-                var length2 = inputs * length1 + layer.Inputs * length1;
+                var length2 = inputs * length1 + hiddens * length1;
 
                 this.outputs = hiddens;
                 this.weights = new double[length2];
@@ -119,7 +119,7 @@ namespace Merkurius
 
                 for (int i = 0; i < length2; i++)
                 {
-                    this.weights[i] = func(layer.Inputs, inputs);
+                    this.weights[i] = func(hiddens, inputs);
                 }
 
                 for (int i = 0; i < length1; i++)
@@ -415,95 +415,95 @@ namespace Merkurius
                     var data = Tuple.Create<double[][], double[][], double[][], double[][], double[][], double[][]>(new double[hPrevious.Size][], new double[hPrevious.Size][], new double[hPrevious.Size][], new double[hPrevious.Size][], new double[hPrevious.Size][], new double[hPrevious.Size][]);
                     var length = this.hiddens * 4;
 
+                    for (int i = 0; i < hPrevious.Size; i++)
+                    {
+                        data.Item5[i] = hPrevious[i];
+                    }
+
+                    for (int i = 0; i < cPrevious.Size; i++)
+                    {
+                        data.Item6[i] = cPrevious[i];
+                    }
+
                     parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
-                    Parallel.ForEach<double[], List<Tuple<long, double[], double[], double[], double[], double[], double[]>>>(hPrevious, parallelOptions, () => new List<Tuple<long, double[], double[], double[], double[], double[], double[]>>(), (vector, state, index, local) =>
+                    Parallel.ForEach<double[], List<Tuple<long, double[], double[], double[], double[], double[], double[]>>>(x, parallelOptions, () => new List<Tuple<long, double[], double[], double[], double[], double[], double[]>>(), (vector, state, index, local) =>
                     {
-                        if (index < x.Size)
+                        var v = new double[length];
+                        var f = new double[this.hiddens];
+                        var g = new double[this.hiddens];
+                        var i = new double[this.hiddens];
+                        var o = new double[this.hiddens];
+                        var cNext = new double[this.hiddens];
+                        var hNext = new double[this.hiddens];
+
+                        for (int j = 0; j < length; j++)
                         {
-                            var v = new double[length];
-                            var f = new double[this.hiddens];
-                            var g = new double[this.hiddens];
-                            var i = new double[this.hiddens];
-                            var o = new double[this.hiddens];
-                            var cNext = new double[this.hiddens];
-                            var hNext = new double[this.hiddens];
+                            double sum = 0.0;
 
-                            for (int j = 0; j < length; j++)
+                            for (int k = 0; k < this.hiddens; k++)
                             {
-                                double sum = 0.0;
-
-                                for (int k = 0; k < this.hiddens; k++)
-                                {
-                                    sum += vector[k] * this.hWeights[length * k + j];
-                                }
-
-                                v[j] = sum;
+                                sum += hPrevious[index][k] * this.hWeights[length * k + j];
                             }
 
-                            for (int j = 0; j < this.hiddens; j++)
-                            {
-                                double sum = 0.0;
-
-                                for (int k = 0; k < this.inputs; k++)
-                                {
-                                    sum += x[index][k] * this.xWeights[length * k + j];
-                                }
-
-                                f[j] = this.sigmoidActivationFunction.Function(sum + v[j] + this.biases[j]);
-                            }
-
-                            for (int j = 0, k = this.hiddens; j < this.hiddens; j++)
-                            {
-                                double sum = 0.0;
-
-                                for (int l = 0; l < this.inputs; l++)
-                                {
-                                    sum += x[index][l] * this.xWeights[length * l + k];
-                                    k++;
-                                }
-
-                                g[j] = this.tanhActivationFunction.Function(sum + v[k] + this.biases[k]);
-                            }
-
-                            for (int j = 0, k = this.hiddens * 2; j < this.hiddens; j++)
-                            {
-                                double sum = 0.0;
-
-                                for (int l = 0; l < this.inputs; l++)
-                                {
-                                    sum += x[index][l] * this.xWeights[length * l + k];
-                                    k++;
-                                }
-
-                                i[j] = this.sigmoidActivationFunction.Function(sum + v[k] + this.biases[k]);
-                            }
-
-                            for (int j = 0, k = this.hiddens * 3; j < this.hiddens; j++)
-                            {
-                                double sum = 0.0;
-
-                                for (int l = 0; l < this.inputs; l++)
-                                {
-                                    sum += x[index][l] * this.xWeights[length * l + k];
-                                    k++;
-                                }
-
-                                o[j] = this.sigmoidActivationFunction.Function(sum + v[k] + this.biases[k]);
-                            }
-
-                            for (int j = 0; j < this.hiddens; j++)
-                            {
-                                cNext[j] = f[j] * cPrevious[index][j] + g[j] + i[j];
-                                hNext[j] = o[j] * this.tanhActivationFunction.Function(cNext[j]);
-                            }
-
-                            local.Add(Tuple.Create<long, double[], double[], double[], double[], double[], double[]>(index, f, g, i, o, hNext, cNext));
+                            v[j] = sum;
                         }
-                        else
+
+                        for (int j = 0; j < this.hiddens; j++)
                         {
-                            local.Add(Tuple.Create<long, double[], double[], double[], double[], double[], double[]>(index, this.cache.Item4.Item1[index], this.cache.Item4.Item2[index], this.cache.Item4.Item3[index], this.cache.Item4.Item4[index], hPrevious[index], cPrevious[index]));
+                            double sum = 0.0;
+
+                            for (int k = 0; k < this.inputs; k++)
+                            {
+                                sum += vector[k] * this.xWeights[j];
+                            }
+
+                            f[j] = this.sigmoidActivationFunction.Function(sum + v[j] + this.biases[j]);
                         }
+
+                        for (int j = 0, k = this.hiddens; j < this.hiddens; j++, k++)
+                        {
+                            double sum = 0.0;
+
+                            for (int l = 0; l < this.inputs; l++)
+                            {
+                                sum += vector[l] * this.xWeights[k + l];
+                            }
+
+                            g[j] = this.tanhActivationFunction.Function(sum + v[k] + this.biases[k]);
+                        }
+
+                        for (int j = 0, k = this.hiddens * 2; j < this.hiddens; j++, k++)
+                        {
+                            double sum = 0.0;
+
+                            for (int l = 0; l < this.inputs; l++)
+                            {
+                                sum += vector[l] * this.xWeights[k + l];
+                            }
+
+                            i[j] = this.sigmoidActivationFunction.Function(sum + v[k] + this.biases[k]);
+                        }
+
+                        for (int j = 0, k = this.hiddens * 3; j < this.hiddens; j++, k++)
+                        {
+                            double sum = 0.0;
+
+                            for (int l = 0; l < this.inputs; l++)
+                            {
+                                sum += vector[l] * this.xWeights[k + l];
+                            }
+
+                            o[j] = this.sigmoidActivationFunction.Function(sum + v[k] + this.biases[k]);
+                        }
+
+                        for (int j = 0; j < this.hiddens; j++)
+                        {
+                            cNext[j] = f[j] * cPrevious[index][j] + g[j] + i[j];
+                            hNext[j] = o[j] * this.tanhActivationFunction.Function(cNext[j]);
+                        }
+
+                        local.Add(Tuple.Create<long, double[], double[], double[], double[], double[], double[]>(index, f, g, i, o, hNext, cNext));
 
                         return local;
                     }, (local) =>
@@ -549,7 +549,7 @@ namespace Merkurius
                         var dcPrevious = new double[this.hiddens];
                         var dA = new double[length];
                         var dWh = new double[this.hiddens * length];
-                        var dWx = new double[this.inputs * this.hiddens];
+                        var dWx = new double[this.inputs * length];
                         var dhPrev = new double[this.hiddens];
                         var dx = new double[this.inputs];
 

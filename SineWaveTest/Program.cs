@@ -48,7 +48,7 @@ namespace SineWaveTest
             int epochs = 100;
             int iterations = 1;
             Model model = new Model(
-                new Recurrent(1, 128, maxLength, true, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
+                new LSTM(1, 128, maxLength, true, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
                 new FullyConnected(128, maxLength, 1, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())),
                 new SGD(), new MeanSquaredError());
 
