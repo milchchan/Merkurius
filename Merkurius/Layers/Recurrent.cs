@@ -63,43 +63,23 @@ namespace Merkurius
                 }
             }
 
-            public Recurrent(int inputs, int outputs, int timesteps, bool stateful, Func<int, int, double> func) : base(inputs, outputs)
+            public Recurrent(int inputs, int hiddens, int timesteps, bool stateful, Func<int, int, double> func) : base(inputs, hiddens)
             {
-                var length = inputs * outputs + outputs * outputs;
+                var length = inputs * hiddens + hiddens * hiddens;
 
+                this.outputs = hiddens;
                 this.weights = new double[length];
-                this.biases = new double[outputs];
+                this.biases = new double[hiddens];
                 this.timesteps = timesteps;
                 this.stateful = stateful;
                 this.tanhActivationFunction = new HyperbolicTangent();
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(inputs, outputs);
+                    this.weights[i] = func(inputs, hiddens);
                 }
 
-                for (int i = 0; i < outputs; i++)
-                {
-                    this.biases[i] = 0.0;
-                }
-            }
-
-            public Recurrent(Layer layer, int nodes, int timesteps, bool stateful, Func<int, int, double> func) : base(layer, nodes)
-            {
-                var length = layer.Outputs * nodes + nodes * nodes;
-
-                this.weights = new double[length];
-                this.biases = new double[nodes];
-                this.timesteps = timesteps;
-                this.stateful = stateful;
-                this.tanhActivationFunction = new HyperbolicTangent();
-
-                for (int i = 0; i < length; i++)
-                {
-                    this.weights[i] = func(layer.Outputs, nodes);
-                }
-
-                for (int i = 0; i < nodes; i++)
+                for (int i = 0; i < hiddens; i++)
                 {
                     this.biases[i] = 0.0;
                 }
@@ -118,7 +98,7 @@ namespace Merkurius
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(layer.Inputs, inputs);
+                    this.weights[i] = func(inputs, hiddens);
                 }
 
                 for (int i = 0; i < hiddens; i++)

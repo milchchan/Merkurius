@@ -66,22 +66,6 @@ namespace Merkurius
                 }
             }
 
-            public BatchNormalization(Layer layer, double momentum) : base(layer, layer.Outputs)
-            {
-                this.weights = new double[layer.Outputs * 2];
-                this.means = new double[layer.Outputs];
-                this.variances = new double[layer.Outputs];
-                this.momentum = momentum;
-
-                for (int i = 0, j = layer.Outputs; i < layer.Outputs; i++, j++)
-                {
-                    this.weights[i] = 1.0;
-                    this.weights[j] = 0.0;
-                    this.means[i] = 0.0;
-                    this.variances[i] = 0.0;
-                }
-            }
-
             public BatchNormalization(Layer layer) : base(layer.Inputs, layer)
             {
                 this.weights = new double[layer.Inputs * 2];

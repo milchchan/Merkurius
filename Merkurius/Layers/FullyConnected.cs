@@ -83,24 +83,6 @@ namespace Merkurius
                 }
             }
 
-            public FullyConnected(Layer layer, int nodes, Func<int, int, double> func) : base(layer, nodes)
-            {
-                var length = layer.Outputs * nodes;
-
-                this.weights = new double[length];
-                this.biases = new double[nodes];
-
-                for (int i = 0; i < length; i++)
-                {
-                    this.weights[i] = func(layer.Outputs, nodes);
-                }
-
-                for (int i = 0; i < nodes; i++)
-                {
-                    this.biases[i] = 0.0;
-                }
-            }
-
             public FullyConnected(int nodes, Func<int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 var length = nodes * layer.Inputs;
@@ -110,7 +92,26 @@ namespace Merkurius
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(layer.Inputs, nodes);
+                    this.weights[i] = func(nodes, layer.Inputs);
+                }
+
+                for (int i = 0; i < nodes; i++)
+                {
+                    this.biases[i] = 0.0;
+                }
+            }
+
+            public FullyConnected(int nodes, int additionalDimensions, Func<int, int, double> func, Layer layer) : base(nodes, layer)
+            {
+                var length = nodes * layer.Inputs;
+
+                this.weights = new double[length];
+                this.biases = new double[nodes];
+                this.additionalDimensions = additionalDimensions;
+
+                for (int i = 0; i < length; i++)
+                {
+                    this.weights[i] = func(nodes, layer.Inputs);
                 }
 
                 for (int i = 0; i < nodes; i++)

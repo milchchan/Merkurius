@@ -62,40 +62,21 @@ namespace Merkurius
                 }
             }
 
-            public LSTM(int inputs, int outputs, Func<int, int, double> func) : base(inputs, outputs)
+            public LSTM(int inputs, int hiddens, int timesteps, bool stateful, Func<int, int, double> func) : base(inputs, hiddens)
             {
-                var length1 = outputs * 4;
-                var length2 = inputs * length1 + outputs * length1;
+                var length1 = hiddens * 4;
+                var length2 = inputs * length1 + hiddens * length1;
 
                 this.weights = new double[length2];
                 this.biases = new double[length1];
+                this.timesteps = timesteps;
+                this.stateful = stateful;
                 this.tanhActivationFunction = new HyperbolicTangent();
                 this.sigmoidActivationFunction = new Sigmoid();
 
                 for (int i = 0; i < length2; i++)
                 {
-                    this.weights[i] = func(inputs, outputs);
-                }
-
-                for (int i = 0; i < length1; i++)
-                {
-                    this.biases[i] = 0.0;
-                }
-            }
-
-            public LSTM(Layer layer, int nodes, Func<int, int, double> func) : base(layer, nodes)
-            {
-                var length1 = outputs * 4;
-                var length2 = layer.Outputs * length1 + nodes * length1;
-
-                this.weights = new double[length2];
-                this.biases = new double[length1];
-                this.tanhActivationFunction = new HyperbolicTangent();
-                this.sigmoidActivationFunction = new Sigmoid();
-
-                for (int i = 0; i < length2; i++)
-                {
-                    this.weights[i] = func(layer.Outputs, nodes);
+                    this.weights[i] = func(inputs, hiddens);
                 }
 
                 for (int i = 0; i < length1; i++)
@@ -119,7 +100,7 @@ namespace Merkurius
 
                 for (int i = 0; i < length2; i++)
                 {
-                    this.weights[i] = func(hiddens, inputs);
+                    this.weights[i] = func(inputs, hiddens);
                 }
 
                 for (int i = 0; i < length1; i++)

@@ -61,15 +61,6 @@ namespace Merkurius
                 this.outputs = outputs;
             }
 
-            public Layer(Layer layer, int nodes)
-            {
-                this.inputs = layer.outputs;
-                this.outputs = nodes;
-
-                layer.nextLayer = this;
-                this.previousLayer = layer;
-            }
-
             public Layer(int nodes, Layer layer)
             {
                 this.inputs = nodes;

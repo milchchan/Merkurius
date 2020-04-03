@@ -123,19 +123,6 @@ namespace MNISTTest
                     new Activation(100, new ReLU()),
                 new Softmax(100, 10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))
                 }, new Adam(), new SoftmaxCrossEntropy());*/
-                /*var inputLayer = new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn));
-
-                new Softmax(
-                    new Activation(
-                        new FullyConnected(
-                            new MaxPooling(
-                                new Activation(inputLayer, new ReLU()),
-                                filters, inputLayer.ActivationMapWidth, inputLayer.ActivationMapHeight, poolWidth, poolHeight),
-                            100, (fanIn, fanOut) => Initializers.HeNormal(fanIn)),
-                        new ReLU()),
-                    10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut));
-
-                model = new Model(inputLayer, new Adam(), new SoftmaxCrossEntropy());*/
                 model = new Model(
                     new Convolution(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
                     new Activation(new ReLU(),

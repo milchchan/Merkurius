@@ -104,36 +104,6 @@ namespace Merkurius
                 }
             }
 
-            public Convolution(Layer layer, int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, double> func) : base(layer, filters * (imageWidth - filterWidth + 1) * (imageHeight - filterHeight + 1))
-            {
-                var length = filters * channels * filterWidth * filterHeight;
-
-                this.activationMapWidth = imageWidth - filterWidth + 1;
-                this.activationMapHeight = imageHeight - filterHeight + 1;
-
-                var fanIn = channels * filterWidth * filterHeight;
-                var fanOut = filters * activationMapWidth * activationMapHeight;
-
-                this.weights = new double[length];
-                this.biases = new double[fanOut];
-                this.channels = channels;
-                this.imageWidth = imageWidth;
-                this.imageHeight = imageHeight;
-                this.filters = filters;
-                this.filterWidth = filterWidth;
-                this.filterHeight = filterHeight;
-
-                for (int i = 0; i < length; i++)
-                {
-                    this.weights[i] = func(fanIn, fanOut);
-                }
-
-                for (int i = 0; i < fanOut; i++)
-                {
-                    this.biases[i] = 0.0;
-                }
-            }
-
             public Convolution(int channels, int imageWidth, int imageHeight, int filters, int filterWidth, int filterHeight, Func<int, int, double> func, Layer layer) : base(channels * imageWidth * imageHeight, layer)
             {
                 var length = filters * channels * filterWidth * filterHeight;

@@ -30,11 +30,6 @@ namespace Merkurius
                 this.rate = rate;
             }
 
-            public Dropout(Layer layer, double rate) : base(layer, layer.Outputs)
-            {
-                this.rate = rate;
-            }
-
             public Dropout(double rate, Layer layer) : base(layer.Inputs, layer)
             {
                 this.rate = rate;

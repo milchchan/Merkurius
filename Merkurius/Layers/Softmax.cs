@@ -60,24 +60,6 @@ namespace Merkurius
                 }
             }
 
-            public Softmax(Layer layer, int nodes, Func<int, int, double> func) : base(layer, nodes)
-            {
-                var length = layer.Outputs * nodes;
-
-                this.weights = new double[length];
-                this.biases = new double[nodes];
-
-                for (int i = 0; i < length; i++)
-                {
-                    this.weights[i] = func(layer.Outputs, nodes);
-                }
-
-                for (int i = 0; i < nodes; i++)
-                {
-                    this.biases[i] = 0.0;
-                }
-            }
-
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
                 var parallelOptions = new ParallelOptions();

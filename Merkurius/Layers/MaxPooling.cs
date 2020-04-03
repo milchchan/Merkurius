@@ -32,15 +32,6 @@ namespace Merkurius
                 this.poolHeight = poolHeight;
             }
 
-            public MaxPooling(Layer layer, int filters, int activationMapWidth, int activationMapHeight, int poolWidth, int poolHeight) : base(layer, filters * activationMapWidth / poolWidth * (activationMapHeight / poolHeight))
-            {
-                this.filters = filters;
-                this.activationMapWidth = activationMapWidth;
-                this.activationMapHeight = activationMapHeight;
-                this.poolWidth = poolWidth;
-                this.poolHeight = poolHeight;
-            }
-
             public MaxPooling(int filters, int activationMapWidth, int activationMapHeight, int poolWidth, int poolHeight, Layer layer) : base(filters * activationMapWidth * activationMapHeight, layer)
             {
                 this.filters = filters;

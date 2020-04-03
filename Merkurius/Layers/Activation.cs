@@ -28,11 +28,6 @@ namespace Merkurius
                 this.activationFunction = activationFunction;
             }
 
-            public Activation(Layer layer, IActivationFunction activationFunction) : base(layer, layer.Outputs)
-            {
-                this.activationFunction = activationFunction;
-            }
-
             public Activation(IActivationFunction activationFunction, Layer layer) : base(layer.Inputs, layer)
             {
                 this.activationFunction = activationFunction;
