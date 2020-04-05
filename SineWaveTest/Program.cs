@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Security.Cryptography;
+using System.Xml;
 using Merkurius;
+using Merkurius.ActivationFunctions;
 using Merkurius.Layers;
 using Merkurius.LossFunctions;
 using Merkurius.Optimizers;
@@ -28,9 +31,12 @@ namespace SineWaveTest
 
             RandomProvider.SetSeed(seed);
 
+            var filename = "SineWave.xml";
+            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(LSTM), typeof(HyperbolicTangent), typeof(Sigmoid), typeof(FullyConnected) });
             var trainingDataList = new List<Tuple<double[], double[]>>();
             var dataSize = 100;
             var maxLength = 200;
+            Model model;
 
             for (int i = 0, j = 0; i < dataSize; i++, j += maxLength)
             {
@@ -46,32 +52,42 @@ namespace SineWaveTest
                 trainingDataList.Add(Tuple.Create<double[], double[]>(x, y));
             }
 
-            int epochs = 100;
-            int iterations = 1;
-            Model model = new Model(
-                new LSTM(1, 128, maxLength, true, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
-                new FullyConnected(128, 1, maxLength, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())),
-                new SGD(), new MeanSquaredError());
-
-            model.Stepped += (sender, args) =>
+            if (File.Exists(filename))
             {
-                if (iterations % 10 == 0)
+                using (XmlReader xmlReader = XmlReader.Create(filename))
                 {
-                    Console.WriteLine("Epoch {0}/{1}", iterations, epochs);
+                    model = new Model((IEnumerable<Layer>)serializer.ReadObject(xmlReader), new SGD(), new MeanSquaredError());
                 }
+            }
+            else
+            {
+                model = new Model(
+                    new LSTM(1, 128, maxLength, true, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
+                    new FullyConnected(128, 1, maxLength, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())),
+                    new SGD(), new MeanSquaredError());
+                int epochs = 100;
+                int iterations = 1;
 
-                iterations++;
-            };
+                model.Stepped += (sender, args) =>
+                {
+                    if (iterations % 10 == 0)
+                    {
+                        Console.WriteLine("Epoch {0}/{1}", iterations, epochs);
+                    }
 
-            Console.WriteLine("Training...");
+                    iterations++;
+                };
 
-            var stopwatch = Stopwatch.StartNew();
+                Console.WriteLine("Training...");
 
-            model.Fit(trainingDataList, epochs, 10);
+                var stopwatch = Stopwatch.StartNew();
 
-            stopwatch.Stop();
+                model.Fit(trainingDataList, epochs, 10);
 
-            Console.WriteLine("Done ({0}).", stopwatch.Elapsed.ToString());
+                stopwatch.Stop();
+
+                Console.WriteLine("Done ({0}).", stopwatch.Elapsed.ToString());
+            }
 
             var dataList = new List<IEnumerable<double>>();
             var data = trainingDataList[0];
@@ -92,6 +108,17 @@ namespace SineWaveTest
                 });
 
                 fs.Flush();
+            }
+
+            XmlWriterSettings settings = new XmlWriterSettings();
+
+            settings.Indent = true;
+            settings.Encoding = new System.Text.UTF8Encoding(false);
+
+            using (XmlWriter xmlWriter = XmlWriter.Create(filename, settings))
+            {
+                serializer.WriteObject(xmlWriter, model.Layers);
+                xmlWriter.Flush();
             }
         }
     }

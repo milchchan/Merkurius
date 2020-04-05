@@ -38,7 +38,6 @@ namespace MNISTTest
             var assembly = Assembly.GetExecutingAssembly();
             var filename = "CNN.xml";
             var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(Convolution), typeof(BatchNormalization), typeof(Activation), typeof(ReLU), typeof(MaxPooling), typeof(FullyConnected), typeof(Softmax) });
-            var random = RandomProvider.GetRandom();
             var trainingList = new List<Tuple<double[], double[]>>();
             var testList = new List<Tuple<double[], double[]>>();
             var accuracyList = new List<double>();
