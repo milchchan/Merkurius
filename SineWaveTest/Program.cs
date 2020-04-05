@@ -62,8 +62,8 @@ namespace SineWaveTest
             else
             {
                 model = new Model(
-                    new LSTM(1, 128, maxLength, true, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
-                    new FullyConnected(128, 1, maxLength, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())),
+                    new LSTM(1, 128, maxLength, true, (fanIn, fanOut) => Initializers.LecunNormal(fanIn),
+                    new FullyConnected(128, 1, maxLength, (fanIn, fanOut) => Initializers.LecunNormal(fanIn))),
                     new SGD(), new MeanSquaredError());
                 int epochs = 100;
                 int iterations = 1;
