@@ -102,13 +102,13 @@ namespace Merkurius
                 }
             }
 
-            public FullyConnected(int nodes, int additionalDimensions, Func<int, int, double> func, Layer layer) : base(nodes, layer)
+            public FullyConnected(int nodes, int sequences, Func<int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 var length = nodes * layer.Inputs;
 
                 this.weights = new double[length];
                 this.biases = new double[nodes];
-                this.sequences = additionalDimensions;
+                this.sequences = sequences;
 
                 for (int i = 0; i < length; i++)
                 {
