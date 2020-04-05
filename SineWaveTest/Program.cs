@@ -15,6 +15,7 @@ namespace SineWaveTest
         static void Main(string[] args)
         {
             Console.WriteLine("Sine Wave Test");
+
             int seed;
 
             using (var rng = new RNGCryptoServiceProvider())
@@ -49,7 +50,7 @@ namespace SineWaveTest
             int iterations = 1;
             Model model = new Model(
                 new LSTM(1, 128, maxLength, true, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
-                new FullyConnected(128, maxLength, 1, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())),
+                new FullyConnected(128, 1, maxLength, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())),
                 new SGD(), new MeanSquaredError());
 
             model.Stepped += (sender, args) =>
