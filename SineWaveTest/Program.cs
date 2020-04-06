@@ -32,7 +32,7 @@ namespace SineWaveTest
             RandomProvider.SetSeed(seed);
 
             var filename = "SineWave.xml";
-            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(LSTM), typeof(HyperbolicTangent), typeof(Sigmoid), typeof(FullyConnected) });
+            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(LSTM), typeof(HyperbolicTangent), typeof(Sigmoid), typeof(FullyConnected), typeof(Activation), typeof(Identity) });
             var trainingDataList = new List<Tuple<double[], double[]>>();
             var dataSize = 100;
             var maxLength = 200;
@@ -63,7 +63,8 @@ namespace SineWaveTest
             {
                 model = new Model(
                     new LSTM(1, 128, maxLength, true, (fanIn, fanOut) => Initializers.LecunNormal(fanIn),
-                    new FullyConnected(128, 1, maxLength, (fanIn, fanOut) => Initializers.LecunNormal(fanIn))),
+                    new FullyConnected(128, maxLength, (fanIn, fanOut) => Initializers.LecunNormal(fanIn),
+                    new Activation(maxLength, new Identity()))),
                     new SGD(), new MeanSquaredError());
                 int epochs = 100;
                 int iterations = 1;

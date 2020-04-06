@@ -29,16 +29,16 @@ namespace Merkurius
                 }
             }
 
-            public Embedding(int size, int inputs, int outputs, Func<int, int, double> func) : base(inputs, inputs * outputs)
+            public Embedding(int size, int inputs, int dimensions, Func<int, int, double> func) : base(inputs, inputs * dimensions)
             {
-                var length = size * outputs;
+                var length = size * dimensions;
 
                 this.weights = new double[length];
                 this.size = size;
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(size, outputs);
+                    this.weights[i] = func(size, dimensions);
                 }
             }
 
