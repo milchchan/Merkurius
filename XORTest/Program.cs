@@ -48,7 +48,7 @@ namespace XORTest
             {
                 using (XmlReader xmlReader = XmlReader.Create(filename))
                 {
-                    model = new Model((IEnumerable<Layer>)serializer.ReadObject(xmlReader), new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
+                    model = new Model((IEnumerable<Layer>)serializer.ReadObject(xmlReader), new Momentum(0.5, 0.1), new MeanSquaredError());
                 }
             }
             else
@@ -57,7 +57,7 @@ namespace XORTest
                     new FullyConnected(2, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
                     new Activation(new Sigmoid(),
                     new FullyConnected(2, 1, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble()))),
-                    new Momentum(0.5, 0.1), new SoftmaxCrossEntropy());
+                    new Momentum(0.5, 0.1), new MeanSquaredError());
 
                 int epochs = 10000;
                 int iterations = 1;
