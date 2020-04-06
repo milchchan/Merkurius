@@ -29,7 +29,7 @@ namespace Merkurius
                 }
             }
 
-            public Embedding(int size, int inputs, int dimensions, Func<int, int, double> func) : base(inputs, inputs * dimensions)
+            public Embedding(int inputs, int size, int dimensions, Func<int, int, double> func) : base(inputs, inputs * dimensions)
             {
                 var length = size * dimensions;
 
@@ -42,7 +42,7 @@ namespace Merkurius
                 }
             }
 
-            public Embedding(int size, int nodes, Func<int, int, double> func, Layer layer) : base(nodes, layer)
+            public Embedding(int nodes, int size, Func<int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 var dimensions = layer.Inputs / nodes;
                 var length = size * dimensions;
