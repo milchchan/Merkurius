@@ -67,7 +67,6 @@ namespace Merkurius
             {
                 var length = inputs * hiddens + hiddens * hiddens;
 
-                this.outputs = hiddens;
                 this.weights = new double[length];
                 this.biases = new double[hiddens];
                 this.timesteps = timesteps;

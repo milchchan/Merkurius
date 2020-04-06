@@ -12,6 +12,8 @@ namespace Merkurius
         {
             [DataMember]
             private double[] weights = null;
+            [DataMember]
+            private int size = 0;
             private Batch<double[]> internalInputs = null;
             private Batch<double[]> dW = null;
 
@@ -27,23 +29,30 @@ namespace Merkurius
                 }
             }
 
-            public Embedding(int size, int inputs, int outputs, Func<int, int, double> func) : base(inputs, outputs)
+            public Embedding(int size, int inputs, int outputs, Func<int, int, double> func) : base(inputs, inputs * outputs)
             {
-                this.weights = new double[size];
+                var length = size * outputs;
 
-                for (int i = 0; i < size; i++)
+                this.weights = new double[length];
+                this.size = size;
+
+                for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(inputs, outputs);
+                    this.weights[i] = func(size, outputs);
                 }
             }
 
             public Embedding(int size, int nodes, Func<int, int, double> func, Layer layer) : base(nodes, layer)
             {
-                this.weights = new double[size];
+                var dimensions = layer.Inputs / nodes;
+                var length = size * dimensions;
 
-                for (int i = 0; i < size; i++)
+                this.weights = new double[length];
+                this.size = size;
+
+                for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(nodes, layer.Inputs);
+                    this.weights[i] = func(size, dimensions);
                 }
             }
 
@@ -51,6 +60,7 @@ namespace Merkurius
             {
                 var parallelOptions = new ParallelOptions();
                 var data = new double[inputs.Size][];
+                var dimensions = this.outputs / this.inputs;
 
                 this.internalInputs = inputs;
 
@@ -58,11 +68,11 @@ namespace Merkurius
 
                 Parallel.ForEach<double[], List<Tuple<long, double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                 {
-                    var v = new double[this.inputs * this.outputs];
+                    var v = new double[this.outputs];
 
                     for (int i = 0, j = 0; i < this.inputs; i++)
                     {
-                        for (int k = 0, l = this.outputs * Convert.ToInt32(vector[i]); k < this.outputs; k++, l++)
+                        for (int k = 0, l = dimensions * Convert.ToInt32(vector[i]); k < dimensions; k++, l++)
                         {
                             v[j] = this.weights[l];
                             j++;
@@ -90,6 +100,7 @@ namespace Merkurius
             {
                 var parallelOptions = new ParallelOptions();
                 var data = new double[this.internalInputs.Size][];
+                var dimensions = this.outputs / this.inputs;
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
@@ -104,7 +115,7 @@ namespace Merkurius
 
                     for (int i = 0, j = 0; i < this.inputs; i++)
                     {
-                        for (int k = 0, l = this.outputs * Convert.ToInt32(this.internalInputs[index][i]); k < this.outputs; k++, l++)
+                        for (int k = 0, l = dimensions * Convert.ToInt32(this.internalInputs[index][i]); k < dimensions; k++, l++)
                         {
                             dW[l] += vector[j];
                             j++;

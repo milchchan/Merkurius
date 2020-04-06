@@ -63,22 +63,20 @@ namespace Merkurius
                 }
             }
 
-            public FullyConnected(int inputs, int outputs, int sequences, Func<int, int, double> func) : base(inputs, outputs)
+            public FullyConnected(int inputs, int outputs, int sequences, Func<int, int, double> func) : base(inputs, sequences * outputs)
             {
-                var length1 = sequences * inputs * outputs;
-                var length2 = sequences * outputs;
-
-                this.outputs = sequences * outputs;
-                this.weights = new double[length1];
-                this.biases = new double[length2];
+                var length = sequences * inputs * outputs;
+                
+                this.weights = new double[length];
+                this.biases = new double[this.outputs];
                 this.sequences = sequences;
 
-                for (int i = 0; i < length1; i++)
+                for (int i = 0; i < length; i++)
                 {
                     this.weights[i] = func(inputs, outputs);
                 }
 
-                for (int i = 0; i < length2; i++)
+                for (int i = 0; i < this.outputs; i++)
                 {
                     this.biases[i] = 0.0;
                 }
@@ -89,14 +87,14 @@ namespace Merkurius
                 var length = nodes * layer.Inputs;
 
                 this.weights = new double[length];
-                this.biases = new double[nodes];
+                this.biases = new double[layer.Inputs];
 
                 for (int i = 0; i < length; i++)
                 {
                     this.weights[i] = func(nodes, layer.Inputs);
                 }
 
-                for (int i = 0; i < nodes; i++)
+                for (int i = 0; i < layer.Inputs; i++)
                 {
                     this.biases[i] = 0.0;
                 }
@@ -105,17 +103,18 @@ namespace Merkurius
             public FullyConnected(int nodes, int sequences, Func<int, int, double> func, Layer layer) : base(nodes, layer)
             {
                 var length = nodes * layer.Inputs;
+                var dimensions = layer.Inputs / sequences;
 
                 this.weights = new double[length];
-                this.biases = new double[nodes];
+                this.biases = new double[layer.Inputs];
                 this.sequences = sequences;
 
                 for (int i = 0; i < length; i++)
                 {
-                    this.weights[i] = func(nodes, layer.Inputs);
+                    this.weights[i] = func(nodes, dimensions);
                 }
 
-                for (int i = 0; i < nodes; i++)
+                for (int i = 0; i < layer.Inputs; i++)
                 {
                     this.biases[i] = 0.0;
                 }
