@@ -439,7 +439,7 @@ namespace Merkurius
                                 sum += vector[k] * this.xWeights[j];
                             }
 
-                            f[j] = this.sigmoidActivationFunction.Function(sum + v[j] + this.biases[j]);
+                            f[j] = this.sigmoidActivationFunction.Forward(sum + v[j] + this.biases[j]);
                         }
 
                         for (int j = 0, k = this.hiddens; j < this.hiddens; j++, k++)
@@ -451,7 +451,7 @@ namespace Merkurius
                                 sum += vector[l] * this.xWeights[k + l];
                             }
 
-                            g[j] = this.tanhActivationFunction.Function(sum + v[k] + this.biases[k]);
+                            g[j] = this.tanhActivationFunction.Forward(sum + v[k] + this.biases[k]);
                         }
 
                         for (int j = 0, k = this.hiddens * 2; j < this.hiddens; j++, k++)
@@ -463,7 +463,7 @@ namespace Merkurius
                                 sum += vector[l] * this.xWeights[k + l];
                             }
 
-                            i[j] = this.sigmoidActivationFunction.Function(sum + v[k] + this.biases[k]);
+                            i[j] = this.sigmoidActivationFunction.Forward(sum + v[k] + this.biases[k]);
                         }
 
                         for (int j = 0, k = this.hiddens * 3; j < this.hiddens; j++, k++)
@@ -475,13 +475,13 @@ namespace Merkurius
                                 sum += vector[l] * this.xWeights[k + l];
                             }
 
-                            o[j] = this.sigmoidActivationFunction.Function(sum + v[k] + this.biases[k]);
+                            o[j] = this.sigmoidActivationFunction.Forward(sum + v[k] + this.biases[k]);
                         }
 
                         for (int j = 0; j < this.hiddens; j++)
                         {
                             cNext[j] = f[j] * cPrevious[index][j] + g[j] + i[j];
-                            hNext[j] = o[j] * this.tanhActivationFunction.Function(cNext[j]);
+                            hNext[j] = o[j] * this.tanhActivationFunction.Forward(cNext[j]);
                         }
 
                         local.Add(Tuple.Create<long, double[], double[], double[], double[], double[], double[]>(index, f, g, i, o, hNext, cNext));
@@ -536,14 +536,14 @@ namespace Merkurius
 
                         for (int j = 0, k = this.hiddens, l = this.hiddens * 2, m = this.hiddens * 3; j < this.hiddens; j++, k++, l++, m++)
                         {
-                            var tanh = this.tanhActivationFunction.Function(cNext[index][j]);
-                            var ds = dcNext[index][j] + vector[j] * o[index][j] * this.tanhActivationFunction.Derivative(tanh);
+                            var tanh = this.tanhActivationFunction.Forward(cNext[index][j]);
+                            var ds = dcNext[index][j] + vector[j] * o[index][j] * this.tanhActivationFunction.Backward(tanh);
 
                             dcPrevious[j] = ds * f[index][j];
-                            dA[j] = ds * cPrevious[index][j] * this.sigmoidActivationFunction.Derivative(i[index][j]); // df
-                            dA[k] = ds * i[index][j] * this.tanhActivationFunction.Derivative(g[index][j]); // dg
-                            dA[l] = ds * g[index][j] * this.sigmoidActivationFunction.Derivative(i[index][j]); // di
-                            dA[m] = vector[j] * tanh * this.sigmoidActivationFunction.Derivative(o[index][j]); // do
+                            dA[j] = ds * cPrevious[index][j] * this.sigmoidActivationFunction.Backward(i[index][j]); // df
+                            dA[k] = ds * i[index][j] * this.tanhActivationFunction.Backward(g[index][j]); // dg
+                            dA[l] = ds * g[index][j] * this.sigmoidActivationFunction.Backward(i[index][j]); // di
+                            dA[m] = vector[j] * tanh * this.sigmoidActivationFunction.Backward(o[index][j]); // do
                         }
 
                         for (int j = 0, k = 0; j < this.hiddens; j++)

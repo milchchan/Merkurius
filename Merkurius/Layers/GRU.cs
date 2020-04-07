@@ -371,7 +371,7 @@ namespace Merkurius
                                 sum2 += hPrevious[index][j] * this.hWeights[length * j + i];
                             }
 
-                            z[i] = this.sigmoidActivationFunction.Function(sum1 + sum2 + this.biases[i]);
+                            z[i] = this.sigmoidActivationFunction.Forward(sum1 + sum2 + this.biases[i]);
                         }
 
                         for (int i = 0, j = this.hiddens; i < this.hiddens; i++, j++)
@@ -389,7 +389,7 @@ namespace Merkurius
                                 sum2 += hPrevious[index][k] * this.hWeights[length * k + j];
                             }
 
-                            r[i] = this.sigmoidActivationFunction.Function(sum1 + sum2 + this.biases[j]);
+                            r[i] = this.sigmoidActivationFunction.Forward(sum1 + sum2 + this.biases[j]);
                         }
 
                         for (int i = 0, j = this.hiddens * 2; i < this.hiddens; i++, j++)
@@ -407,7 +407,7 @@ namespace Merkurius
                                 sum2 += hPrevious[index][k] * r[i] * this.hWeights[length * k + j];
                             }
 
-                            hHat[i] = this.tanhActivationFunction.Function(sum1 + sum2 + this.biases[j]);
+                            hHat[i] = this.tanhActivationFunction.Forward(sum1 + sum2 + this.biases[j]);
                             hNext[i] = (1.0 - z[i]) * hPrevious[index][i] + z[i] * hHat[i];
                         }
 
@@ -462,8 +462,8 @@ namespace Merkurius
                             dhHat[i] = vector[i] * z[index][i];
                             dhPrev[i] = vector[i] * (1.0 - z[index][i]);
                             
-                            dt[i] = dhHat[i] * this.tanhActivationFunction.Derivative(hHat[index][i]);
-                            dt[j] = (vector[i] * hHat[index][i] - vector[i] * hPrevious[index][i]) * this.sigmoidActivationFunction.Derivative(z[index][i]);
+                            dt[i] = dhHat[i] * this.tanhActivationFunction.Backward(hHat[index][i]);
+                            dt[j] = (vector[i] * hHat[index][i] - vector[i] * hPrevious[index][i]) * this.sigmoidActivationFunction.Backward(z[index][i]);
                         }
 
                         for (int i = 0, j = 0; i < this.hiddens; i++)
@@ -490,7 +490,7 @@ namespace Merkurius
 
                         for (int i = 0, j = this.hiddens * 2; i < this.hiddens; i++, j++)
                         {
-                            dt[j] = dhr[i] * hPrevious[index][i] * this.sigmoidActivationFunction.Derivative(r[index][i]);
+                            dt[j] = dhr[i] * hPrevious[index][i] * this.sigmoidActivationFunction.Backward(r[index][i]);
                         }
 
                         for (int i = 0, j = 0, offset = this.hiddens * 2; i < this.hiddens; i++)

@@ -8,7 +8,7 @@ namespace Merkurius
         [DataContract]
         public class SoftPlus : IActivationFunction
         {
-            public double Function(double x)
+            public double Forward(double x)
             {
                 // ln(1 + e^x)
                 if (x > 0)
@@ -19,7 +19,7 @@ namespace Merkurius
                 return Math.Log(1.0 + Math.Exp(x));
             }
 
-            public double Derivative(double x)
+            public double Backward(double x)
             {
                 return 1.0 / (1.0 + Math.Exp(-x));
             }

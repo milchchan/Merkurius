@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
@@ -13,7 +12,7 @@ namespace Merkurius
         {
             [DataMember]
             private int sequences = 1;
-            private Batch<double[]> internalInputs = null;
+            private Batch<double[]> internalOutputs = null;
             
             public Softmax(int nodes) : base(nodes, nodes) { }
 
@@ -27,9 +26,7 @@ namespace Merkurius
                 var parallelOptions = new ParallelOptions();
                 var data = new double[inputs.Size][];
                 var nodes = this.inputs / this.sequences;
-
-                this.internalInputs = inputs;
-
+                
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
                 Parallel.ForEach<double[], List<Tuple<long, double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
@@ -65,12 +62,57 @@ namespace Merkurius
                     }
                 });
 
-                return new Batch<double[]>(data);
+                this.internalOutputs = new Batch<double[]>(data);
+
+                return this.internalOutputs;
             }
 
             public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
-                return deltas;
+                var parallelOptions = new ParallelOptions();
+                var tuple = Tuple.Create<double[][], double[][]>(new double[deltas.Size][], new double[deltas.Size][]);
+                var hiddens = this.outputs / this.sequences;
+
+                parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
+
+                Parallel.ForEach<double[], List<Tuple<long, double[]>>>(deltas, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector1, state, index, local) =>
+                {
+                    var vector2 = new double[this.sequences * this.inputs];
+
+                    for (int i = 0; i < this.sequences; i++)
+                    {
+                        var offset = hiddens * i;
+                        double sum = 0.0;
+
+                        for (int j = 0; j < hiddens; j++)
+                        {
+                            var dx = this.internalOutputs[index][offset + j] * vector1[offset + j];
+
+                            vector2[offset + j] = dx;
+                            sum += dx;
+                        }
+
+                        for (int j = 0; j < hiddens; j++)
+                        {
+                            vector2[offset + j] -= this.internalOutputs[index][offset + j] * sum;
+                        }
+                    }
+
+                    local.Add(Tuple.Create<long, double[]>(index, vector2));
+
+                    return local;
+                }, (local) =>
+                {
+                    lock (tuple)
+                    {
+                        local.ForEach(x =>
+                        {
+                            tuple.Item1[x.Item1] = x.Item2;
+                        });
+                    }
+                });
+
+                return new Batch<double[]>(tuple.Item1);
             }
 
             private double SoftmaxFunction(double[] x, int i)
@@ -92,46 +134,6 @@ namespace Merkurius
                 }
 
                 return Math.Exp(x[i] - max) / sum;
-            }
-
-            private double[] DerivativeOfSoftmaxFunction(double[] outputs, double[] deltas)
-            {
-                double[] dx = new double[deltas.Length];
-                double sum = 0.0;
-
-                for (int i = 0; i < deltas.Length; i++)
-                {
-                    dx[i] = outputs[i] * deltas[i];
-                    sum += dx[i];
-                }
-
-                for (int i = 0; i < deltas.Length; i++)
-                {
-                    dx[i] -= outputs[i] * sum;
-                }
-
-                return dx;
-            }
-
-            private double[] DerivativeOfSoftmaxFunction(double[] x, int i)
-            {
-                // yi(1 - yi) if i = j
-                // -yiyj otherwise
-                double[] vector = new double[x.Length];
-
-                for (int j = 0; j < x.Length; j++)
-                {
-                    if (i == j)
-                    {
-                        vector[j] = x[i] * (1.0 - x[i]);
-                    }
-                    else
-                    {
-                        vector[j] = -x[j] * x[i];
-                    }
-                }
-
-                return vector;
             }
         }
     }

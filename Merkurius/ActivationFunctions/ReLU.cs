@@ -8,7 +8,7 @@ namespace Merkurius
         [DataContract]
         public class ReLU : IActivationFunction
         {
-            public double Function(double x)
+            public double Forward(double x)
             {
                 if (x > 0)
                 {
@@ -18,7 +18,7 @@ namespace Merkurius
                 return 0;
             }
 
-            public double Derivative(double x)
+            public double Backward(double x)
             {
                 if (x > 0)
                 {

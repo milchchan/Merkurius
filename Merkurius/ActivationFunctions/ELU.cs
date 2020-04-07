@@ -18,7 +18,7 @@ namespace Merkurius
                 this.alpha = alpha;
             }
 
-            public double Function(double x)
+            public double Forward(double x)
             {
                 // a(e^x - 1) if x < 0
                 // x otherwise
@@ -30,7 +30,7 @@ namespace Merkurius
                 return this.alpha * (Math.Exp(x) - 1.0);
             }
 
-            public double Derivative(double x)
+            public double Backward(double x)
             {
                 // f(a, x) + a if x < 0
                 // 1 otherwise

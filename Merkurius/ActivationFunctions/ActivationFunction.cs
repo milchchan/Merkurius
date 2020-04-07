@@ -6,8 +6,8 @@ namespace Merkurius
     {
         public interface IActivationFunction
         {
-            double Function(double x);
-            double Derivative(double x);
+            double Forward(double x);
+            double Backward(double x);
         }
     }
 }

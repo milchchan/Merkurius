@@ -7,14 +7,28 @@ namespace Merkurius
         // Cross-entropy loss function for multiclass classification
         public class CategoricalCrossEntropy : ILossFunction
         {
-            public double Function(double y, double t)
+            public double[] Forward(double[] y, double[] t)
             {
-                return -t * Math.Log(y + 1e-7, Math.E);
+                double[] vector = new double[y.Length];
+
+                for (int i = 0; i < y.Length; i++)
+                {
+                    vector[i] = -t[i] * Math.Log(y[i] + 1e-7, Math.E);
+                }
+
+                return vector;
             }
 
-            public double Derivative(double y, double t)
+            public double[] Backward(double[] y, double[] t)
             {
-                return -t / y;
+                double[] vector = new double[y.Length];
+
+                for (int i = 0; i < y.Length; i++)
+                {
+                    vector[i] = -t[i] / y[i];
+                }
+
+                return vector;
             }
         }
     }

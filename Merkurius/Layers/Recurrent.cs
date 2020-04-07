@@ -363,7 +363,7 @@ namespace Merkurius
                                 sum += vector[j] * this.xWeights[this.hiddens * j + i];
                             }
 
-                            hNext[i] = this.activationFunction.Function(sum + v[i] + this.biases[i]);
+                            hNext[i] = this.activationFunction.Forward(sum + v[i] + this.biases[i]);
                         }
 
                         local.Add(Tuple.Create<long, double[]>(index, hNext));
@@ -406,7 +406,7 @@ namespace Merkurius
                         
                         for (int i = 0; i < this.hiddens; i++)
                         {
-                            dt[i] = this.activationFunction.Derivative(hNext[index][i]) * vector[i];
+                            dt[i] = this.activationFunction.Backward(hNext[index][i]) * vector[i];
                         }
 
                         for (int i = 0, j = 0; i < this.hiddens; i++)

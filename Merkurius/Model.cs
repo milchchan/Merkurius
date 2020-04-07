@@ -216,10 +216,10 @@ namespace Merkurius
             foreach (var tuple in collection)
             {
                 var outputActivations = Forward(new Batch<double[]>(new double[][] { tuple.Item1 }), false);
-
-                for (int i = 0; i < outputs; i++)
+                
+                foreach (var loss in this.lossFunction.Forward(outputActivations[0], tuple.Item2))
                 {
-                    sum += this.lossFunction.Function(outputActivations[0][i], tuple.Item2[i]);
+                    sum += loss;
                 }
             }
 
@@ -271,12 +271,7 @@ namespace Merkurius
 
             for (int i = 0; i < t.Size; i++)
             {
-                deltas[i] = new double[layer.Outputs];
-
-                for (int j = 0; j < layer.Outputs; j++)
-                {
-                    deltas[i][j] = this.lossFunction.Derivative(y[i][j], t[i][j]);
-                }
+                deltas[i] = this.lossFunction.Backward(y[i], t[i]);
             }
 
             do

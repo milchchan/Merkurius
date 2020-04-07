@@ -7,14 +7,28 @@ namespace Merkurius
         // Mean squared error (MSE) for regression
         public class MeanSquaredError : ILossFunction
         {
-            public double Function(double y, double t)
+            public double[] Forward(double[] y, double[] t)
             {
-                return (y - t) * (y - t) / 2;
+                double[] vector = new double[y.Length];
+
+                for (int i = 0; i < y.Length; i++)
+                {
+                    vector[i] = (y[i] - t[i]) * (y[i] - t[i]) / 2.0;
+                }
+
+                return vector;
             }
 
-            public double Derivative(double y, double t)
+            public double[] Backward(double[] y, double[] t)
             {
-                return y - t;
+                double[] vector = new double[y.Length];
+
+                for (int i = 0; i < y.Length; i++)
+                {
+                    vector[i] = y[i] - t[i];
+                }
+
+                return vector;
             }
         }
     }

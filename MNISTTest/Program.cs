@@ -120,8 +120,7 @@ namespace MNISTTest
                     new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
                     new FullyConnected(filters * outputWidth * outputHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
                     new Activation(new ReLU(),
-                    new FullyConnected(100, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut),
-                    new Softmax(10))))))),
+                    new FullyConnected(100, 10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
                     new Adam(), new SoftmaxCrossEntropy());
                 int epochs = 50;
                 int iterations = 1;

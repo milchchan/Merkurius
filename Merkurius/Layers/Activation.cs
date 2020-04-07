@@ -47,7 +47,7 @@ namespace Merkurius
 
                     for (int i = 0; i < this.outputs; i++)
                     {
-                        activations[i] = this.activationFunction.Function(vector[i]);
+                        activations[i] = this.activationFunction.Forward(vector[i]);
                     }
 
                     local.Add(Tuple.Create<long, double[]>(index, activations));
@@ -81,7 +81,7 @@ namespace Merkurius
 
                     for (int i = 0; i < this.outputs; i++)
                     {
-                        vector2[i] = this.activationFunction.Derivative(this.internalOutputs[index][i]) * vector1[i];
+                        vector2[i] = this.activationFunction.Backward(this.internalOutputs[index][i]) * vector1[i];
                     }
 
                     local.Add(Tuple.Create<long, double[]>(index, vector2));

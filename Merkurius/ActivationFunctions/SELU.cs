@@ -21,7 +21,7 @@ namespace Merkurius
                 this.scale = scale;
             }
 
-            public double Function(double x)
+            public double Forward(double x)
             {
                 if (x >= 0)
                 {
@@ -31,7 +31,7 @@ namespace Merkurius
                 return this.scale * this.alpha * (Math.Exp(x) - 1.0);
             }
 
-            public double Derivative(double x)
+            public double Backward(double x)
             {
                 if (x >= 0)
                 {
