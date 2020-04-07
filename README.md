@@ -37,7 +37,8 @@ var model = new Model(
   new MaxPooling(f, mw, mh, pw, ph,
   new FullyConnected(f * ow * oh, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
   new Activation(new ReLU(),
-  new Softmax(100, 10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
+  new FullyConnected(100, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut),
+  new Softmax(10))))))),
   new Adam(), new SoftmaxCrossEntropy());
 
 model.Fit(trainingList, 50);
