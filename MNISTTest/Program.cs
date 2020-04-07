@@ -114,21 +114,14 @@ namespace MNISTTest
             }
             else
             {
-                /*model = new Model(new Layer[] {
-                    new Convolutional(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn)),
-                    new Activation(filters * activationMapWidth * activationMapHeight, new ReLU()),
-                    new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight),
-                    new FullyConnected(filters * outputWidth * outputHeight, 100, (fanIn, fanOut) => Initializers.HeNormal(fanIn)),
-                    new Activation(100, new ReLU()),
-                new Softmax(100, 10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))
-                }, new Adam(), new SoftmaxCrossEntropy());*/
                 model = new Model(
                     new Convolution(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
                     new Activation(new ReLU(),
                     new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
                     new FullyConnected(filters * outputWidth * outputHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
                     new Activation(new ReLU(),
-                    new Softmax(100, 10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
+                    new FullyConnected(100, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut),
+                    new Softmax(10))))))),
                     new Adam(), new SoftmaxCrossEntropy());
                 int epochs = 50;
                 int iterations = 1;
