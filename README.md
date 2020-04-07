@@ -1,6 +1,6 @@
 # Merkurius
 
-This repository contains the portable deep learning (deep neural networks) library implementation for .NET platform. This library is written by C#.
+This repository contains the portable deep learning (deep neural networks) library implementation for .NET platform. This library is written by 100% C#.
 
 ![](https://github.com/kawatan/Merkurius/workflows/.NET%20Core/badge.svg)
 
@@ -37,8 +37,7 @@ var model = new Model(
   new MaxPooling(f, mw, mh, pw, ph,
   new FullyConnected(f * ow * oh, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
   new Activation(new ReLU(),
-  new FullyConnected(100, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut),
-  new Softmax(10))))))),
+  new FullyConnected(100, 10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
   new Adam(), new SoftmaxCrossEntropy());
 
 model.Fit(trainingList, 50);
