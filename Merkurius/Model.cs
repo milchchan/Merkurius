@@ -140,7 +140,8 @@ namespace Merkurius
                     });
                     int index = 0;
                     int identifier = 0;
-                    var tuples = Backward(Forward(new Batch<double[]>(dataTuple.Item1), true), new Batch<double[]>(dataTuple.Item2));
+                    var targets = new Batch<double[]>(dataTuple.Item2);
+                    var tuples = Backward(Forward(new Batch<double[]>(dataTuple.Item1), targets, true).Item1, targets);
 
                     // Weight decay
                     foreach (var tuple in tuples)
@@ -213,23 +214,20 @@ namespace Merkurius
             int size = collection.Count();
             int outputs = this.layerCollection[this.layerCollection.Count - 1].Outputs;
 
-            foreach (var tuple in collection)
+            foreach (var loss in from tuple in collection from loss in Forward(new Batch<double[]>(new double[][] { tuple.Item1 }), new Batch<double[]>(new double[][] { tuple.Item2 }), false).Item2[0] select loss)
             {
-                var outputActivations = Forward(new Batch<double[]>(new double[][] { tuple.Item1 }), false);
-                
-                foreach (var loss in this.lossFunction.Forward(outputActivations[0], tuple.Item2))
-                {
-                    sum += loss;
-                }
+                sum += loss;
             }
 
             return sum / size;
         }
 
-        private Batch<double[]> Forward(Batch<double[]> x, bool isTraining)
+        private Tuple<Batch<double[]>, Batch<double[]>> Forward(Batch<double[]> x, Batch<double[]> t, bool isTraining)
         {
             var layer = this.layerCollection[0];
             var weightDecay = 0.0;
+            var vectorList1 = new List<double[]>();
+            var vectorList2 = new List<double[]>();
 
             do
             {
@@ -243,7 +241,7 @@ namespace Merkurius
 
                     foreach (double weight in updatable.Weights)
                     {
-                        sum = + weight * weight;
+                        sum += weight * weight;
                     }
 
                     weightDecay += 0.5 * this.weightDecayRate * sum;
@@ -252,15 +250,20 @@ namespace Merkurius
                 layer = layer.Next;
             } while (layer != null);
 
-            foreach (var vector in x)
+            for (int i = 0; i < x.Size; i++)
             {
-                for (int i = 0; i < vector.Length; i++)
+                var y = this.lossFunction.Forward(x[i], t[i]);
+
+                for (int j = 0; j < y.Item2.Length; j++)
                 {
-                    vector[i] += weightDecay;
+                    y.Item2[j] += weightDecay;
                 }
+
+                vectorList1.Add(y.Item1);
+                vectorList2.Add(y.Item2);
             }
 
-            return x;
+            return Tuple.Create<Batch<double[]>, Batch<double[]>>(new Batch<double[]>(vectorList1), new Batch<double[]>(vectorList2));
         }
 
         private IEnumerable<IUpdatable> Backward(Batch<double[]> y, Batch<double[]> t)

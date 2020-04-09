@@ -55,14 +55,14 @@ namespace XORTest
             {
                 model = new Model(
                     new FullyConnected(2, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
+                    new BatchNormalization(
                     new Activation(new Sigmoid(),
-                    new FullyConnected(2, 1, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble()))),
+                    new FullyConnected(2, 1, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())))),
                     new Momentum(0.5, 0.1), new MeanSquaredError());
 
                 int epochs = 10000;
                 int iterations = 1;
 
-                //model.WeightDecayRate = 0.01;
                 model.Stepped += (sender, e) =>
                 {
                     double tptn = 0.0;
@@ -73,7 +73,7 @@ namespace XORTest
                         var i = ArgMax(vector);
                         var j = ArgMax(tuple.Item2);
 
-                        if (i == j && Math.Round(vector[i]) == tuple.Item2[j])
+                        if (i == j)
                         {
                             tptn += 1.0;
                         }

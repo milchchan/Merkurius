@@ -6,16 +6,18 @@ namespace Merkurius
     {
         public class SoftmaxCrossEntropy : ILossFunction
         {
-            public double[] Forward(double[] y, double[] t)
+            public Tuple<double[], double[]> Forward(double[] y, double[] t)
             {
-                double[] vector = new double[y.Length];
+                double[] vector1 = new double[y.Length];
+                double[] vector2 = new double[y.Length];
 
                 for (int i = 0; i < y.Length; i++)
                 {
-                    vector[i] = -t[i] * Math.Log(SoftmaxFunction(y, i) + 1e-7, Math.E);
+                    vector1[i] = SoftmaxFunction(y, i);
+                    vector2[i] = -t[i] * Math.Log(vector1[i] + 1e-7, Math.E);
                 }
 
-                return vector;
+                return Tuple.Create<double[], double[]>(vector1, vector2);
             }
 
             public double[] Backward(double[] y, double[] t)

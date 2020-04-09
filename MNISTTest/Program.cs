@@ -37,7 +37,7 @@ namespace MNISTTest
 
             var assembly = Assembly.GetExecutingAssembly();
             var filename = "CNN.xml";
-            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(Convolution), typeof(BatchNormalization), typeof(Activation), typeof(ReLU), typeof(MaxPooling), typeof(FullyConnected), typeof(Softmax) });
+            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(Convolution), typeof(BatchNormalization), typeof(Activation), typeof(ReLU), typeof(MaxPooling), typeof(FullyConnected), typeof(Dropout), typeof(Softmax) });
             var trainingList = new List<Tuple<double[], double[]>>();
             var testList = new List<Tuple<double[], double[]>>();
             var accuracyList = new List<double>();
@@ -120,11 +120,14 @@ namespace MNISTTest
                     new MaxPooling(filters, activationMapWidth, activationMapHeight, poolWidth, poolHeight,
                     new FullyConnected(filters * outputWidth * outputHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
                     new Activation(new ReLU(),
-                    new FullyConnected(100, 10, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut))))))),
+                    new Dropout(0.5,
+                    new FullyConnected(100, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut),
+                    new Dropout(10, 0.5)))))))),
                     new Adam(), new SoftmaxCrossEntropy());
                 int epochs = 50;
                 int iterations = 1;
 
+                //model.WeightDecayRate = 0.1;
                 model.Stepped += (sender, e) =>
                 {
                     double tptn = 0.0;
@@ -135,7 +138,7 @@ namespace MNISTTest
                         var i = ArgMax(vector);
                         var j = ArgMax(x.Item2);
 
-                        if (i == j && Math.Round(vector[i]) == x.Item2[j])
+                        if (i == j)
                         {
                             tptn += 1.0;
                         }

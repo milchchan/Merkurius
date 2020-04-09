@@ -6,7 +6,7 @@ namespace Merkurius
     {
         public interface ILossFunction
         {
-            double[] Forward(double[] y, double[] t);
+            Tuple<double[], double[]> Forward(double[] y, double[] t);
             double[] Backward(double[] y, double[] t);
         }
     }
