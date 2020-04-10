@@ -114,6 +114,9 @@ namespace MNISTTest
             }
             else
             {
+                int epochs = 50;
+                int iterations = 1;
+
                 model = new Model(
                     new Convolution(channels, imageWidth, imageHeight, filters, filterWidth, filterHeight, (fanIn, fanOut) => Initializers.HeNormal(fanIn),
                     new Activation(new ReLU(),
@@ -124,9 +127,6 @@ namespace MNISTTest
                     new FullyConnected(100, (fanIn, fanOut) => Initializers.GlorotNormal(fanIn, fanOut),
                     new Dropout(10, 0.5)))))))),
                     new Adam(), new SoftmaxCrossEntropy());
-                int epochs = 50;
-                int iterations = 1;
-
                 //model.WeightDecayRate = 0.1;
                 model.Stepped += (sender, e) =>
                 {
@@ -134,11 +134,7 @@ namespace MNISTTest
 
                     trainingList.ForEach(x =>
                     {
-                        var vector = model.Predicate(x.Item1);
-                        var i = ArgMax(vector);
-                        var j = ArgMax(x.Item2);
-
-                        if (i == j)
+                        if (ArgMax(model.Predicate(x.Item1)) == ArgMax(x.Item2))
                         {
                             tptn += 1.0;
                         }

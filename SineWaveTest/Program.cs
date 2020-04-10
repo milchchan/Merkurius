@@ -61,14 +61,14 @@ namespace SineWaveTest
             }
             else
             {
+                int epochs = 100;
+                int iterations = 1;
+
                 model = new Model(
                     new LSTM(1, 128, maxLength, true, (fanIn, fanOut) => Initializers.LecunNormal(fanIn),
                     new FullyConnected(128, maxLength, (fanIn, fanOut) => Initializers.LecunNormal(fanIn),
                     new Activation(maxLength, new Identity()))),
                     new SGD(), new MeanSquaredError());
-                int epochs = 100;
-                int iterations = 1;
-
                 model.Stepped += (sender, args) =>
                 {
                     if (iterations % 10 == 0)

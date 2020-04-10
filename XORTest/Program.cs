@@ -33,7 +33,7 @@ namespace XORTest
             RandomProvider.SetSeed(seed);
 
             var filename = "XOR.xml";
-            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(FullyConnected), typeof(BatchNormalization), typeof(Activation), typeof(Sigmoid) });
+            var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(FullyConnected), typeof(Activation), typeof(Sigmoid) });
             var patternList = new List<Tuple<double[], double[]>>();
             var accuracyList = new List<double>();
             var lossList = new List<double>();
@@ -53,27 +53,21 @@ namespace XORTest
             }
             else
             {
-                model = new Model(
-                    new FullyConnected(2, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
-                    new BatchNormalization(
-                    new Activation(new Sigmoid(),
-                    new FullyConnected(2, 1, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble())))),
-                    new Momentum(0.5, 0.1), new MeanSquaredError());
-
                 int epochs = 10000;
                 int iterations = 1;
 
+                model = new Model(
+                    new FullyConnected(2, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble(),
+                    new Activation(new Sigmoid(),
+                    new FullyConnected(2, 1, (fanIn, fanOut) => RandomProvider.GetRandom().NextDouble()))),
+                    new Momentum(0.5, 0.1), new MeanSquaredError());
                 model.Stepped += (sender, e) =>
                 {
                     double tptn = 0.0;
 
                     patternList.ForEach(tuple =>
                     {
-                        var vector = model.Predicate(tuple.Item1);
-                        var i = ArgMax(vector);
-                        var j = ArgMax(tuple.Item2);
-
-                        if (i == j)
+                        if (ArgMax(model.Predicate(tuple.Item1)) == ArgMax(tuple.Item2))
                         {
                             tptn += 1.0;
                         }
