@@ -151,7 +151,7 @@ namespace Merkurius
 
                     if (this.maxGradient.HasValue)
                     {
-                        // Gradients clipping
+                        // Gradient clipping
                         var vectors = from tuple in tuples let batch = tuple.GetGradients() from vector in batch select vector;
                         double sum = 0.0;
 
