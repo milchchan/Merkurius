@@ -65,8 +65,8 @@ namespace SineWaveTest
                 int iterations = 1;
 
                 model = new Model(
-                    new LSTM(1, 128, maxLength, true, false, (fanIn, fanOut) => Initializers.LecunNormal(fanIn),
-                    new FullyConnected(128, maxLength, (fanIn, fanOut) => Initializers.LecunNormal(fanIn),
+                    new LSTM(1, 128, maxLength, true, false, (fanIn, fanOut) => Initializers.LeCunNormal(fanIn),
+                    new FullyConnected(128, maxLength, (fanIn, fanOut) => Initializers.LeCunNormal(fanIn),
                     new Activation(maxLength, new Identity()))),
                     new SGD(), new MeanSquaredError());
                 model.Stepped += (sender, args) =>
