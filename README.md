@@ -1,6 +1,6 @@
 # Merkurius
 
-This repository contains the portable deep learning (deep neural networks) library implementation for .NET platform. This library supports inference and training. Furthermore, All codes are written in C#.
+This repository contains the portable deep learning (deep neural networks) library implementation for .NET platform. This library supports inference and training. Furthermore, all codes are written in C#.
 
 ![](https://github.com/kawatan/Merkurius/workflows/.NET%20Core/badge.svg)
 
@@ -24,6 +24,18 @@ To build Merkurius, run .NET Core CLI command.
 
 ```sh
 > dotnet build Merkurius.csproj
+```
+
+Recurrent neural network (RNN).
+
+```csharp
+var model = new Model(
+  new Recurrent(1, 128, 10, true, false, (fanIn, fanOut) => Initializers.LeCunNormal(fanIn),
+  new FullyConnected(128, 10, (fanIn, fanOut) => Initializers.LeCunNormal(fanIn),
+  new Activation(10, new Identity()))),
+  new SGD(), new MeanSquaredError());
+
+model.Fit(trainingList, 50);
 ```
 
 ## Example
