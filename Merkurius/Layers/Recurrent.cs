@@ -21,6 +21,7 @@ namespace Merkurius
             [DataMember]
             private double[] biases = null;
             private Batch<double[]> state = null;
+            private Batch<double[]> deltaState = null;
 
             public double[] Weights
             {
@@ -70,6 +71,14 @@ namespace Merkurius
                 }
             }
 
+            public int Timesteps
+            {
+                get
+                {
+                    return this.forwardRecurrent.Timesteps;
+                }
+            }
+
             public Batch<double[]> State
             {
                 get
@@ -80,6 +89,23 @@ namespace Merkurius
                     }
 
                     return this.state;
+                }
+                set
+                {
+                    if (this.backwardRecurrent == null)
+                    {
+                        this.forwardRecurrent.State = value;
+                    }
+
+                    this.state = value;
+                }
+            }
+
+            public Batch<double[]> DeltaState
+            {
+                get
+                {
+                    return this.deltaState;
                 }
             }
 
@@ -181,9 +207,9 @@ namespace Merkurius
                 {
                     var vector = new double[outputs1[i].Length];
 
-                    for (int j = 0, last = outputs1[i].Length - 1; j < outputs1[i].Length; j++)
+                    for (int j = 0; j < outputs1[i].Length; j++)
                     {
-                        vector[j] = outputs1[i][j] + outputs2[i][last - j];
+                        vector[j] = outputs1[i][j] + outputs2[i][j];
                     }
 
                     vectorList1.Add(vector);
@@ -203,6 +229,8 @@ namespace Merkurius
                     vectorList2.Add(vector);
                 }
 
+                this.state = new Batch<double[]>(vectorList2);
+
                 return new Batch<double[]>(vectorList1);
             }
 
@@ -221,12 +249,24 @@ namespace Merkurius
                 {
                     var vector = new double[dx1[i].Length];
 
-                    for (int j = 0, last = dx1[i].Length - 1; j < dx1[i].Length; j++)
+                    for (int j = 0; j < dx1[i].Length; j++)
                     {
-                        vector[j] = dx1[i][j] + dx2[i][last - j];
+                        vector[j] = dx1[i][j] + dx2[i][j];
                     }
 
                     vectorList.Add(vector);
+                }
+
+                this.deltaState = new Batch<double[]>(new double[this.forwardRecurrent.DeltaState.Size][]);
+
+                for (int i = 0; i < this.forwardRecurrent.DeltaState.Size; i++)
+                {
+                    this.deltaState[i] = new double[forwardRecurrent.DeltaState[i].Length];
+
+                    for (int j = 0; j < this.forwardRecurrent.DeltaState[i].Length; j++)
+                    {
+                        this.deltaState[i][j] = this.forwardRecurrent.DeltaState[i][j] + this.backwardRecurrent.DeltaState[i][j];
+                    }
                 }
 
                 return new Batch<double[]>(vectorList);
@@ -344,7 +384,7 @@ namespace Merkurius
                 [DataMember]
                 private bool stateful = false;
                 private List<RecurrentCell> layerList = null;
-                private Batch<double[]> h = null;
+                private Batch<double[]> h = null; // Hidden state
                 private Batch<double[]> dh = null;
                 private double[][] gradients = null;
                 [DataMember]
@@ -374,6 +414,14 @@ namespace Merkurius
                     }
                 }
 
+                public int Timesteps
+                {
+                    get
+                    {
+                        return this.timesteps;
+                    }
+                }
+
                 public Batch<double[]> State
                 {
                     get
@@ -383,6 +431,18 @@ namespace Merkurius
                     set
                     {
                         this.h = value;
+                    }
+                }
+
+                public Batch<double[]> DeltaState
+                {
+                    get
+                    {
+                        return this.dh;
+                    }
+                    set
+                    {
+                        this.dh = value;
                     }
                 }
 
@@ -446,6 +506,27 @@ namespace Merkurius
                                 this.h[i][j] = 0.0;
                             }
                         }
+                    }
+                    else if (this.h.Size < inputs.Size)
+                    {
+                        var batch = new Batch<double[]>(new double[inputs.Size][]);
+
+                        for (int i = 0; i < this.h.Size; i++)
+                        {
+                            batch[i] = this.h[i];
+                        }
+
+                        for (int i = this.h.Size; i < inputs.Size; i++)
+                        {
+                            batch[i] = new double[this.outputs];
+
+                            for (int j = 0; j < this.outputs; j++)
+                            {
+                                batch[i][j] = 0.0;
+                            }
+                        }
+
+                        this.h = batch;
                     }
 
                     for (int t = 0; t < this.timesteps; t++)

@@ -33,7 +33,7 @@ namespace SineWaveTest
 
             var filename = "SineWave.xml";
             var serializer = new DataContractSerializer(typeof(IEnumerable<Layer>), new Type[] { typeof(LSTM), typeof(HyperbolicTangent), typeof(Sigmoid), typeof(FullyConnected), typeof(Activation), typeof(Identity) });
-            var trainingDataList = new List<Tuple<double[], double[]>>();
+            var trainingDataList = new List<ValueTuple<double[], double[]>>();
             var dataSize = 100;
             var maxLength = 200;
             Model model;
@@ -49,14 +49,14 @@ namespace SineWaveTest
                     y[k] = Math.Sin((j + k + maxLength) * 0.01 * Math.PI);
                 }
 
-                trainingDataList.Add(Tuple.Create<double[], double[]>(x, y));
+                trainingDataList.Add(ValueTuple.Create<double[], double[]>(x, y));
             }
 
             if (File.Exists(filename))
             {
                 using (XmlReader xmlReader = XmlReader.Create(filename))
                 {
-                    model = new Model((IEnumerable<Layer>)serializer.ReadObject(xmlReader), new SGD(), new MeanSquaredError());
+                    model = new Model((IEnumerable<Layer>)serializer.ReadObject(xmlReader));
                 }
             }
             else
@@ -67,8 +67,7 @@ namespace SineWaveTest
                 model = new Model(
                     new LSTM(1, 128, maxLength, true, false, (fanIn, fanOut) => Initializers.LeCunNormal(fanIn),
                     new FullyConnected(128, maxLength, (fanIn, fanOut) => Initializers.LeCunNormal(fanIn),
-                    new Activation(maxLength, new Identity()))),
-                    new SGD(), new MeanSquaredError());
+                    new Activation(maxLength, new Identity()))));
                 model.Stepped += (sender, args) =>
                 {
                     if (iterations % 10 == 0)
@@ -83,7 +82,7 @@ namespace SineWaveTest
 
                 var stopwatch = Stopwatch.StartNew();
 
-                model.Fit(trainingDataList, epochs, 10);
+                model.Fit(trainingDataList, epochs, 10, new SGD(), new MeanSquaredError());
 
                 stopwatch.Stop();
 

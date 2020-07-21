@@ -13,9 +13,6 @@ namespace Merkurius
         public event EventHandler<EventArgs> Stepped = null;
         private Random random = null;
         private Collection<Layer> layerCollection = null;
-        private double loss = 0.0;
-        private IOptimizer optimizer = null;
-        private ILossFunction lossFunction = null;
         private double weightDecayRate = 0.0;
         private double? maxGradient = null;
 
@@ -24,30 +21,6 @@ namespace Merkurius
             get
             {
                 return this.layerCollection;
-            }
-        }
-
-        public double Loss
-        {
-            get
-            {
-                return this.loss;
-            }
-        }
-
-        public IOptimizer Optimizer
-        {
-            get
-            {
-                return this.optimizer;
-            }
-        }
-
-        public ILossFunction LossFunction
-        {
-            get
-            {
-                return this.lossFunction;
             }
         }
 
@@ -75,14 +48,12 @@ namespace Merkurius
             }
         }
 
-        public Model(Layer inputLayer, IOptimizer optimizer, ILossFunction lossFunction)
+        public Model(Layer inputLayer)
         {
             var layer = inputLayer;
 
             this.random = RandomProvider.GetRandom();
             this.layerCollection = new Collection<Layer>();
-            this.optimizer = optimizer;
-            this.lossFunction = lossFunction;
 
             do
             {
@@ -91,12 +62,10 @@ namespace Merkurius
             } while (layer != null);
         }
 
-        public Model(IEnumerable<Layer> collection, IOptimizer optimizer, ILossFunction lossFunction)
+        public Model(IEnumerable<Layer> collection)
         {
             this.random = RandomProvider.GetRandom();
             this.layerCollection = new Collection<Layer>();
-            this.optimizer = optimizer;
-            this.lossFunction = lossFunction;
 
             foreach (Layer layer in collection)
             {
@@ -112,12 +81,12 @@ namespace Merkurius
             }
         }
 
-        public void Fit(IEnumerable<Tuple<double[], double[]>> collection, int epochs, int batchSize = 32)
+        public void Fit(IEnumerable<ValueTuple<double[], double[]>> collection, int epochs, int batchSize, IOptimizer optimizer, ILossFunction lossFunction)
         {
-            Fit(collection, epochs, batchSize, (x, y) => x.Sample<Tuple<double[], double[]>>(this.random, y));
+            Fit(collection, epochs, batchSize, (x, y) => x.Sample<ValueTuple<double[], double[]>>(this.random, y), optimizer, lossFunction);
         }
 
-        public void Fit(IEnumerable<Tuple<double[], double[]>> collection, int epochs, int batchSize, Func<IEnumerable<Tuple<double[], double[]>>, int, IEnumerable<Tuple<double[], double[]>>> func)
+        public void Fit(IEnumerable<ValueTuple<double[], double[]>> collection, int epochs, int batchSize, Func<IEnumerable<ValueTuple<double[], double[]>>, int, IEnumerable<ValueTuple<double[], double[]>>> func, IOptimizer optimizer, ILossFunction lossFunction)
         {
             // Backpropagation
             int dataSize = collection.Count();
@@ -131,7 +100,7 @@ namespace Merkurius
 
                 do
                 {
-                    var dataTuple = func(collection, Math.Min(remaining, batchSize)).Aggregate<Tuple<double[], double[]>, Tuple<List<double[]>, List<double[]>>>(Tuple.Create<List<double[]>, List<double[]>>(new List<double[]>(), new List<double[]>()), (tuple1, tuple2) =>
+                    var dataTuple = func(collection, Math.Min(remaining, batchSize)).Aggregate<ValueTuple<double[], double[]>, Tuple<List<double[]>, List<double[]>>>(Tuple.Create<List<double[]>, List<double[]>>(new List<double[]>(), new List<double[]>()), (tuple1, tuple2) =>
                     {
                         tuple1.Item1.Add(tuple2.Item1);
                         tuple1.Item2.Add(tuple2.Item2);
@@ -141,18 +110,18 @@ namespace Merkurius
                     int index = 0;
                     int identifier = 0;
                     var targets = new Batch<double[]>(dataTuple.Item2);
-                    var tuples = Backward(Forward(new Batch<double[]>(dataTuple.Item1), targets, true).Item1, targets);
+                    var layers = Backward(Forward(new Batch<double[]>(dataTuple.Item1), targets, true, lossFunction).Item1, targets, lossFunction);
 
                     // Weight decay
-                    foreach (var tuple in tuples)
+                    foreach (var layer in layers)
                     {
-                        tuple.SetGradients((x, y, z) => x ? y + this.weightDecayRate * tuple.Weights[z] : y);
+                        layer.SetGradients((x, y, z) => x ? y + this.weightDecayRate * layer.Weights[z] : y);
                     }
 
                     if (this.maxGradient.HasValue)
                     {
                         // Gradient clipping
-                        var vectors = from tuple in tuples let batch = tuple.GetGradients() from vector in batch select vector;
+                        var vectors = from tuple in layers let batch = tuple.GetGradients() from vector in batch select vector;
                         double sum = 0.0;
 
                         foreach (var gradient in from vector in vectors from gradient in vector select gradient)
@@ -174,16 +143,14 @@ namespace Merkurius
                         }
                     }
 
-                    foreach (var tuple in tuples)
+                    foreach (var layer in layers)
                     {
-                        tuple.Update(tuple.GetGradients(), (weight, gradient) => optimizer.Optimize(identifier++, weight, gradient));
+                        layer.Update(layer.GetGradients(), (weight, gradient) => optimizer.Optimize(identifier++, weight, gradient));
                         index++;
                     }
 
                     remaining -= batchSize;
                 } while (remaining > 0);
-
-                this.loss = GetLoss(collection);
 
                 if (this.Stepped != null)
                 {
@@ -208,13 +175,13 @@ namespace Merkurius
             return inputs[0];
         }
 
-        private double GetLoss(IEnumerable<Tuple<double[], double[]>> collection)
+        public double GetLoss(IEnumerable<ValueTuple<double[], double[]>> collection, ILossFunction lossFunction)
         {
             double sum = 0.0;
             int size = collection.Count();
             int outputs = this.layerCollection[this.layerCollection.Count - 1].Outputs;
 
-            foreach (var loss in from tuple in collection from loss in Forward(new Batch<double[]>(new double[][] { tuple.Item1 }), new Batch<double[]>(new double[][] { tuple.Item2 }), false).Item2[0] select loss)
+            foreach (var loss in from tuple in collection from loss in Forward(new Batch<double[]>(new double[][] { tuple.Item1 }), new Batch<double[]>(new double[][] { tuple.Item2 }), false, lossFunction).Item2[0] select loss)
             {
                 sum += loss;
             }
@@ -222,7 +189,7 @@ namespace Merkurius
             return sum / size;
         }
 
-        private Tuple<Batch<double[]>, Batch<double[]>> Forward(Batch<double[]> x, Batch<double[]> t, bool isTraining)
+        private Tuple<Batch<double[]>, Batch<double[]>> Forward(Batch<double[]> x, Batch<double[]> t, bool isTraining, ILossFunction lossFunction)
         {
             var layer = this.layerCollection[0];
             var weightDecay = 0.0;
@@ -252,7 +219,7 @@ namespace Merkurius
 
             for (int i = 0; i < x.Size; i++)
             {
-                var y = this.lossFunction.Forward(x[i], t[i]);
+                var y = lossFunction.Forward(x[i], t[i]);
 
                 for (int j = 0; j < y.Item2.Length; j++)
                 {
@@ -266,7 +233,7 @@ namespace Merkurius
             return Tuple.Create<Batch<double[]>, Batch<double[]>>(new Batch<double[]>(vectorList1), new Batch<double[]>(vectorList2));
         }
 
-        private IEnumerable<IUpdatable> Backward(Batch<double[]> y, Batch<double[]> t)
+        private IEnumerable<IUpdatable> Backward(Batch<double[]> y, Batch<double[]> t, ILossFunction lossFunction)
         {
             var layer = this.layerCollection[this.layerCollection.Count - 1];
             var deltas = new Batch<double[]>(new double[t.Size][]);
@@ -274,7 +241,7 @@ namespace Merkurius
 
             for (int i = 0; i < t.Size; i++)
             {
-                deltas[i] = this.lossFunction.Backward(y[i], t[i]);
+                deltas[i] = lossFunction.Backward(y[i], t[i]);
             }
 
             do
