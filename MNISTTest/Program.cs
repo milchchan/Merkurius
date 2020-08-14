@@ -134,7 +134,7 @@ namespace MNISTTest
 
                     trainingList.ForEach(x =>
                     {
-                        if (ArgMax(model.Predicate(x.Item1)) == ArgMax(x.Item2))
+                        if (ArgMax(model.Predict(x.Item1)) == ArgMax(x.Item2))
                         {
                             tptn += 1.0;
                         }
@@ -167,7 +167,7 @@ namespace MNISTTest
 
             testList.ForEach(x =>
             {
-                var vector = model.Predicate(x.Item1);
+                var vector = model.Predict(x.Item1);
                 var i = ArgMax(vector);
                 var j = ArgMax(x.Item2);
 

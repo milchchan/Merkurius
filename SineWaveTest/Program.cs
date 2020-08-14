@@ -91,7 +91,7 @@ namespace SineWaveTest
 
             var dataList = new List<IEnumerable<double>>();
             var data = trainingDataList[0];
-            var vector = model.Predicate(data.Item1);
+            var vector = model.Predict(data.Item1);
 
             for (var i = 0; i < data.Item1.Length; i++)
             {

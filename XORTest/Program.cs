@@ -67,7 +67,7 @@ namespace XORTest
 
                     patternList.ForEach(tuple =>
                     {
-                        if (ArgMax(model.Predicate(tuple.Item1)) == ArgMax(tuple.Item2))
+                        if (ArgMax(model.Predict(tuple.Item1)) == ArgMax(tuple.Item2))
                         {
                             tptn += 1.0;
                         }
@@ -106,7 +106,7 @@ namespace XORTest
                     x.Add(y.ToString());
 
                     return x;
-                })), String.Join(",", model.Predicate(tuple.Item1).Aggregate<double, List<string>>(new List<string>(), (x, y) =>
+                })), String.Join(",", model.Predict(tuple.Item1).Aggregate<double, List<string>>(new List<string>(), (x, y) =>
                 {
                     x.Add(y.ToString());
 

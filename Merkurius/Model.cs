@@ -161,7 +161,7 @@ namespace Merkurius
             }
         }
 
-        public double[] Predicate(double[] vector)
+        public double[] Predict(double[] vector)
         {
             var inputs = new Batch<double[]>(new double[][] { vector });
             var layer = this.layerCollection[0];
