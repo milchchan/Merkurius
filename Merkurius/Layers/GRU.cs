@@ -14,15 +14,15 @@ namespace Merkurius
         public class GRU : Layer, IUpdatable
         {
             [DataMember]
-            private GRUCore forwardGru = null;
+            private GRUCore? forwardGru = null;
             [DataMember]
-            private GRUCore backwardGru = null;
+            private GRUCore? backwardGru = null;
             [DataMember]
-            private double[] weights = null;
+            private double[]? weights = null;
             [DataMember]
-            private double[] biases = null;
-            private Batch<double[]> state = null;
-            private Batch<double[]> deltaState = null;
+            private double[]? biases = null;
+            private Batch<double[]>? state = null;
+            private Batch<double[]>? deltaState = null;
 
             public double[] Weights
             {
@@ -30,16 +30,16 @@ namespace Merkurius
                 {
                     if (this.backwardGru == null)
                     {
-                        return this.forwardGru.Weights;
+                        return this.forwardGru!.Weights;
                     }
 
-                    return this.weights;
+                    return this.weights!;
                 }
                 set
                 {
                     if (this.backwardGru == null)
                     {
-                        this.forwardGru.Weights = value;
+                        this.forwardGru!.Weights = value;
                     }
                     else
                     {
@@ -54,16 +54,16 @@ namespace Merkurius
                 {
                     if (this.backwardGru == null)
                     {
-                        return this.forwardGru.Biases;
+                        return this.forwardGru!.Biases;
                     }
 
-                    return this.biases;
+                    return this.biases!;
                 }
                 set
                 {
                     if (this.backwardGru == null)
                     {
-                        this.forwardGru.Biases = value;
+                        this.forwardGru!.Biases = value;
                     }
                     else
                     {
@@ -76,17 +76,17 @@ namespace Merkurius
             {
                 get
                 {
-                    return this.forwardGru.Timesteps;
+                    return this.forwardGru!.Timesteps;
                 }
             }
 
-            public Batch<double[]> State
+            public Batch<double[]>? State
             {
                 get
                 {
                     if (this.backwardGru == null)
                     {
-                        return this.forwardGru.State;
+                        return this.forwardGru!.State;
                     }
 
                     return this.state;
@@ -95,14 +95,14 @@ namespace Merkurius
                 {
                     if (this.backwardGru == null)
                     {
-                        this.forwardGru.State = value;
+                        this.forwardGru!.State = value;
                     }
 
                     this.state = value;
                 }
             }
 
-            public Batch<double[]> DeltaState
+            public Batch<double[]>? DeltaState
             {
                 get
                 {
@@ -170,18 +170,18 @@ namespace Merkurius
             {
                 if (this.backwardGru == null)
                 {
-                    return this.forwardGru.Forward(inputs, isTraining);
+                    return this.forwardGru!.Forward(inputs, isTraining);
                 }
 
-                for (int i = 0, length = this.weights.Length / 2; i < length; i++)
+                for (int i = 0, length = this.weights!.Length / 2; i < length; i++)
                 {
-                    this.forwardGru.Weights[i] = this.weights[i];
+                    this.forwardGru!.Weights[i] = this.weights[i];
                     this.backwardGru.Weights[i] = this.weights[i + length];
                 }
 
-                for (int i = 0, length = this.biases.Length / 2; i < length; i++)
+                for (int i = 0, length = this.biases!.Length / 2; i < length; i++)
                 {
-                    this.forwardGru.Biases[i] = this.biases[i];
+                    this.forwardGru!.Biases[i] = this.biases[i];
                     this.backwardGru.Biases[i] = this.biases[i + length];
                 }
 
@@ -193,13 +193,13 @@ namespace Merkurius
 
                         for (int j = 0; j < length; j++)
                         {
-                            this.forwardGru.State[i][j] = this.state[i][j];
-                            this.backwardGru.State[i][j] = this.state[i][j + length];
+                            this.forwardGru!.State![i][j] = this.state[i][j];
+                            this.backwardGru.State![i][j] = this.state[i][j + length];
                         }
                     }
                 }
 
-                var outputs1 = this.forwardGru.Forward(inputs, isTraining);
+                var outputs1 = this.forwardGru!.Forward(inputs, isTraining);
                 var outputs2 = this.backwardGru.Forward(Reverse(inputs), isTraining);
                 var vectorList1 = new List<double[]>();
                 var vectorList2 = new List<double[]>();
@@ -216,10 +216,10 @@ namespace Merkurius
                     vectorList1.Add(vector);
                 }
 
-                for (int i = 0; i < this.forwardGru.State.Size; i++)
+                for (int i = 0; i < this.forwardGru.State!.Size; i++)
                 {
                     int length = this.forwardGru.State[i].Length;
-                    var vector = new double[this.forwardGru.State[i].Length + this.backwardGru.State[i].Length];
+                    var vector = new double[this.forwardGru.State[i].Length + this.backwardGru.State![i].Length];
 
                     for (int j = 0; j < length; j++)
                     {
@@ -239,10 +239,10 @@ namespace Merkurius
             {
                 if (this.backwardGru == null)
                 {
-                    return this.forwardGru.Backward(deltas);
+                    return this.forwardGru!.Backward(deltas);
                 }
 
-                var dx1 = this.forwardGru.Backward(deltas);
+                var dx1 = this.forwardGru!.Backward(deltas);
                 var dx2 = this.backwardGru.Backward(Reverse(deltas));
                 var vectorList = new List<double[]>();
 
@@ -258,7 +258,7 @@ namespace Merkurius
                     vectorList.Add(vector);
                 }
 
-                this.deltaState = new Batch<double[]>(new double[this.forwardGru.DeltaState.Size][]);
+                this.deltaState = new Batch<double[]>(new double[this.forwardGru.DeltaState!.Size][]);
 
                 for (int i = 0; i < this.forwardGru.DeltaState.Size; i++)
                 {
@@ -266,7 +266,7 @@ namespace Merkurius
 
                     for (int j = 0; j < this.forwardGru.DeltaState[i].Length; j++)
                     {
-                        this.deltaState[i][j] = this.forwardGru.DeltaState[i][j] + this.backwardGru.DeltaState[i][j];
+                        this.deltaState[i][j] = this.forwardGru.DeltaState[i][j] + this.backwardGru.DeltaState![i][j];
                     }
                 }
 
@@ -277,10 +277,10 @@ namespace Merkurius
             {
                 if (this.backwardGru == null)
                 {
-                    return this.forwardGru.GetGradients();
+                    return this.forwardGru!.GetGradients();
                 }
 
-                var gradients1 = this.forwardGru.GetGradients();
+                var gradients1 = this.forwardGru!.GetGradients();
                 var gradients2 = this.backwardGru.GetGradients();
                 var vectorList = new List<double[]>();
 
@@ -302,11 +302,11 @@ namespace Merkurius
 
             public void SetGradients(Func<bool, double, int, double> func)
             {
-                this.forwardGru.SetGradients(func);
+                this.forwardGru!.SetGradients(func);
 
                 if (this.backwardGru != null)
                 {
-                    this.backwardGru.SetGradients((x, y, z) => func(x, y, this.weights.Length / 2 - 1 - z));
+                    this.backwardGru.SetGradients((x, y, z) => func(x, y, this.weights!.Length / 2 - 1 - z));
                 }
             }
 
@@ -314,7 +314,7 @@ namespace Merkurius
             {
                 if (this.backwardGru == null)
                 {
-                    this.forwardGru.Update(gradients, func);
+                    this.forwardGru!.Update(gradients, func);
                 }
                 else
                 {
@@ -337,16 +337,16 @@ namespace Merkurius
                         vectorList2.Add(vector2);
                     }
 
-                    this.forwardGru.Update(new Batch<double[]>(vectorList1), func);
+                    this.forwardGru!.Update(new Batch<double[]>(vectorList1), func);
                     this.backwardGru.Update(new Batch<double[]>(vectorList2), func);
 
-                    for (int i = 0, length = this.weights.Length / 2; i < length; i++)
+                    for (int i = 0, length = this.weights!.Length / 2; i < length; i++)
                     {
                         this.weights[i] = this.forwardGru.Weights[i];
                         this.weights[i + length] = this.backwardGru.Weights[i];
                     }
 
-                    for (int i = 0, length = this.biases.Length / 2; i < length; i++)
+                    for (int i = 0, length = this.biases!.Length / 2; i < length; i++)
                     {
                         this.biases[i] = this.forwardGru.Biases[i];
                         this.biases[i + length] = this.backwardGru.Biases[i];
@@ -377,27 +377,27 @@ namespace Merkurius
             private class GRUCore : Layer, IUpdatable
             {
                 [DataMember]
-                private double[] weights = null;
+                private double[]? weights = null;
                 [DataMember]
-                private double[] biases = null;
+                private double[]? biases = null;
                 [DataMember]
                 private int timesteps = 0;
                 [DataMember]
                 private bool stateful = false;
-                private List<GRUCell> layerList = null;
-                private Batch<double[]> h = null; // Hidden state
-                private Batch<double[]> dh = null;
-                private double[][] gradients = null;
+                private List<GRUCell>? layerList = null;
+                private Batch<double[]>? h = null; // Hidden state
+                private Batch<double[]>? dh = null;
+                private double[][]? gradients = null;
                 [DataMember]
-                private IActivationFunction tanhActivationFunction = null;
+                private IActivationFunction? tanhActivationFunction = null;
                 [DataMember]
-                private IActivationFunction sigmoidActivationFunction = null;
+                private IActivationFunction? sigmoidActivationFunction = null;
 
                 public double[] Weights
                 {
                     get
                     {
-                        return this.weights;
+                        return this.weights!;
                     }
                     set
                     {
@@ -409,7 +409,7 @@ namespace Merkurius
                 {
                     get
                     {
-                        return this.biases;
+                        return this.biases!;
                     }
                     set
                     {
@@ -425,7 +425,7 @@ namespace Merkurius
                     }
                 }
 
-                public Batch<double[]> State
+                public Batch<double[]>? State
                 {
                     get
                     {
@@ -437,7 +437,7 @@ namespace Merkurius
                     }
                 }
 
-                public Batch<double[]> DeltaState
+                public Batch<double[]>? DeltaState
                 {
                     get
                     {
@@ -484,12 +484,12 @@ namespace Merkurius
 
                     for (int i = 0; i < length2; i++)
                     {
-                        xWeights[i] = this.weights[i];
+                        xWeights[i] = this.weights![i];
                     }
 
                     for (int i = 0, j = length2; i < length3; i++, j++)
                     {
-                        hWeights[i] = this.weights[j];
+                        hWeights[i] = this.weights![j];
                     }
 
                     for (int i = 0; i < inputs.Size; i++)
@@ -537,7 +537,7 @@ namespace Merkurius
 
                     for (int t = 0; t < this.timesteps; t++)
                     {
-                        var layer = new GRUCell(this.inputs, this.outputs, xWeights, hWeights, this.biases, this.tanhActivationFunction, this.sigmoidActivationFunction);
+                        var layer = new GRUCell(this.inputs, this.outputs, xWeights, hWeights, this.biases!, this.tanhActivationFunction!, this.sigmoidActivationFunction!);
                         var x = new Batch<double[]>(new double[inputs.Size][]);
 
                         for (int i = 0; i < inputs.Size; i++)
@@ -606,7 +606,7 @@ namespace Merkurius
                             }
                         }
 
-                        var tuple = this.layerList[t].Backward(dh);
+                        var tuple = this.layerList![t].Backward(dh);
 
                         dh = tuple.Item2;
 
@@ -631,7 +631,7 @@ namespace Merkurius
 
                 public Batch<double[]> GetGradients()
                 {
-                    return new Batch<double[]>(this.gradients);
+                    return new Batch<double[]>(this.gradients!);
                 }
 
                 public void SetGradients(Func<bool, double, int, double> func)
@@ -639,7 +639,7 @@ namespace Merkurius
                     var length = this.outputs * 3;
                     var offset = this.inputs * length + this.outputs * length;
 
-                    foreach (double[] vector in this.gradients)
+                    foreach (double[] vector in this.gradients!)
                     {
                         for (int i = 0; i < offset; i++)
                         {
@@ -680,17 +680,17 @@ namespace Merkurius
 
                     for (int i = 0; i < length2; i++)
                     {
-                        this.weights[i] = func(this.weights[i], gradients[0][i] / gradients.Size);
+                        this.weights![i] = func(this.weights[i], gradients[0][i] / gradients.Size);
                     }
 
                     for (int i = 0, j = length2; i < length3; i++, j++)
                     {
-                        this.weights[j] = func(this.weights[j], gradients[0][j] / gradients.Size);
+                        this.weights![j] = func(this.weights[j], gradients[0][j] / gradients.Size);
                     }
 
                     for (int i = 0, j = offset; i < length1; i++, j++)
                     {
-                        this.biases[i] = func(this.biases[i], gradients[0][j] / gradients.Size);
+                        this.biases![i] = func(this.biases[i], gradients[0][j] / gradients.Size);
                     }
                 }
 
@@ -698,12 +698,12 @@ namespace Merkurius
                 {
                     private int inputs = 0;
                     private int hiddens = 0;
-                    private double[] xWeights = null;
-                    private double[] hWeights = null;
-                    private double[] biases = null;
-                    private IActivationFunction tanhActivationFunction = null;
-                    private IActivationFunction sigmoidActivationFunction = null;
-                    private Tuple<Batch<double[]>, Batch<double[]>, double[][], double[][], double[][]> cache = null;
+                    private double[]? xWeights = null;
+                    private double[]? hWeights = null;
+                    private double[]? biases = null;
+                    private IActivationFunction? tanhActivationFunction = null;
+                    private IActivationFunction? sigmoidActivationFunction = null;
+                    private Tuple<Batch<double[]>, Batch<double[]>, double[][], double[][], double[][]>? cache = null;
 
                     public GRUCell(int inputs, int hiddens, double[] xWeights, double[] hWeights, double[] biases, IActivationFunction tanhActivationFunction, IActivationFunction sigmoidActivationFunction)
                     {
@@ -743,15 +743,15 @@ namespace Merkurius
 
                                 for (int j = 0; j < this.inputs; j++)
                                 {
-                                    sum1 += vector[j] * this.xWeights[length * j + i];
+                                    sum1 += vector[j] * this.xWeights![length * j + i];
                                 }
 
                                 for (int j = 0; j < this.hiddens; j++)
                                 {
-                                    sum2 += hPrevious[index][j] * this.hWeights[length * j + i];
+                                    sum2 += hPrevious[index][j] * this.hWeights![length * j + i];
                                 }
 
-                                z[i] = this.sigmoidActivationFunction.Forward(sum1 + sum2 + this.biases[i]);
+                                z[i] = this.sigmoidActivationFunction!.Forward(sum1 + sum2 + this.biases![i]);
                             }
 
                             for (int i = 0, j = this.hiddens; i < this.hiddens; i++, j++)
@@ -761,15 +761,15 @@ namespace Merkurius
 
                                 for (int k = 0; k < this.inputs; k++)
                                 {
-                                    sum1 += vector[k] * this.xWeights[length * k + j];
+                                    sum1 += vector[k] * this.xWeights![length * k + j];
                                 }
 
                                 for (int k = 0; k < this.hiddens; k++)
                                 {
-                                    sum2 += hPrevious[index][k] * this.hWeights[length * k + j];
+                                    sum2 += hPrevious[index][k] * this.hWeights![length * k + j];
                                 }
 
-                                r[i] = this.sigmoidActivationFunction.Forward(sum1 + sum2 + this.biases[j]);
+                                r[i] = this.sigmoidActivationFunction!.Forward(sum1 + sum2 + this.biases![j]);
                             }
 
                             for (int i = 0, j = this.hiddens * 2; i < this.hiddens; i++, j++)
@@ -779,15 +779,15 @@ namespace Merkurius
 
                                 for (int k = 0; k < this.inputs; k++)
                                 {
-                                    sum1 += vector[k] * this.xWeights[length * k + j];
+                                    sum1 += vector[k] * this.xWeights![length * k + j];
                                 }
 
                                 for (int k = 0; k < this.hiddens; k++)
                                 {
-                                    sum2 += hPrevious[index][k] * r[i] * this.hWeights[length * k + j];
+                                    sum2 += hPrevious[index][k] * r[i] * this.hWeights![length * k + j];
                                 }
 
-                                hHat[i] = this.tanhActivationFunction.Forward(sum1 + sum2 + this.biases[j]);
+                                hHat[i] = this.tanhActivationFunction!.Forward(sum1 + sum2 + this.biases![j]);
                                 hNext[i] = (1.0 - z[i]) * hPrevious[index][i] + z[i] * hHat[i];
                             }
 
@@ -817,7 +817,7 @@ namespace Merkurius
                     {
                         var parallelOptions = new ParallelOptions();
                         var length = this.hiddens * 3;
-                        var x = this.cache.Item1;
+                        var x = this.cache!.Item1;
                         var hPrevious = this.cache.Item2;
                         var z = this.cache.Item3;
                         var r = this.cache.Item4;
@@ -842,8 +842,8 @@ namespace Merkurius
                                 dhHat[i] = vector[i] * z[index][i];
                                 dhPrev[i] = vector[i] * (1.0 - z[index][i]);
 
-                                dt[i] = dhHat[i] * this.tanhActivationFunction.Backward(hHat[index][i]);
-                                dt[j] = (vector[i] * hHat[index][i] - vector[i] * hPrevious[index][i]) * this.sigmoidActivationFunction.Backward(z[index][i]);
+                                dt[i] = dhHat[i] * this.tanhActivationFunction!.Backward(hHat[index][i]);
+                                dt[j] = (vector[i] * hHat[index][i] - vector[i] * hPrevious[index][i]) * this.sigmoidActivationFunction!.Backward(z[index][i]);
                             }
 
                             for (int i = 0, j = 0; i < this.hiddens; i++)
@@ -855,7 +855,7 @@ namespace Merkurius
                                 {
                                     var m = this.hiddens + j;
 
-                                    error1 += dt[k] * this.hWeights[j];
+                                    error1 += dt[k] * this.hWeights![j];
                                     dWh[j] = dt[k] * r[index][i] * hPrevious[index][i];
 
                                     error2 += dt[l] * this.hWeights[m];
@@ -870,7 +870,7 @@ namespace Merkurius
 
                             for (int i = 0, j = this.hiddens * 2; i < this.hiddens; i++, j++)
                             {
-                                dt[j] = dhr[i] * hPrevious[index][i] * this.sigmoidActivationFunction.Backward(r[index][i]);
+                                dt[j] = dhr[i] * hPrevious[index][i] * this.sigmoidActivationFunction!.Backward(r[index][i]);
                             }
 
                             for (int i = 0, j = 0, offset = this.hiddens * 2; i < this.hiddens; i++)
@@ -881,7 +881,7 @@ namespace Merkurius
                                 {
                                     var m = offset + j;
 
-                                    error += dt[l] * this.hWeights[m];
+                                    error += dt[l] * this.hWeights![m];
                                     dWh[m] = dt[l] * hPrevious[index][i];
                                     j++;
                                 }
@@ -895,7 +895,7 @@ namespace Merkurius
 
                                 for (int k = 0; k < length; k++)
                                 {
-                                    error += dt[k] * this.xWeights[j];
+                                    error += dt[k] * this.xWeights![j];
                                     dWx[j] = dt[k] * x[index][i];
                                     j++;
                                 }

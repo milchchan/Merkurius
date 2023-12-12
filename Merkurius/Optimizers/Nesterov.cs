@@ -9,7 +9,7 @@ namespace Merkurius
         {
             private double lr = 0.01; // Learning rate
             private double momentum = 0.9; // Momentum
-            private Dictionary<int, double> dictionary = null;
+            private Dictionary<int, double>? dictionary = null;
 
             public Nesterov()
             {
@@ -27,7 +27,7 @@ namespace Merkurius
             {
                 double v;
 
-                if (this.dictionary.TryGetValue(index, out v))
+                if (this.dictionary!.TryGetValue(index, out v))
                 {
                     v = v * this.momentum - this.lr * gradient;
                     weight = weight + this.momentum * this.momentum * v - (1.0 + this.momentum) * this.lr * gradient;

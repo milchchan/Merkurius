@@ -12,9 +12,9 @@ namespace Merkurius
         public class Convolution : Layer, IUpdatable
         {
             [DataMember]
-            private double[] weights = null;
+            private double[]? weights = null;
             [DataMember]
-            private double[] biases = null;
+            private double[]? biases = null;
             [DataMember]
             private int channels = 0;
             [DataMember]
@@ -31,14 +31,14 @@ namespace Merkurius
             private int activationMapWidth = 0;
             [DataMember]
             private int activationMapHeight = 0;
-            private Batch<double[]> internalInputs = null;
-            private double[][] gradients = null;
+            private Batch<double[]>? internalInputs = null;
+            private double[][]? gradients = null;
 
             public double[] Weights
             {
                 get
                 {
-                    return this.weights;
+                    return this.weights!;
                 }
                 set
                 {
@@ -50,7 +50,7 @@ namespace Merkurius
             {
                 get
                 {
-                    return this.biases;
+                    return this.biases!;
                 }
                 set
                 {
@@ -171,7 +171,7 @@ namespace Merkurius
                                     {
                                         for (int q = 0; q < this.filterWidth; q++)
                                         {
-                                            gradients[o] += vector[j] * this.internalInputs[index][n + this.imageWidth * (k + p) + l + q];
+                                            gradients[o] += vector[j] * this.internalInputs![index][n + this.imageWidth * (k + p) + l + q];
                                             o++;
                                         }
                                     }
@@ -201,7 +201,7 @@ namespace Merkurius
 
             public Batch<double[]> GetGradients()
             {
-                return new Batch<double[]>(this.gradients);
+                return new Batch<double[]>(this.gradients!);
             }
 
             public void SetGradients(Func<bool, double, int, double> func)
@@ -209,7 +209,7 @@ namespace Merkurius
                 var length1 = this.filters * this.channels * this.filterWidth * this.filterHeight;
                 var length2 = this.filters * this.activationMapWidth * this.activationMapHeight;
 
-                foreach (double[] vector in this.gradients)
+                foreach (double[] vector in this.gradients!)
                 {
                     for (int i = 0; i < length1; i++)
                     {
@@ -243,12 +243,12 @@ namespace Merkurius
 
                 for (int i = 0; i < length1; i++)
                 {
-                    this.weights[i] = func(this.weights[i], gradients[0][i] / gradients.Size);
+                    this.weights![i] = func(this.weights[i], gradients[0][i] / gradients.Size);
                 }
 
                 for (int i = 0, j = length1; i < length2; i++, j++)
                 {
-                    this.biases[i] = func(this.biases[i], gradients[0][j] / gradients.Size);
+                    this.biases![i] = func(this.biases[i], gradients[0][j] / gradients.Size);
                 }
             }
 
@@ -287,13 +287,13 @@ namespace Merkurius
                                     {
                                         for (int q = 0; q < this.filterWidth; q++)
                                         {
-                                            convolvedInputs[i, k, l] += vector[n + this.imageWidth * (k + p) + l + q] * this.weights[o];
+                                            convolvedInputs[i, k, l] += vector[n + this.imageWidth * (k + p) + l + q] * this.weights![o];
                                             o++;
                                         }
                                     }
                                 }
 
-                                activationMaps[j] = convolvedInputs[i, k, l] + this.biases[j];
+                                activationMaps[j] = convolvedInputs[i, k, l] + this.biases![j];
                                 j++;
                             }
                         }
@@ -350,7 +350,7 @@ namespace Merkurius
 
                                             if (y >= 0 && x >= 0)
                                             {
-                                                d[k] += vector[n * activationMapWidth * activationMapHeight + y * activationMapWidth + x] * this.weights[o + j + q + r];
+                                                d[k] += vector[n * activationMapWidth * activationMapHeight + y * activationMapWidth + x] * this.weights![o + j + q + r];
                                             }
                                         }
                                     }

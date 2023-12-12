@@ -12,8 +12,8 @@ namespace Merkurius
             protected int inputs = 0;
             [DataMember]
             protected int outputs = 0;
-            protected Layer previousLayer = null;
-            protected Layer nextLayer = null;
+            protected Layer? previousLayer = null;
+            protected Layer? nextLayer = null;
 
             public int Inputs
             {
@@ -31,7 +31,7 @@ namespace Merkurius
                 }
             }
 
-            public Layer Previous
+            public Layer? Previous
             {
                 get
                 {
@@ -43,7 +43,7 @@ namespace Merkurius
                 }
             }
 
-            public Layer Next
+            public Layer? Next
             {
                 get
                 {

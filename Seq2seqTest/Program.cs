@@ -22,7 +22,7 @@ namespace Seq2seqTest
 
             int seed;
 
-            using (var rng = new RNGCryptoServiceProvider())
+            using (var rng = RandomNumberGenerator.Create())
             {
                 var buffer = new byte[sizeof(int)];
 
@@ -32,9 +32,9 @@ namespace Seq2seqTest
 
             RandomProvider.SetSeed(seed);
 
-            var dataList = new List<ValueTuple<int, string, double[]>>();
+            var dataList = new List<ValueTuple<int, string?, double[]>>();
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("LangModel.Wikipedia.zip"))
-            using (var zipArchive = new ZipArchive(stream))
+            using (var zipArchive = new ZipArchive(stream!))
             {
                 foreach (var zipArchiveEntry in from zipArchiveEntry in zipArchive.Entries where zipArchiveEntry.FullName.EndsWith(".tsv", StringComparison.OrdinalIgnoreCase) select zipArchiveEntry)
                 {
@@ -45,7 +45,7 @@ namespace Seq2seqTest
                         var spaceSeparator = new char[] { ' ' };
                         var isVectorStarted = false;
                         int tokenIndex = -1;
-                        string tokenName = null;
+                        string? tokenName = null;
                         var weightList = new List<double>();
                         var line = sr.ReadLine();
 
@@ -63,7 +63,7 @@ namespace Seq2seqTest
                                         }
                                     }
 
-                                    dataList.Add(ValueTuple.Create<int, string, double[]>(tokenIndex, tokenName, weightList.ToArray()));
+                                    dataList.Add(ValueTuple.Create<int, string?, double[]>(tokenIndex, tokenName, weightList.ToArray()));
                                     weightList.Clear();
 
                                     isVectorStarted = false;
@@ -108,7 +108,7 @@ namespace Seq2seqTest
 
             dataList.ForEach(x =>
             {
-                wordData[x.Item1] = ValueTuple.Create<string, double[]>(x.Item2, x.Item3);
+                wordData[x.Item1] = ValueTuple.Create<string, double[]>(x.Item2!, x.Item3);
 
                 for (int i = 0, offset = x.Item1 * x.Item3.Length; i < x.Item3.Length; i++)
                 {

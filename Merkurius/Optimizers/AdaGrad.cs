@@ -9,7 +9,7 @@ namespace Merkurius
         {
             private double eta = Math.Pow(10, -2); // Learning rate
             private double epsilon = Math.Pow(10, -8);
-            private Dictionary<int, double> rDictionary = null;
+            private Dictionary<int, double>? rDictionary = null;
 
             public AdaGrad()
             {
@@ -27,7 +27,7 @@ namespace Merkurius
             {
                 double r;
 
-                if (this.rDictionary.TryGetValue(index, out r))
+                if (this.rDictionary!.TryGetValue(index, out r))
                 {
                     r += gradient * gradient;
                     this.rDictionary[index] = r;

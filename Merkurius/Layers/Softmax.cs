@@ -12,7 +12,7 @@ namespace Merkurius
         {
             [DataMember]
             private int sequences = 1;
-            private Batch<double[]> internalOutputs = null;
+            private Batch<double[]>? internalOutputs = null;
             
             public Softmax(int nodes) : base(nodes, nodes) { }
 
@@ -86,7 +86,7 @@ namespace Merkurius
 
                         for (int j = 0; j < hiddens; j++)
                         {
-                            var dx = this.internalOutputs[index][offset + j] * vector1[offset + j];
+                            var dx = this.internalOutputs![index][offset + j] * vector1[offset + j];
 
                             vector2[offset + j] = dx;
                             sum += dx;
@@ -94,7 +94,7 @@ namespace Merkurius
 
                         for (int j = 0; j < hiddens; j++)
                         {
-                            vector2[offset + j] -= this.internalOutputs[index][offset + j] * sum;
+                            vector2[offset + j] -= this.internalOutputs![index][offset + j] * sum;
                         }
                     }
 

@@ -13,12 +13,12 @@ namespace Merkurius
         {
             [DataMember]
             private int timesteps = 1;
-            private Batch<double[]> encoderOutputs = null;
-            private Batch<double[]> deltaEncoderOutputs = null;
-            private List<AttentionCore> attentionList = null;
-            private List<Batch<double[]>> attentionWeightList = null;
+            private Batch<double[]>? encoderOutputs = null;
+            private Batch<double[]>? deltaEncoderOutputs = null;
+            private List<AttentionCore>? attentionList = null;
+            private List<Batch<double[]>>? attentionWeightList = null;
 
-            public Batch<double[]> EncoderOutputs
+            public Batch<double[]>? EncoderOutputs
             {
                 get
                 {
@@ -30,7 +30,7 @@ namespace Merkurius
                 }
             }
 
-            public Batch<double[]> DeltaEncoderOutputs
+            public Batch<double[]>? DeltaEncoderOutputs
             {
                 get
                 {
@@ -42,7 +42,7 @@ namespace Merkurius
                 }
             }
 
-            public IEnumerable<Batch<double[]>> AttentionWeights
+            public IEnumerable<Batch<double[]>>? AttentionWeights
             {
                 get
                 {
@@ -87,7 +87,7 @@ namespace Merkurius
                         decoderInputs[i] = vector;
                     }
 
-                    var contextVectors = attentionCore.Forward(this.encoderOutputs, decoderInputs, isTraining);
+                    var contextVectors = attentionCore.Forward(this.encoderOutputs!, decoderInputs, isTraining);
 
                     for (int i = 0; i < inputs.Size; i++)
                     {
@@ -136,7 +136,7 @@ namespace Merkurius
                         d[i] = vector;
                     }
 
-                    var tuple = this.attentionList[t].Backward(d);
+                    var tuple = this.attentionList![t].Backward(d);
 
                     for (int i = 0; i < tuple.Item1.Size; i++)
                     {
@@ -162,12 +162,12 @@ namespace Merkurius
             {
                 private int hiddens = 0;
                 private int sequences = 0;
-                private Batch<double[]> internalInputs = null;
-                private Batch<double[]> internalState = null;
-                private Softmax softmax = null;
-                private Batch<double[]> attentionWeight = null;
+                private Batch<double[]>? internalInputs = null;
+                private Batch<double[]>? internalState = null;
+                private Softmax? softmax = null;
+                private Batch<double[]>? attentionWeight = null;
 
-                public Batch<double[]> AttentionWeight
+                public Batch<double[]>? AttentionWeight
                 {
                     get
                     {
@@ -232,7 +232,7 @@ namespace Merkurius
                         }
                     });
 
-                    this.attentionWeight = this.softmax.Forward(new Batch<double[]>(data1), isTraining);
+                    this.attentionWeight = this.softmax!.Forward(new Batch<double[]>(data1), isTraining);
 
                     Parallel.ForEach<double[], List<Tuple<long, double[]>>>(inputs, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector1, state, index, local) =>
                     {
@@ -296,8 +296,8 @@ namespace Merkurius
 
                             for (int j = 0; j < this.hiddens; j++)
                             {
-                                vector2[offset3 + j] = vector1[j] * this.attentionWeight[index][i];
-                                vector3[offset3 + j] = vector1[j] * this.internalInputs[index][offset3 + j];
+                                vector2[offset3 + j] = vector1[j] * this.attentionWeight![index][i];
+                                vector3[offset3 + j] = vector1[j] * this.internalInputs![index][offset3 + j];
                             }
                         }
 
@@ -326,7 +326,7 @@ namespace Merkurius
                         }
                     });
 
-                    Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(this.softmax.Backward(new Batch<double[]>(tuple1.Item2)), parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
+                    Parallel.ForEach<double[], List<Tuple<long, double[], double[]>>>(this.softmax!.Backward(new Batch<double[]>(tuple1.Item2)), parallelOptions, () => new List<Tuple<long, double[], double[]>>(), (vector1, state, index, local) =>
                     {
                         var vector2 = new double[this.sequences * this.hiddens];
                         var vector3 = new double[this.sequences * this.hiddens];
@@ -338,8 +338,8 @@ namespace Merkurius
 
                             for (int j = 0; j < this.hiddens; j++)
                             {
-                                vector2[offset3 + j] = vector1[i] * this.internalState[index][j];
-                                vector3[offset3 + j] = vector1[i] * this.internalInputs[index][offset3 + j];
+                                vector2[offset3 + j] = vector1[i] * this.internalState![index][j];
+                                vector3[offset3 + j] = vector1[i] * this.internalInputs![index][offset3 + j];
                             }
                         }
 

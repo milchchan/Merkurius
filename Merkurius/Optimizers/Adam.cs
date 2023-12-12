@@ -11,7 +11,7 @@ namespace Merkurius
             private double beta1 = 0.9; // Decay term
             private double beta2 = 0.999; // Decay term
             private double epsilon = Math.Pow(10, -8);
-            private Dictionary<int, ValueTuple<double, double, double, double>> dictionary = null;
+            private Dictionary<int, ValueTuple<double, double, double, double>>? dictionary = null;
 
             public Adam()
             {
@@ -30,7 +30,7 @@ namespace Merkurius
             {
                 ValueTuple<double, double, double, double> tuple;
 
-                if (this.dictionary.TryGetValue(index, out tuple))
+                if (this.dictionary!.TryGetValue(index, out tuple))
                 {
                     var mt = this.beta1 * tuple.Item1 + (1.0 - this.beta1) * gradient;
                     var vt = this.beta2 * tuple.Item2 + (1.0 - this.beta2) * (gradient * gradient);

@@ -10,9 +10,9 @@ namespace Merkurius
 {
     public class Model
     {
-        public event EventHandler<EventArgs> Stepped = null;
-        private Random random = null;
-        private Collection<Layer> layerCollection = null;
+        public event EventHandler<EventArgs>? Stepped = null;
+        private Random? random = null;
+        private Collection<Layer>? layerCollection = null;
         private double weightDecayRate = 0.0;
         private double? maxGradient = null;
 
@@ -20,7 +20,7 @@ namespace Merkurius
         {
             get
             {
-                return this.layerCollection;
+                return this.layerCollection!;
             }
         }
 
@@ -83,7 +83,7 @@ namespace Merkurius
 
         public void Fit(IEnumerable<ValueTuple<double[], double[]>> collection, int epochs, int batchSize, IOptimizer optimizer, ILossFunction lossFunction)
         {
-            Fit(collection, epochs, batchSize, (x, y) => x.Sample<ValueTuple<double[], double[]>>(this.random, y), optimizer, lossFunction);
+            Fit(collection, epochs, batchSize, (x, y) => x.Sample<ValueTuple<double[], double[]>>(this.random!, y), optimizer, lossFunction);
         }
 
         public void Fit(IEnumerable<ValueTuple<double[], double[]>> collection, int epochs, int batchSize, Func<IEnumerable<ValueTuple<double[], double[]>>, int, IEnumerable<ValueTuple<double[], double[]>>> func, IOptimizer optimizer, ILossFunction lossFunction)
@@ -164,7 +164,7 @@ namespace Merkurius
         public double[] Predict(double[] vector)
         {
             var inputs = new Batch<double[]>(new double[][] { vector });
-            var layer = this.layerCollection[0];
+            var layer = this.layerCollection![0];
 
             do
             {
@@ -179,7 +179,7 @@ namespace Merkurius
         {
             double sum = 0.0;
             int size = collection.Count();
-            int outputs = this.layerCollection[this.layerCollection.Count - 1].Outputs;
+            int outputs = this.layerCollection![this.layerCollection.Count - 1].Outputs;
 
             foreach (var loss in from tuple in collection from loss in Forward(new Batch<double[]>(new double[][] { tuple.Item1 }), new Batch<double[]>(new double[][] { tuple.Item2 }), false, lossFunction).Item2[0] select loss)
             {
@@ -191,7 +191,7 @@ namespace Merkurius
 
         private Tuple<Batch<double[]>, Batch<double[]>> Forward(Batch<double[]> x, Batch<double[]> t, bool isTraining, ILossFunction lossFunction)
         {
-            var layer = this.layerCollection[0];
+            var layer = this.layerCollection![0];
             var weightDecay = 0.0;
             var vectorList1 = new List<double[]>();
             var vectorList2 = new List<double[]>();
@@ -235,7 +235,7 @@ namespace Merkurius
 
         private IEnumerable<IUpdatable> Backward(Batch<double[]> y, Batch<double[]> t, ILossFunction lossFunction)
         {
-            var layer = this.layerCollection[this.layerCollection.Count - 1];
+            var layer = this.layerCollection![this.layerCollection.Count - 1];
             var deltas = new Batch<double[]>(new double[t.Size][]);
             var updatableList = new LinkedList<IUpdatable>();
 

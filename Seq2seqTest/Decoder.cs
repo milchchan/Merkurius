@@ -11,21 +11,21 @@ namespace Merkurius
         public class Decoder : Layer, IUpdatable
         {
             [DataMember]
-            private Embedding embedding = null;
+            private Embedding? embedding = null;
             [DataMember]
-            private LSTM recurrent = null;
-            private Attention attention = null;
+            private LSTM? recurrent = null;
+            private Attention? attention = null;
             [DataMember]
-            private FullyConnected fullyConnected = null;
+            private FullyConnected? fullyConnected = null;
             [DataMember]
-            private double[] weights = null;
-            private Batch<double[]> encoderOutputs = null;
+            private double[]? weights = null;
+            private Batch<double[]>? encoderOutputs = null;
 
             public double[] Weights
             {
                 get
                 {
-                    return this.weights;
+                    return this.weights!;
                 }
                 set
                 {
@@ -33,19 +33,19 @@ namespace Merkurius
                 }
             }
 
-            public Batch<double[]> State
+            public Batch<double[]>? State
             {
                 get
                 {
-                    return this.recurrent.State;
+                    return this.recurrent!.State;
                 }
                 set
                 {
-                    this.recurrent.State = value;
+                    this.recurrent!.State = value;
                 }
             }
 
-            public Batch<double[]> EncoderOutputs
+            public Batch<double[]>? EncoderOutputs
             {
                 get
                 {
@@ -83,24 +83,24 @@ namespace Merkurius
 
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
-                for (int i = 0; i < this.embedding.Weights.Length; i++)
+                for (int i = 0; i < this.embedding!.Weights.Length; i++)
                 {
-                    this.embedding.Weights[i] = this.weights[i];
+                    this.embedding.Weights[i] = this.weights![i];
                 }
 
-                for (int i = 0, j = this.embedding.Weights.Length; i < this.recurrent.Weights.Length; i++, j++)
+                for (int i = 0, j = this.embedding.Weights.Length; i < this.recurrent!.Weights.Length; i++, j++)
                 {
-                    this.recurrent.Weights[i] = this.weights[j];
+                    this.recurrent.Weights[i] = this.weights![j];
                 }
 
-                for (int i = 0, j = this.embedding.Weights.Length + this.recurrent.Weights.Length; i < this.fullyConnected.Weights.Length; i++, j++)
+                for (int i = 0, j = this.embedding.Weights.Length + this.recurrent.Weights.Length; i < this.fullyConnected!.Weights.Length; i++, j++)
                 {
-                    this.fullyConnected.Weights[i] = this.weights[j];
+                    this.fullyConnected.Weights[i] = this.weights![j];
                 }
 
                 var outputs = this.recurrent.Forward(this.embedding.Forward(inputs, isTraining), isTraining);
                 
-                this.attention.EncoderOutputs = this.encoderOutputs;
+                this.attention!.EncoderOutputs = this.encoderOutputs;
 
                 var contextVectors = this.attention.Forward(outputs, isTraining);
                 var outputList = new List<double[]>();
@@ -126,14 +126,14 @@ namespace Merkurius
 
             public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
-                var dout = this.fullyConnected.Backward(deltas);
+                var dout = this.fullyConnected!.Backward(deltas);
                 var dcontext = new List<double[]>();
                 var dh = new List<double[]>();
 
                 for (int i = 0; i < dout.Size; i++)
                 {
                     var length1 = dout[i].Length / 2;
-                    var length2 = length1 / this.recurrent.Timesteps;
+                    var length2 = length1 / this.recurrent!.Timesteps;
                     var length3 = dout[i].Length / this.recurrent.Timesteps;
                     var vector1 = new double[length1];
                     var vector2 = new double[length1];
@@ -151,7 +151,7 @@ namespace Merkurius
                     dh.Add(vector2);
                 }
 
-                var decoderDeltas = this.attention.Backward(new Batch<double[]>(dcontext));
+                var decoderDeltas = this.attention!.Backward(new Batch<double[]>(dcontext));
 
                 for (int i = 0; i < dh.Count; i++)
                 {
@@ -161,11 +161,11 @@ namespace Merkurius
                     }
                 }
 
-                this.embedding.Backward(this.recurrent.Backward(decoderDeltas));
+                this.embedding!.Backward(this.recurrent!.Backward(decoderDeltas));
 
                 var encoderDeltaList = new List<double[]>();
 
-                for (int i = 0; i < this.attention.DeltaEncoderOutputs.Size; i++)
+                for (int i = 0; i < this.attention!.DeltaEncoderOutputs!.Size; i++)
                 {
                     var hiddens = this.attention.DeltaEncoderOutputs[i].Length / this.recurrent.Timesteps;
                     var vector = new double[this.attention.DeltaEncoderOutputs[i].Length];
@@ -176,7 +176,7 @@ namespace Merkurius
 
                         if (k <= j)
                         {
-                            vector[j] += this.recurrent.DeltaState[i][l];
+                            vector[j] += this.recurrent.DeltaState![i][l];
                             l++;
                         }
                     }
@@ -190,9 +190,9 @@ namespace Merkurius
             public Batch<double[]> GetGradients()
             {
                 var vectorList = new List<double[]>();
-                var embeddingGradients = this.embedding.GetGradients();
-                var recurrentGradients = this.recurrent.GetGradients();
-                var fullyConnectedGradients = this.fullyConnected.GetGradients();
+                var embeddingGradients = this.embedding!.GetGradients();
+                var recurrentGradients = this.recurrent!.GetGradients();
+                var fullyConnectedGradients = this.fullyConnected!.GetGradients();
 
                 for (int i = 0; i < embeddingGradients.Size; i++)
                 {
@@ -204,9 +204,9 @@ namespace Merkurius
 
             public void SetGradients(Func<bool, double, int, double> func)
             {
-                this.embedding.SetGradients(func);
-                this.recurrent.SetGradients(func);
-                this.fullyConnected.SetGradients(func);
+                this.embedding!.SetGradients(func);
+                this.recurrent!.SetGradients(func);
+                this.fullyConnected!.SetGradients(func);
             }
 
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
@@ -217,8 +217,8 @@ namespace Merkurius
 
                 for (int i = 0; i < gradients.Size; i++)
                 {
-                    var vector1 = new double[this.embedding.Weights.Length];
-                    var vector2 = new double[gradients[i].Length - this.embedding.Weights.Length - this.fullyConnected.Weights.Length - this.fullyConnected.Outputs];
+                    var vector1 = new double[this.embedding!.Weights.Length];
+                    var vector2 = new double[gradients[i].Length - this.embedding.Weights.Length - this.fullyConnected!.Weights.Length - this.fullyConnected.Outputs];
                     var vector3 = new double[this.fullyConnected.Weights.Length + this.fullyConnected.Outputs];
 
                     for (int j = 0; j < this.embedding.Weights.Length; j++)
@@ -241,23 +241,23 @@ namespace Merkurius
                     vectorList3.Add(vector3);
                 }
 
-                this.embedding.Update(new Batch<double[]>(vectorList1), func);
-                this.recurrent.Update(new Batch<double[]>(vectorList2), func);
-                this.fullyConnected.Update(new Batch<double[]>(vectorList3), func);
+                this.embedding!.Update(new Batch<double[]>(vectorList1), func);
+                this.recurrent!.Update(new Batch<double[]>(vectorList2), func);
+                this.fullyConnected!.Update(new Batch<double[]>(vectorList3), func);
 
                 for (int i = 0; i < this.embedding.Weights.Length; i++)
                 {
-                    this.weights[i] = this.embedding.Weights[i];
+                    this.weights![i] = this.embedding.Weights[i];
                 }
 
                 for (int i = 0, j = this.embedding.Weights.Length; i < this.recurrent.Weights.Length; i++, j++)
                 {
-                    this.weights[j] = this.recurrent.Weights[i];
+                    this.weights![j] = this.recurrent.Weights[i];
                 }
 
                 for (int i = 0, j = this.embedding.Weights.Length + this.recurrent.Weights.Length; i < this.fullyConnected.Weights.Length; i++, j++)
                 {
-                    this.weights[j] = this.fullyConnected.Weights[i];
+                    this.weights![j] = this.fullyConnected.Weights[i];
                 }
             }
         }

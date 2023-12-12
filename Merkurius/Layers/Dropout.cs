@@ -13,7 +13,7 @@ namespace Merkurius
             [DataMember]
             private double rate = 0.5;
             [DataMember]
-            private double[][] masks = null;
+            private double[][]? masks = null;
 
             public double Rate
             {
@@ -126,7 +126,7 @@ namespace Merkurius
 
                     for (int i = 0; i < vector1.Length; i++)
                     {
-                        vector2[i] = vector1[i] * this.masks[index][i];
+                        vector2[i] = vector1[i] * this.masks![index][i];
                     }
 
                     local.Add(Tuple.Create<long, double[]>(index, vector2));

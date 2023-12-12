@@ -10,24 +10,24 @@ namespace Merkurius
         public class BatchNormalization : Layer, IUpdatable
         {
             [DataMember]
-            private double[] weights = null;
+            private double[]? weights = null;
             [DataMember]
             private double momentum = 0.9;
             [DataMember]
-            private double[] means = null;
+            private double[]? means = null;
             [DataMember]
-            private double[] variances = null;
-            private double[] standardDeviations = null;
-            private double[,] xc = null;
-            private double[,] xn = null;
-            private double[] dbetaVector = null;
-            private double[] dgammaVector = null;
+            private double[]? variances = null;
+            private double[]? standardDeviations = null;
+            private double[,]? xc = null;
+            private double[,]? xn = null;
+            private double[]? dbetaVector = null;
+            private double[]? dgammaVector = null;
 
             public double[] Weights
             {
                 get
                 {
-                    return this.weights;
+                    return this.weights!;
                 }
                 set
                 {
@@ -128,7 +128,7 @@ namespace Merkurius
                     for (int i = 0; i < meanVector.Length; i++)
                     {
                         meanVector[i] = meanVector[i] / inputs.Size;
-                        this.means[i] = this.momentum * this.means[i] + (1 - this.momentum) * meanVector[i];
+                        this.means![i] = this.momentum * this.means[i] + (1 - this.momentum) * meanVector[i];
                     }
 
                     for (int i = 0; i < meanVector.Length; i++)
@@ -144,7 +144,7 @@ namespace Merkurius
                     {
                         varianceVector[i] = varianceVector[i] / inputs.Size;
                         this.standardDeviations[i] = Math.Sqrt(varianceVector[i] + 10e-7);
-                        this.variances[i] = this.momentum * this.variances[i] + (1 - this.momentum) * varianceVector[i];
+                        this.variances![i] = this.momentum * this.variances[i] + (1 - this.momentum) * varianceVector[i];
                     }
 
                     for (int i = 0; i < inputs[0].Length; i++)
@@ -161,8 +161,8 @@ namespace Merkurius
                     {
                         for (int j = 0; j < inputs.Size; j++)
                         {
-                            this.xc[j, i] = inputs[j][i] - this.means[i];
-                            this.xn[j, i] = this.xc[j, i] / Math.Sqrt(this.variances[i] + 10e-7);
+                            this.xc[j, i] = inputs[j][i] - this.means![i];
+                            this.xn[j, i] = this.xc[j, i] / Math.Sqrt(this.variances![i] + 10e-7);
                         }
                     }
                 }
@@ -173,7 +173,7 @@ namespace Merkurius
 
                     for (int j = 0, k = this.outputs; j < this.outputs; j++, k++)
                     {
-                        outputs[i][j] = this.weights[j] * this.xc[i, j] + this.weights[k];
+                        outputs[i][j] = this.weights![j] * this.xc[i, j] + this.weights[k];
                     }
                 }
 
@@ -211,17 +211,17 @@ namespace Merkurius
                     for (int j = 0; j < deltas.Size; j++)
                     {
                         this.dbetaVector[i] += deltas[j][i];
-                        this.dgammaVector[i] += this.xn[j, i] * deltas[j][i];
-                        dxn[j, i] = this.weights[i] * deltas[j][i];
-                        dxc[j, i] = dxn[j, i] / this.standardDeviations[i];
-                        dstd[i] -= dxn[j, i] * this.xc[j, i] / (this.standardDeviations[i] * this.standardDeviations[i]);
+                        this.dgammaVector[i] += this.xn![j, i] * deltas[j][i];
+                        dxn[j, i] = this.weights![i] * deltas[j][i];
+                        dxc[j, i] = dxn[j, i] / this.standardDeviations![i];
+                        dstd[i] -= dxn[j, i] * this.xc![j, i] / (this.standardDeviations[i] * this.standardDeviations[i]);
                     }
 
-                    dvar[i] = 0.5 * dstd[i] / this.standardDeviations[i];
+                    dvar[i] = 0.5 * dstd[i] / this.standardDeviations![i];
 
                     for (int j = 0; j < deltas.Size; j++)
                     {
-                        dxc[j, i] += (2.0 / deltas.Size) * this.xc[j, i] * dvar[i];
+                        dxc[j, i] += (2.0 / deltas.Size) * this.xc![j, i] * dvar[i];
                         sum += dxc[j, i];
                     }
 
@@ -242,12 +242,12 @@ namespace Merkurius
 
             public void SetGradients(Func<bool, double, int, double> func)
             {
-                for (int i = 0; i < this.dgammaVector.Length; i++)
+                for (int i = 0; i < this.dgammaVector!.Length; i++)
                 {
                     this.dgammaVector[i] = func(true, this.dgammaVector[i], i);
                 }
 
-                for (int i = 0, j = this.outputs; i < this.dbetaVector.Length; i++, j++)
+                for (int i = 0, j = this.outputs; i < this.dbetaVector!.Length; i++, j++)
                 {
                     this.dbetaVector[i] = func(true, this.dbetaVector[i], j);
                 }
@@ -259,7 +259,7 @@ namespace Merkurius
                 {
                     for (int i = 0, j = this.outputs; i < this.outputs; i++, j++)
                     {
-                        this.weights[i] = func(this.weights[i], vector[i]);
+                        this.weights![i] = func(this.weights[i], vector[i]);
                         this.weights[j] = func(this.weights[j], vector[j]);
                     }
                 }

@@ -11,17 +11,17 @@ namespace Merkurius
         public class Seq2seq : Layer, IUpdatable
         {
             [DataMember]
-            private Encoder encoder = null;
+            private Encoder? encoder = null;
             [DataMember]
-            private Decoder decoder = null;
+            private Decoder? decoder = null;
             [DataMember]
-            private double[] weights = null;
+            private double[]? weights = null;
 
             public double[] Weights
             {
                 get
                 {
-                    return this.weights;
+                    return this.weights!;
                 }
                 set
                 {
@@ -71,14 +71,14 @@ namespace Merkurius
                     vectorList2.Add(vector2);
                 }
 
-                for (int i = 0; i < this.encoder.Weights.Length; i++)
+                for (int i = 0; i < this.encoder!.Weights.Length; i++)
                 {
-                    this.encoder.Weights[i] = this.weights[i];
+                    this.encoder.Weights[i] = this.weights![i];
                 }
 
-                for (int i = 0, j = this.encoder.Weights.Length; i < this.decoder.Weights.Length; i++, j++)
+                for (int i = 0, j = this.encoder.Weights.Length; i < this.decoder!.Weights.Length; i++, j++)
                 {
-                    this.decoder.Weights[i] = this.weights[j];
+                    this.decoder.Weights[i] = this.weights![j];
                 }
 
                 this.decoder.EncoderOutputs = this.encoder.Forward(new Batch<double[]>(vectorList1), isTraining);
@@ -89,14 +89,14 @@ namespace Merkurius
 
             public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
-                return this.encoder.Backward(this.decoder.Backward(deltas));
+                return this.encoder!.Backward(this.decoder!.Backward(deltas));
             }
 
             public Batch<double[]> GetGradients()
             {
                 var vectorList = new List<double[]>();
-                var encoderGradients = this.encoder.GetGradients();
-                var decoderGradients = this.decoder.GetGradients();
+                var encoderGradients = this.encoder!.GetGradients();
+                var decoderGradients = this.decoder!.GetGradients();
 
                 for (int i = 0; i < encoderGradients.Size; i++)
                 {
@@ -108,8 +108,8 @@ namespace Merkurius
 
             public void SetGradients(Func<bool, double, int, double> func)
             {
-                this.encoder.SetGradients(func);
-                this.decoder.SetGradients(func);
+                this.encoder!.SetGradients(func);
+                this.decoder!.SetGradients(func);
             }
 
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
@@ -119,7 +119,7 @@ namespace Merkurius
 
                 for (int i = 0; i < gradients.Size; i++)
                 {
-                    var vector1 = new double[this.encoder.Weights.Length];
+                    var vector1 = new double[this.encoder!.Weights.Length];
                     var vector2 = new double[gradients[i].Length - this.encoder.Weights.Length];
 
                     for (int j = 0; j < this.encoder.Weights.Length; j++)
@@ -136,17 +136,17 @@ namespace Merkurius
                     vectorList2.Add(vector2);
                 }
 
-                this.encoder.Update(new Batch<double[]>(vectorList1), func);
-                this.decoder.Update(new Batch<double[]>(vectorList2), func);
+                this.encoder!.Update(new Batch<double[]>(vectorList1), func);
+                this.decoder!.Update(new Batch<double[]>(vectorList2), func);
 
                 for (int i = 0; i < this.encoder.Weights.Length; i++)
                 {
-                    this.weights[i] = this.encoder.Weights[i];
+                    this.weights![i] = this.encoder.Weights[i];
                 }
 
                 for (int i = 0, j = this.encoder.Weights.Length; i < this.decoder.Weights.Length; i++, j++)
                 {
-                    this.weights[j] = this.decoder.Weights[i];
+                    this.weights![j] = this.decoder.Weights[i];
                 }
             }
         }

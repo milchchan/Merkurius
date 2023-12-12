@@ -14,7 +14,7 @@ namespace Merkurius.Layers
     public class Skip : Layer, IUpdatable
     {
         [DataMember]
-        private Collection<Layer> layerCollection = null;
+        private Collection<Layer>? layerCollection = null;
 
         public double[] Weights
         {
@@ -22,7 +22,7 @@ namespace Merkurius.Layers
             {
                 var weightList = new List<double>();
 
-                foreach (var layer in this.layerCollection)
+                foreach (var layer in this.layerCollection!)
                 {
                     var updatable = layer as IUpdatable;
 
@@ -38,7 +38,7 @@ namespace Merkurius.Layers
             {
                 var index = 0;
 
-                foreach (var layer in this.layerCollection)
+                foreach (var layer in this.layerCollection!)
                 {
                     var updatable = layer as IUpdatable;
 
@@ -58,7 +58,7 @@ namespace Merkurius.Layers
         {
             get
             {
-                return this.layerCollection;
+                return this.layerCollection!;
             }
         }
         
@@ -77,7 +77,7 @@ namespace Merkurius.Layers
 
         public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
         {
-            var layer = this.layerCollection[0];
+            var layer = this.layerCollection![0];
             var x = inputs;
             var parallelOptions = new ParallelOptions();
             var data = new double[inputs.Size][];
@@ -118,7 +118,7 @@ namespace Merkurius.Layers
 
         public override Batch<double[]> Backward(Batch<double[]> deltas)
         {
-            var layer = this.layerCollection[this.layerCollection.Count - 1];
+            var layer = this.layerCollection![this.layerCollection.Count - 1];
             var dx = deltas;
             var parallelOptions = new ParallelOptions();
             var data = new double[deltas.Size][];
@@ -157,8 +157,8 @@ namespace Merkurius.Layers
 
         public Batch<double[]> GetGradients()
         {
-            var layer = this.layerCollection[0];
-            List<double>[] gradients = null;
+            var layer = this.layerCollection![0];
+            List<double>[]? gradients = null;
 
             do
             {
@@ -202,7 +202,7 @@ namespace Merkurius.Layers
 
         public void SetGradients(Func<bool, double, int, double> func)
         {
-            foreach (var layer in this.layerCollection)
+            foreach (var layer in this.layerCollection!)
             {
                 var updatable = layer as IUpdatable;
 
@@ -217,7 +217,7 @@ namespace Merkurius.Layers
         {
             int i = 0;
 
-            foreach (var layer in this.layerCollection)
+            foreach (var layer in this.layerCollection!)
             {
                 var updatable = layer as IUpdatable;
 

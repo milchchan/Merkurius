@@ -20,8 +20,8 @@ namespace Merkurius
             private int poolWidth = 0;
             [DataMember]
             private int poolHeight = 0;
-            private Batch<double[]> activationMaps = null;
-            private Batch<double[]> internalOutputs = null;
+            private Batch<double[]>? activationMaps = null;
+            private Batch<double[]>? internalOutputs = null;
 
             public MaxPooling(int filters, int activationMapWidth, int activationMapHeight, int poolWidth, int poolHeight) : base(filters * activationMapWidth * activationMapHeight, filters * activationMapWidth / poolWidth * (activationMapHeight / poolHeight))
             {
@@ -51,7 +51,7 @@ namespace Merkurius
 
             public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
-                return DerivativeOfPooling(this.internalOutputs, deltas, this.activationMapWidth, this.activationMapHeight, GetOutputWidth(this.activationMapWidth), GetOutputHeight(this.activationMapHeight));
+                return DerivativeOfPooling(this.internalOutputs!, deltas, this.activationMapWidth, this.activationMapHeight, GetOutputWidth(this.activationMapWidth), GetOutputHeight(this.activationMapHeight));
             }
 
             private Batch<double[]> Pooling(Batch<double[]> inputs, int activationMapWidth, int activationMapHeight, int outputWidth, int outputHeight)
@@ -137,7 +137,7 @@ namespace Merkurius
                                         var y = this.poolHeight * k + m;
                                         var o = i * activationMapWidth * activationMapHeight + y * activationMapWidth + x;
 
-                                        if (outputs[index][j] == this.activationMaps[index][o])
+                                        if (outputs[index][j] == this.activationMaps![index][o])
                                         {
                                             d[o] = vector[j];
                                         }

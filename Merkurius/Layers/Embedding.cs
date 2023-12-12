@@ -11,17 +11,17 @@ namespace Merkurius
         public class Embedding : Layer, IUpdatable
         {
             [DataMember]
-            private double[] weights = null;
+            private double[]? weights = null;
             [DataMember]
             private int size = 0;
-            private Batch<double[]> internalInputs = null;
-            private Batch<double[]> dW = null;
+            private Batch<double[]>? internalInputs = null;
+            private Batch<double[]>? dW = null;
 
             public double[] Weights
             {
                 get
                 {
-                    return this.weights;
+                    return this.weights!;
                 }
                 set
                 {
@@ -74,7 +74,7 @@ namespace Merkurius
                     {
                         for (int k = 0, l = dimensions * Convert.ToInt32(vector[i]); k < dimensions; k++, l++)
                         {
-                            v[j] = this.weights[l];
+                            v[j] = this.weights![l];
                             j++;
                         }
                     }
@@ -99,14 +99,14 @@ namespace Merkurius
             public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
                 var parallelOptions = new ParallelOptions();
-                var data = new double[this.internalInputs.Size][];
+                var data = new double[this.internalInputs!.Size][];
                 var dimensions = this.outputs / this.inputs;
 
                 parallelOptions.MaxDegreeOfParallelism = 2 * Environment.ProcessorCount;
 
                 Parallel.ForEach<double[], List<Tuple<long, double[]>>>(deltas, parallelOptions, () => new List<Tuple<long, double[]>>(), (vector, state, index, local) =>
                 {
-                    var dW = new double[this.weights.Length];
+                    var dW = new double[this.weights!.Length];
 
                     for (int i = 0; i < this.weights.Length; i++)
                     {
@@ -143,12 +143,12 @@ namespace Merkurius
 
             public Batch<double[]> GetGradients()
             {
-                return this.dW;
+                return this.dW!;
             }
 
             public void SetGradients(Func<bool, double, int, double> func)
             {
-                foreach (double[] vector in this.dW)
+                foreach (double[] vector in this.dW!)
                 {
                     for (int i = 0; i < vector.Length; i++)
                     {
@@ -161,13 +161,13 @@ namespace Merkurius
             {
                 for (int i = 1; i < gradients.Size; i++)
                 {
-                    for (int j = 0; j < this.weights.Length; j++)
+                    for (int j = 0; j < this.weights!.Length; j++)
                     {
                         gradients[0][j] += gradients[i][j];
                     }
                 }
 
-                for (int i = 0; i < this.weights.Length; i++)
+                for (int i = 0; i < this.weights!.Length; i++)
                 {
                     this.weights[i] = func(this.weights[i], gradients[0][i] / gradients.Size);
                 }

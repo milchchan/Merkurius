@@ -21,7 +21,7 @@ namespace SineWaveTest
 
             int seed;
 
-            using (var rng = new RNGCryptoServiceProvider())
+            using (var rng = RandomNumberGenerator.Create())
             {
                 var buffer = new byte[sizeof(int)];
 
@@ -56,7 +56,7 @@ namespace SineWaveTest
             {
                 using (XmlReader xmlReader = XmlReader.Create(filename))
                 {
-                    model = new Model((IEnumerable<Layer>)serializer.ReadObject(xmlReader));
+                    model = new Model((IEnumerable<Layer>)serializer!.ReadObject(xmlReader)!);
                 }
             }
             else

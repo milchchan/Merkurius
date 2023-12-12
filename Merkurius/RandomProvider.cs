@@ -7,7 +7,7 @@ namespace Merkurius
     {
         private static int seed = Environment.TickCount;
         [ThreadStatic]
-        private static Random random = null;
+        private static Random? random = null;
 
         public static void SetSeed(int seed)
         {

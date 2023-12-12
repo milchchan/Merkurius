@@ -9,7 +9,7 @@ namespace Merkurius
         {
             private double eta = 0.01; // Learning rate
             private double alpha = 0.9; // Momentum
-            private Dictionary<int, double> dictionary = null;
+            private Dictionary<int, double>? dictionary = null;
 
             public Momentum()
             {
@@ -27,7 +27,7 @@ namespace Merkurius
             {
                 double v;
 
-                if (this.dictionary.TryGetValue(index, out v))
+                if (this.dictionary!.TryGetValue(index, out v))
                 {
                     this.dictionary[index] = gradient;
                 }

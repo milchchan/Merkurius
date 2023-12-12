@@ -12,20 +12,20 @@ namespace Merkurius
         public class FullyConnected : Layer, IUpdatable
         {
             [DataMember]
-            private double[] weights = null;
+            private double[]? weights = null;
             [DataMember]
-            private double[] biases = null;
+            private double[]? biases = null;
             [DataMember]
             private int sequences = 1;
-            private Batch<double[]> internalInputs = null;
-            private Batch<double[]> internalOutputs = null;
-            private List<Tuple<double[], double[]>> gradientList = null;
+            private Batch<double[]>? internalInputs = null;
+            private Batch<double[]>? internalOutputs = null;
+            private List<Tuple<double[], double[]>>? gradientList = null;
 
             public double[] Weights
             {
                 get
                 {
-                    return this.weights;
+                    return this.weights!;
                 }
                 set
                 {
@@ -37,7 +37,7 @@ namespace Merkurius
             {
                 get
                 {
-                    return this.biases;
+                    return this.biases!;
                 }
                 set
                 {
@@ -146,10 +146,10 @@ namespace Merkurius
 
                             for (int k = 0; k < this.inputs; k++)
                             {
-                                sum += vector[offset1 + k] * this.weights[offset2 + hiddens * k + j];
+                                sum += vector[offset1 + k] * this.weights![offset2 + hiddens * k + j];
                             }
 
-                            activations[offset3 + j] = sum + this.biases[offset3 + j];
+                            activations[offset3 + j] = sum + this.biases![offset3 + j];
                         }
                     }   
 
@@ -199,8 +199,8 @@ namespace Merkurius
 
                             for (int l = 0; l < hiddens; l++)
                             {
-                                error += vector1[offset1 + l] * this.weights[offset2 + k];
-                                gradients[offset2 + k] = vector1[offset1 + l] * this.internalInputs[index][offset3 + j];
+                                error += vector1[offset1 + l] * this.weights![offset2 + k];
+                                gradients[offset2 + k] = vector1[offset1 + l] * this.internalInputs![index][offset3 + j];
                                 k++;
                             }
 
@@ -233,12 +233,12 @@ namespace Merkurius
 
             public Batch<double[]> GetGradients()
             {
-                return new Batch<double[]>(this.gradientList.ConvertAll<double[]>(x => x.Item1.Concat<double>(x.Item2).ToArray<double>()));
+                return new Batch<double[]>(this.gradientList!.ConvertAll<double[]>(x => x.Item1.Concat<double>(x.Item2).ToArray<double>()));
             }
 
             public void SetGradients(Func<bool, double, int, double> func)
             {
-                this.gradientList.ForEach(x =>
+                this.gradientList!.ForEach(x =>
                 {
                     for (int i = 0; i < x.Item1.Length; i++)
                     {
@@ -282,12 +282,12 @@ namespace Merkurius
 
                     for (int j = 0; j < length1; j++)
                     {
-                        this.weights[offset1 + j] = func(this.weights[offset1 + j], gradients[0][offset1 + j] / gradients.Size);
+                        this.weights![offset1 + j] = func(this.weights[offset1 + j], gradients[0][offset1 + j] / gradients.Size);
                     }
 
                     for (int j = 0, k = length1 * i + length1; j < hiddens; j++, k++)
                     {
-                        this.biases[offset2 + j] = func(this.biases[offset2 + j], gradients[0][k] / gradients.Size);
+                        this.biases![offset2 + j] = func(this.biases[offset2 + j], gradients[0][k] / gradients.Size);
                     }
                 }
             }

@@ -11,17 +11,17 @@ namespace Merkurius
         public class Encoder : Layer, IUpdatable
         {
             [DataMember]
-            private Embedding embedding = null;
+            private Embedding? embedding = null;
             [DataMember]
-            private LSTM recurrent = null;
+            private LSTM? recurrent = null;
             [DataMember]
-            private double[] weights = null;
+            private double[]? weights = null;
 
             public double[] Weights
             {
                 get
                 {
-                    return this.weights;
+                    return this.weights!;
                 }
                 set
                 {
@@ -29,15 +29,15 @@ namespace Merkurius
                 }
             }
 
-            public Batch<double[]> State
+            public Batch<double[]>? State
             {
                 get
                 {
-                    return this.recurrent.State;
+                    return this.recurrent!.State;
                 }
                 set
                 {
-                    this.recurrent.State = value;
+                    this.recurrent!.State = value;
                 }
             }
 
@@ -60,14 +60,14 @@ namespace Merkurius
 
             public override Batch<double[]> Forward(Batch<double[]> inputs, bool isTraining)
             {
-                for (int i = 0; i < this.embedding.Weights.Length; i++)
+                for (int i = 0; i < this.embedding!.Weights.Length; i++)
                 {
-                    this.embedding.Weights[i] = this.weights[i];
+                    this.embedding.Weights[i] = this.weights![i];
                 }
 
-                for (int i = 0, j = this.embedding.Weights.Length; i < this.recurrent.Weights.Length; i++, j++)
+                for (int i = 0, j = this.embedding.Weights.Length; i < this.recurrent!.Weights.Length; i++, j++)
                 {
-                    this.recurrent.Weights[i] = this.weights[j];
+                    this.recurrent.Weights[i] = this.weights![j];
                 }
 
                 return this.recurrent.Forward(this.embedding.Forward(inputs, isTraining), isTraining);
@@ -75,14 +75,14 @@ namespace Merkurius
 
             public override Batch<double[]> Backward(Batch<double[]> deltas)
             {
-                return this.embedding.Backward(this.recurrent.Backward(deltas));
+                return this.embedding!.Backward(this.recurrent!.Backward(deltas));
             }
 
             public Batch<double[]> GetGradients()
             {
                 var vectorList = new List<double[]>();
-                var embeddingGradients = this.embedding.GetGradients();
-                var recurrentGradients = this.recurrent.GetGradients();
+                var embeddingGradients = this.embedding!.GetGradients();
+                var recurrentGradients = this.recurrent!.GetGradients();
 
                 for (int i = 0; i < embeddingGradients.Size; i++)
                 {
@@ -94,8 +94,8 @@ namespace Merkurius
 
             public void SetGradients(Func<bool, double, int, double> func)
             {
-                this.embedding.SetGradients(func);
-                this.recurrent.SetGradients(func);
+                this.embedding!.SetGradients(func);
+                this.recurrent!.SetGradients(func);
             }
 
             public void Update(Batch<double[]> gradients, Func<double, double, double> func)
@@ -105,7 +105,7 @@ namespace Merkurius
 
                 for (int i = 0; i < gradients.Size; i++)
                 {
-                    var vector1 = new double[this.embedding.Weights.Length];
+                    var vector1 = new double[this.embedding!.Weights.Length];
                     var vector2 = new double[gradients[i].Length - this.embedding.Weights.Length];
 
                     for (int j = 0; j < this.embedding.Weights.Length; j++)
@@ -122,17 +122,17 @@ namespace Merkurius
                     vectorList2.Add(vector2);
                 }
 
-                this.embedding.Update(new Batch<double[]>(vectorList1), func);
-                this.recurrent.Update(new Batch<double[]>(vectorList2), func);
+                this.embedding!.Update(new Batch<double[]>(vectorList1), func);
+                this.recurrent!.Update(new Batch<double[]>(vectorList2), func);
 
                 for (int i = 0; i < this.embedding.Weights.Length; i++)
                 {
-                    this.weights[i] = this.embedding.Weights[i];
+                    this.weights![i] = this.embedding.Weights[i];
                 }
 
                 for (int i = 0, j = this.embedding.Weights.Length; i < this.recurrent.Weights.Length; i++, j++)
                 {
-                    this.weights[j] = this.recurrent.Weights[i];
+                    this.weights![j] = this.recurrent.Weights[i];
                 }
             }
         }

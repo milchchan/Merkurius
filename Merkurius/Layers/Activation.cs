@@ -11,15 +11,15 @@ namespace Merkurius
         [DataContract]
         public class Activation : Layer
         {
-            private double[][] internalOutputs = null;
+            private double[][]? internalOutputs = null;
             [DataMember]
-            private IActivationFunction activationFunction = null;
+            private IActivationFunction? activationFunction = null;
 
             public IActivationFunction ActivationFunction
             {
                 get
                 {
-                    return this.activationFunction;
+                    return this.activationFunction!;
                 }
             }
 
@@ -47,7 +47,7 @@ namespace Merkurius
 
                     for (int i = 0; i < this.outputs; i++)
                     {
-                        activations[i] = this.activationFunction.Forward(vector[i]);
+                        activations[i] = this.activationFunction!.Forward(vector[i]);
                     }
 
                     local.Add(Tuple.Create<long, double[]>(index, activations));
@@ -81,7 +81,7 @@ namespace Merkurius
 
                     for (int i = 0; i < this.outputs; i++)
                     {
-                        vector2[i] = this.activationFunction.Backward(this.internalOutputs[index][i]) * vector1[i];
+                        vector2[i] = this.activationFunction!.Backward(this.internalOutputs![index][i]) * vector1[i];
                     }
 
                     local.Add(Tuple.Create<long, double[]>(index, vector2));

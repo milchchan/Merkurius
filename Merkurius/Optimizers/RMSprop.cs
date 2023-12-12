@@ -10,7 +10,7 @@ namespace Merkurius
             private double eta = Math.Pow(10, -2); // Learning rate
             private double rho = 0.95;
             private double epsilon = Math.Pow(10, -8);
-            private Dictionary<int, double> rDictionary = null;
+            private Dictionary<int, double>? rDictionary = null;
 
             public RMSprop()
             {
@@ -29,7 +29,7 @@ namespace Merkurius
             {
                 double r;
 
-                if (this.rDictionary.TryGetValue(index, out r))
+                if (this.rDictionary!.TryGetValue(index, out r))
                 {
                     r += this.rho * r + (1.0 - r) * gradient * gradient;
                     this.rDictionary[index] = r;

@@ -9,7 +9,7 @@ namespace Merkurius
         {
             private double rho = 0.95;
             private double epsilon = Math.Pow(10, -8);
-            private Dictionary<int, ValueTuple<double, double>> dictionary = null;
+            private Dictionary<int, ValueTuple<double, double>>? dictionary = null;
 
             public AdaDelta()
             {
@@ -29,7 +29,7 @@ namespace Merkurius
                 double e;
                 double dx;
 
-                if (this.dictionary.TryGetValue(index, out tuple))
+                if (this.dictionary!.TryGetValue(index, out tuple))
                 {
                     e = this.rho * tuple.Item1 + (1 - tuple.Item1) * gradient * gradient;
                     dx = -Math.Sqrt(tuple.Item2 + this.epsilon) / Math.Sqrt(e + this.epsilon) * gradient;

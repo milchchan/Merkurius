@@ -7,17 +7,17 @@ namespace Merkurius
 {
     public class Batch<T> : IEnumerable<T>
     {
-        private T[] items = null;
+        private T[]? items = null;
 
         public T this[long i]
         {
             get
             {
-                return this.items[i];
+                return this.items![i];
             }
             set
             {
-                this.items[i] = value;
+                this.items![i] = value;
             }
         }
 
@@ -25,7 +25,7 @@ namespace Merkurius
         {
             get
             {
-                return this.items.Length;
+                return this.items!.Length;
             }
         }
 
@@ -49,7 +49,7 @@ namespace Merkurius
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.items.GetEnumerator();
+            return this.items!.GetEnumerator();
         }
     }
 }

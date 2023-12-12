@@ -25,7 +25,7 @@ namespace MNISTTest
 
             int seed;
 
-            using (var rng = new RNGCryptoServiceProvider())
+            using (var rng = RandomNumberGenerator.Create())
             {
                 var buffer = new byte[sizeof(int)];
 
@@ -58,8 +58,8 @@ namespace MNISTTest
             Model model;
 
             using (Stream
-                imagesStream = assembly.GetManifestResourceStream("MNISTTest.train-images.idx3-ubyte"),
-                labelsStream = assembly.GetManifestResourceStream("MNISTTest.train-labels.idx1-ubyte"))
+                imagesStream = assembly!.GetManifestResourceStream("MNISTTest.train-images.idx3-ubyte")!,
+                labelsStream = assembly!.GetManifestResourceStream("MNISTTest.train-labels.idx1-ubyte")!)
             {
                 foreach (var image in MnistImage.Load(imagesStream, labelsStream).Take(1000))
                 {
@@ -82,8 +82,8 @@ namespace MNISTTest
             }
 
             using (Stream
-                imagesStream = assembly.GetManifestResourceStream("MNISTTest.t10k-images.idx3-ubyte"),
-                labelsStream = assembly.GetManifestResourceStream("MNISTTest.t10k-labels.idx1-ubyte"))
+                imagesStream = assembly!.GetManifestResourceStream("MNISTTest.t10k-images.idx3-ubyte")!,
+                labelsStream = assembly!.GetManifestResourceStream("MNISTTest.t10k-labels.idx1-ubyte")!)
             {
                 foreach (var image in MnistImage.Load(imagesStream, labelsStream).Take(1000))
                 {
@@ -109,7 +109,7 @@ namespace MNISTTest
             {
                 using (XmlReader xmlReader = XmlReader.Create(filename))
                 {
-                    model = new Model((IEnumerable<Layer>)serializer.ReadObject(xmlReader));
+                    model = new Model((IEnumerable<Layer>)serializer!.ReadObject(xmlReader)!);
                 }
             }
             else
